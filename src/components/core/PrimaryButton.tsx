@@ -1,9 +1,13 @@
 import React from 'react';
 
-const PrimaryButton: React.FC = () => {
+type PrimaryButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  children?: React.ReactNode;
+};
+
+const PrimaryButton: React.FC<PrimaryButtonProps> = ({ children, ...props }) => {
   return (
-    <button>
-      {/* TODO: Implement PrimaryButton with Rough.js */}
+    <button {...props}>
+      {children}
     </button>
   );
 };
