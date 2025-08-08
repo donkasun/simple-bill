@@ -1,6 +1,7 @@
 import React from 'react';
 import StyledTable from '../components/core/StyledTable';
 import PrimaryButton from '../components/core/PrimaryButton';
+import StyledInput from '../components/core/StyledInput';
 import { useAuth } from '../hooks/useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 
@@ -14,7 +15,7 @@ type Customer = {
 
 const Customers: React.FC = () => {
   const { user } = useAuth();
-  const { items, loading, error } = useFirestore<Customer>({
+  const { items, loading, error, add, remove } = useFirestore<Customer>({
     collectionName: 'customers',
     userId: user?.uid,
     orderByField: 'createdAt',
@@ -24,7 +25,13 @@ const Customers: React.FC = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <div></div>
-        <PrimaryButton onClick={() => { /* TODO: open modal */ }}>
+        <PrimaryButton onClick={async () => {
+          const name = window.prompt('Customer name');
+          if (!name) return;
+          const email = window.prompt('Customer email') ?? '';
+          const address = window.prompt('Customer address') ?? '';
+          await add({ name, email, address, userId: user?.uid || '' });
+        }}>
           Add New Customer
         </PrimaryButton>
       </div>
@@ -50,7 +57,7 @@ const Customers: React.FC = () => {
                 <td>{c.address ?? '-'}</td>
                 <td>
                   <button style={{ marginRight: 8 }}>Edit</button>
-                  <button>Delete</button>
+                  <button onClick={async () => { if (c.id && window.confirm('Delete this customer?')) await remove(c.id); }}>Delete</button>
                 </td>
               </tr>
             ))}
