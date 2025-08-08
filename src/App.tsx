@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import ProtectedRoute from "./components/core/ProtectedRoute";
 import Login from "./pages/Login";
@@ -21,6 +21,7 @@ function App() {
               </ProtectedRoute>
             }
           >
+            <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="customers" element={<Customers />} />
             <Route path="items" element={<Items />} />
