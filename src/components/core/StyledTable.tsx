@@ -1,9 +1,13 @@
 import React from 'react';
 
-const StyledTable: React.FC = () => {
+type StyledTableProps = React.TableHTMLAttributes<HTMLTableElement> & {
+  children?: React.ReactNode;
+};
+
+const StyledTable: React.FC<StyledTableProps> = ({ children, ...props }) => {
   return (
-    <table>
-      {/* TODO: Implement StyledTable with Rough.js */}
+    <table {...props} style={{ width: '100%', borderCollapse: 'collapse' }}>
+      {children}
     </table>
   );
 };

@@ -1,8 +1,15 @@
 import React from 'react';
 
-const StyledInput: React.FC = () => {
+type StyledInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  label?: string;
+};
+
+const StyledInput: React.FC<StyledInputProps> = ({ label, ...props }) => {
   return (
-    <input />
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {label && <span style={{ fontSize: 14 }}>{label}</span>}
+      <input {...props} />
+    </label>
   );
 };
 

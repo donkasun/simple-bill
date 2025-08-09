@@ -1,10 +1,15 @@
 import React from 'react';
 
-const StyledDropdown: React.FC = () => {
+type StyledDropdownProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+  label?: string;
+};
+
+const StyledDropdown: React.FC<StyledDropdownProps> = ({ label, children, ...props }) => {
   return (
-    <select>
-      {/* TODO: Implement StyledDropdown with Rough.js */}
-    </select>
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {label && <span style={{ fontSize: 14 }}>{label}</span>}
+      <select {...props}>{children}</select>
+    </label>
   );
 };
 
