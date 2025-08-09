@@ -10,6 +10,7 @@
   --green-dark: #008a5a;
   --orange-light: #fff4e5;
   --orange-dark: #ff8c00;
+  --brand-danger: #dc3545;
 }
 
 body {
@@ -134,6 +135,20 @@ h1, h2, h3, .brand, .primary-cta {
 .table .td-right {
   text-align: right;
 }
+
+/* Link-style buttons for table actions */
+.link-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--brand-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-btn:hover { text-decoration: underline; }
+.link-btn.link-danger { color: var(--brand-danger); }
+.table .actions { display: inline-flex; align-items: center; gap: 20px; }
 
 .status-badge {
   display: inline-flex;

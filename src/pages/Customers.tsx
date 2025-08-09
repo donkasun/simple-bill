@@ -110,15 +110,18 @@ const Customers: React.FC = () => {
                     <div style={{ whiteSpace: "pre-wrap" }}>{c.address ?? "-"}</div>
                   </td>
                   <td>
-                    <button style={{ marginRight: 8 }} onClick={() => handleEditClick(c)}>Edit</button>
-                    <button
-                      onClick={async () => {
-                        if (c.id && window.confirm("Delete this customer?"))
-                          await remove(c.id);
-                      }}
-                    >
-                      Delete
-                    </button>
+                    <div className="actions">
+                      <button className="link-btn" onClick={() => handleEditClick(c)}>Edit</button>
+                      <button
+                        className="link-btn link-danger"
+                        onClick={async () => {
+                          if (c.id && window.confirm("Delete this customer?"))
+                            await remove(c.id);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
