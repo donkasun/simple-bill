@@ -1,25 +1,13 @@
 import React from 'react';
+import PrimaryButton from '../components/core/PrimaryButton';
 
 const Dashboard: React.FC = () => {
   return (
     <div style={{ padding: '1rem' }}>
       <div className="container-xl">
         <div className="page-header">
-          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Dashboard</h2>
-          <button
-            className="btn-primary"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: '1px solid rgba(52,58,64,0.2)',
-            }}
-          >
-            <span className="material-icons" style={{ fontSize: 16 }}>add_circle_outline</span>
-            <span style={{ fontWeight: 600 }}>Create New Document</span>
-          </button>
+          <div/>
+          <PrimaryButton>Create New Document</PrimaryButton>
         </div>
 
         <h3 className="section-title">Recent Documents</h3>

@@ -54,12 +54,35 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({ children, className, styl
       {...props}
       ref={buttonRef}
       className={`btn-primary ${className ?? ''}`.trim()}
-      style={{ position: 'relative', border: 'none', background: 'transparent', padding: '8px 12px', borderRadius: 8, ...style }}
+      style={{
+        position: 'relative',
+        border: 'none',
+        background: 'transparent',
+        padding: '8px 12px',
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...style,
+      }}
       onMouseEnter={(e) => { setHovered(true); props.onMouseEnter?.(e); }}
       onMouseLeave={(e) => { setHovered(false); props.onMouseLeave?.(e); }}
     >
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, borderRadius: 8, pointerEvents: 'none' }} />
-      <div style={{ position: 'relative', zIndex: 1, display: 'inherit', width: '100%' }}>{children}</div>
+      <span
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'inherit',
+          width: '100%',
+          fontWeight: 600,
+        }}
+      >
+        {children}
+      </span>
     </button>
   );
 };
