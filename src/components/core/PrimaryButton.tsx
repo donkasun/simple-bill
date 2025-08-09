@@ -59,7 +59,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({ children, className, styl
       onMouseLeave={(e) => { setHovered(false); props.onMouseLeave?.(e); }}
     >
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, borderRadius: 8, pointerEvents: 'none' }} />
-      <span style={{ position: 'relative', zIndex: 1, fontWeight: 600 }}>{children}</span>
+      <div style={{ position: 'relative', zIndex: 1, display: 'inherit', width: '100%' }}>{children}</div>
     </button>
   );
 };
