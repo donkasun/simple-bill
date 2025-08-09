@@ -6,11 +6,10 @@ const Dashboard: React.FC = () => {
     <div style={{ padding: '1rem' }}>
       <div className="container-xl">
         <div className="page-header">
-          <div/>
+          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Dashboard</h2>
           <PrimaryButton>Create New Document</PrimaryButton>
         </div>
 
-        <h3 className="section-title">Recent Documents</h3>
 
         <div className="table-wrapper card">
           <table className="table">

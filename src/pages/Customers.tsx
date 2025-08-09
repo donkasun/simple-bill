@@ -57,8 +57,9 @@ const Customers: React.FC = () => {
         });
       }
       setModalOpen(false);
-    } catch (e: any) {
-      setPageError(e?.message ?? "Failed to save customer");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to save customer";
+      setPageError(message);
     } finally {
       setModalSubmitting(false);
     }
@@ -98,7 +99,7 @@ const Customers: React.FC = () => {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Address</th>
-                <th>Actions</th>
+                <th className="td-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -109,7 +110,7 @@ const Customers: React.FC = () => {
                   <td>
                     <div style={{ whiteSpace: "pre-wrap" }}>{c.address ?? "-"}</div>
                   </td>
-                  <td>
+                  <td className="td-right">
                     <div className="actions">
                       <button className="link-btn" onClick={() => handleEditClick(c)}>Edit</button>
                       <button
