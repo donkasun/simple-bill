@@ -1,8 +1,8 @@
-import React from 'react';
-import StyledTable from '../components/core/StyledTable';
-import PrimaryButton from '../components/core/PrimaryButton';
-import { useAuth } from '../hooks/useAuth';
-import { useFirestore, type BaseEntity } from '../hooks/useFirestore';
+import React from "react";
+import StyledTable from "../components/core/StyledTable";
+import PrimaryButton from "../components/core/PrimaryButton";
+import { useAuth } from "../hooks/useAuth";
+import { useFirestore, type BaseEntity } from "../hooks/useFirestore";
 
 type Customer = BaseEntity & {
   userId: string;
@@ -14,29 +14,45 @@ type Customer = BaseEntity & {
 const Customers: React.FC = () => {
   const { user } = useAuth();
   const { items, loading, error, add, remove } = useFirestore<Customer>({
-    collectionName: 'customers',
+    collectionName: "customers",
     userId: user?.uid,
-    orderByField: 'createdAt',
+    orderByField: "createdAt",
   });
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{ padding: "1rem" }}>
       <div className="container-xl">
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Customers</h2>
-          <PrimaryButton onClick={async () => {
-            const name = window.prompt('Customer name');
-            if (!name) return;
-            const email = window.prompt('Customer email') ?? '';
-            const address = window.prompt('Customer address') ?? '';
-            await add({ name, email, address, userId: user?.uid || '' });
-          }}>
-            Add New Customer
-          </PrimaryButton>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "1rem",
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
+            Customers
+          </h2>
+          <div style={{ display: "flex", gap: 8 }}>
+            <PrimaryButton
+              onClick={async () => {
+                const name = window.prompt("Customer name");
+                if (!name) return;
+                const email = window.prompt("Customer email") ?? "";
+                const address = window.prompt("Customer address") ?? "";
+                await add({ name, email, address, userId: user?.uid || "" });
+              }}
+            >
+              Add New Customer
+            </PrimaryButton>
+          </div>
         </div>
 
         {loading && <div>Loading customers…</div>}
-        {error && <div role="alert" style={{ color: 'crimson' }}>{error}</div>}
+        {error && (
+          <div role="alert" style={{ color: "crimson" }}>
+            {error}
+          </div>
+        )}
 
         {!loading && !error && (
           <StyledTable>
@@ -53,10 +69,17 @@ const Customers: React.FC = () => {
                 <tr key={c.id}>
                   <td>{c.name}</td>
                   <td>{c.email}</td>
-                  <td>{c.address ?? '-'}</td>
+                  <td>{c.address ?? "-"}</td>
                   <td>
                     <button style={{ marginRight: 8 }}>Edit</button>
-                    <button onClick={async () => { if (c.id && window.confirm('Delete this customer?')) await remove(c.id); }}>Delete</button>
+                    <button
+                      onClick={async () => {
+                        if (c.id && window.confirm("Delete this customer?"))
+                          await remove(c.id);
+                      }}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
