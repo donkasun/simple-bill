@@ -1,69 +1,83 @@
-# React + TypeScript + Vite
+# SimpleBill
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A minimal, charming invoicing app built with React + TypeScript, Firebase, and Rough.js. Create and manage customers, items, and billing documents quickly.
 
-Currently, two official plugins are available:
+## Tech Stack
+- React (Vite, TypeScript)
+- Firebase (Auth with Google, Firestore)
+- Rough.js for sketch-style UI accents
+- pdf-lib for PDF generation (planned)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Prerequisites
+- Node.js 18+
+- A Firebase project with Firestore and Google Sign-In enabled
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Setup
+1) Install deps
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2) Environment variables
+Create a `.env` file with your Firebase web config:
+```bash
+VITE_API_KEY=...
+VITE_AUTH_DOMAIN=...
+VITE_PROJECT_ID=...
+VITE_STORAGE_BUCKET=...
+VITE_MESSAGING_SENDER_ID=...
+VITE_APP_ID=...
 ```
+
+3) Firestore
+- Create the database (Native mode, region `nam5`) in Firebase Console
+- Deploy rules and indexes (requires Firebase CLI):
+```bash
+npm i -g firebase-tools
+firebase login
+firebase use <your-project-id>
+firebase deploy --only firestore:rules,firestore:indexes
+```
+
+Files used:
+- `firebase.json` – Firestore config (database, region, files)
+- `firestore.rules` – Secure, per-user access rules
+- `firestore.indexes.json` – Composite index for `customers` (userId ASC, createdAt DESC)
+
+## Development
+Run the app locally:
+```bash
+npm run dev
+```
+
+## Features
+- Google Sign-In
+- Customers
+  - Add/Edit in modal
+  - Address supports multiple lines
+  - Email is optional; validated if provided
+  - `showEmail` boolean to control whether email appears on documents
+- Items (scaffolded)
+- Dashboard (static placeholder)
+
+## Design Language
+- Rough.js-enhanced components:
+  - `PrimaryButton`, `SecondaryButton` (sketch borders/fills, hover states)
+  - `StyledInput`, `StyledTextarea` (rough borders)
+  - `StyledTable` (card with rough border)
+- Link-style table actions for Edit/Delete
+
+## Code Structure
+- `src/components/core/*` – Reusable UI components
+- `src/components/customers/CustomerModal.tsx` – Add/Edit customer modal
+- `src/hooks/useAuth.tsx` – Google Auth context
+- `src/hooks/useFirestore.ts` – Generic Firestore CRUD hook
+- `src/pages/*` – Route pages (Dashboard, Customers, Items)
+
+## Roadmap
+- Items CRUD
+- Document creation (invoice/quotation), totals, and PDF export
+- Dashboard recent documents
+
+## License
+MIT
