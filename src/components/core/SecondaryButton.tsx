@@ -1,9 +1,66 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import rough from 'roughjs/bundled/rough.esm.js';
 
-const SecondaryButton: React.FC = () => {
+type SecondaryButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  children?: React.ReactNode;
+};
+
+const SecondaryButton: React.FC<SecondaryButtonProps> = ({ children, className, style, ...props }) => {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [hovered, setHovered] = useState(false);
+
+  useEffect(() => {
+    const btn = buttonRef.current;
+    const canvas = canvasRef.current;
+    if (!btn || !canvas) return;
+
+    const draw = () => {
+      const rect = btn.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+      canvas.width = Math.max(1, Math.round(w * dpr));
+      canvas.height = Math.max(1, Math.round(h * dpr));
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+      const rc = rough.canvas(canvas);
+      const padding = 2;
+      rc.rectangle(padding, padding, w - padding * 2, h - padding * 2, {
+        roughness: hovered ? 2.0 : 1.2,
+        fill: 'transparent',
+        stroke: 'rgba(0,0,0,0.4)',
+        strokeWidth: 1,
+        hachureAngle: hovered ? 60 : 0,
+        fillStyle: hovered ? 'hachure' : 'solid'
+      });
+    };
+
+    draw();
+    const ro = new ResizeObserver(draw);
+    ro.observe(btn);
+    window.addEventListener('resize', draw);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', draw);
+    };
+  }, [hovered]);
+
   return (
-    <button>
-      {/* TODO: Implement SecondaryButton with Rough.js */}
+    <button
+      {...props}
+      ref={buttonRef}
+      className={className}
+      style={{ position: 'relative', border: 'none', background: 'transparent', padding: '8px 12px', borderRadius: 8, ...style }}
+      onMouseEnter={(e) => { setHovered(true); props.onMouseEnter?.(e); }}
+      onMouseLeave={(e) => { setHovered(false); props.onMouseLeave?.(e); }}
+    >
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, borderRadius: 8, pointerEvents: 'none' }} />
+      <span style={{ position: 'relative', zIndex: 1, fontWeight: 600 }}>{children}</span>
     </button>
   );
 };
