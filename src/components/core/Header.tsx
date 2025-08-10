@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import Logo from '../../assets/logo.svg';
 import { useAuth } from '../../hooks/useAuth';
+import { getFallbackAvatar } from '../../utils/fallbackAvatar';
 
 type HeaderProps = { title?: string };
 
@@ -31,6 +32,8 @@ const Header: React.FC<HeaderProps> = () => {
 
   const navClass = ({ isActive }: { isActive: boolean }) => `nav-link${isActive ? ' active' : ''}`;
 
+  console.log(user);
+
   return (
     <header className="top-header">
       <div className="top-header__inner">
@@ -52,11 +55,6 @@ const Header: React.FC<HeaderProps> = () => {
         </nav>
 
         <div className="header-actions">
-          <button className="icon-button" aria-label="Notifications">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-              <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
           <div className="user-menu" ref={menuRef}>
             <button
               className="avatar-button"
@@ -65,11 +63,14 @@ const Header: React.FC<HeaderProps> = () => {
               onClick={() => setMenuOpen((v) => !v)}
             >
               <div className="avatar" title={user?.displayName ?? 'User'}>
-                {user?.photoURL ? (
-                  <img src={user.photoURL} alt="User avatar" />
-                ) : (
-                  <span>{user?.displayName?.[0] ?? 'U'}</span>
-                )}
+                <img
+                  src={user?.photoURL || getFallbackAvatar({ uid: user?.uid, email: user?.email, displayName: user?.displayName })}
+                  alt="User avatar"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.src = getFallbackAvatar({ uid: user?.uid, email: user?.email, displayName: user?.displayName });
+                  }}
+                />
               </div>
             </button>
             <div className={`menu-dropdown ${menuOpen ? 'open' : ''}`} role="menu">
