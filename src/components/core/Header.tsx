@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import Logo from '../../assets/logo.svg';
 import { useAuth } from '../../hooks/useAuth';
+import { getFallbackAvatar } from '../../utils/fallbackAvatar';
 
 type HeaderProps = { title?: string };
 
@@ -30,6 +31,8 @@ const Header: React.FC<HeaderProps> = () => {
   };
 
   const navClass = ({ isActive }: { isActive: boolean }) => `nav-link${isActive ? ' active' : ''}`;
+
+  console.log(user);
 
   return (
     <header className="top-header">
@@ -65,11 +68,14 @@ const Header: React.FC<HeaderProps> = () => {
               onClick={() => setMenuOpen((v) => !v)}
             >
               <div className="avatar" title={user?.displayName ?? 'User'}>
-                {user?.photoURL ? (
-                  <img src={user.photoURL} alt="User avatar" />
-                ) : (
-                  <span>{user?.displayName?.[0] ?? 'U'}</span>
-                )}
+                <img
+                  src={user?.photoURL || getFallbackAvatar({ uid: user?.uid, email: user?.email, displayName: user?.displayName })}
+                  alt="User avatar"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.src = getFallbackAvatar({ uid: user?.uid, email: user?.email, displayName: user?.displayName });
+                  }}
+                />
               </div>
             </button>
             <div className={`menu-dropdown ${menuOpen ? 'open' : ''}`} role="menu">
