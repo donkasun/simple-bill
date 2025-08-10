@@ -1,13 +1,16 @@
 import React from 'react';
 import PrimaryButton from '../components/core/PrimaryButton';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div style={{ padding: '1rem' }}>
       <div className="container-xl">
         <div className="page-header">
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Dashboard</h2>
-          <PrimaryButton>Create New Document</PrimaryButton>
+          <PrimaryButton onClick={() => navigate('/documents/new')}>Create New Document</PrimaryButton>
         </div>
 
 
