@@ -8,6 +8,8 @@ import SecondaryButton from '../components/core/SecondaryButton';
 import { useAuth } from '../hooks/useAuth';
 import { useFirestore, type BaseEntity } from '../hooks/useFirestore';
 import { useNavigate } from 'react-router-dom';
+import { generateDocumentPdf } from '../utils/pdf';
+import { serverTimestamp } from 'firebase/firestore';
 
 type Customer = BaseEntity & {
   userId: string;
@@ -201,6 +203,8 @@ const DocumentCreation: React.FC = () => {
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
+  const [finalizeError, setFinalizeError] = useState<string | null>(null);
 
   const handleSaveDraft = async () => {
     setSaveError(null);
@@ -240,6 +244,70 @@ const DocumentCreation: React.FC = () => {
     }
   };
 
+  const handleFinalizeAndDownload = async () => {
+    setFinalizeError(null);
+    if (!user?.uid) return;
+    setFinalizing(true);
+    try {
+      const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const payload: Omit<DocumentEntity, 'id' | 'createdAt' | 'updatedAt'> = {
+        userId: user.uid,
+        type: state.documentType,
+        docNumber: state.documentNumber || '',
+        date: state.date,
+        customerId: state.customerId,
+        customerDetails: selectedCustomer
+          ? { name: selectedCustomer.name, email: selectedCustomer.email, address: selectedCustomer.address }
+          : undefined,
+        items: state.lineItems.map((li) => ({
+          itemId: li.itemId,
+          name: li.name,
+          description: li.description,
+          unitPrice: Number.isFinite(li.unitPrice) ? li.unitPrice : 0,
+          quantity: Number.isFinite(li.quantity) ? li.quantity : 0,
+          amount: Number.isFinite(li.amount) ? li.amount : 0,
+        })),
+        subtotal,
+        total,
+        notes: state.notes,
+        status: 'finalized',
+        finalizedAt: serverTimestamp() as unknown as import('firebase/firestore').Timestamp,
+      };
+
+      // Save finalized doc
+      const id = await addDocument(payload);
+
+      // Generate PDF and download
+      const pdfBytes = await generateDocumentPdf({
+        type: payload.type,
+        docNumber: payload.docNumber,
+        date: payload.date,
+        customerDetails: payload.customerDetails,
+        items: payload.items,
+        subtotal: payload.subtotal,
+        total: payload.total,
+      });
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const filenamePrefix = payload.type === 'invoice' ? 'INV' : 'QUO';
+      const filename = payload.docNumber ? payload.docNumber : `${filenamePrefix}-${payload.date}`;
+      a.href = url;
+      a.download = `${filename}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      if (id) navigate('/dashboard');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to finalize & download'
+      setFinalizeError(message);
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
   return (
     <div style={{ padding: '1rem' }}>
       <div className="container-xl">
@@ -247,14 +315,20 @@ const DocumentCreation: React.FC = () => {
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Create Document</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <SecondaryButton onClick={() => navigate('/dashboard')}>Cancel</SecondaryButton>
-            <PrimaryButton onClick={handleSaveDraft} disabled={saving}>
+            <PrimaryButton onClick={handleSaveDraft} disabled={saving || finalizing}>
               {saving ? 'Saving…' : 'Save Draft'}
+            </PrimaryButton>
+            <PrimaryButton onClick={handleFinalizeAndDownload} disabled={saving || finalizing}>
+              {finalizing ? 'Finalizing…' : 'Finalize & Download PDF'}
             </PrimaryButton>
           </div>
         </div>
 
         {saveError && (
           <div role="alert" style={{ color: 'crimson', marginBottom: 12 }}>{saveError}</div>
+        )}
+        {finalizeError && (
+          <div role="alert" style={{ color: 'crimson', marginBottom: 12 }}>{finalizeError}</div>
         )}
 
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
