@@ -11,6 +11,8 @@
   --orange-light: #fff4e5;
   --orange-dark: #ff8c00;
   --brand-danger: #dc3545;
+  --avatar-size: 36px;
+  --round-button-size: 36px;
 }
 
 body {
@@ -38,7 +40,7 @@ h1, h2, h3, .brand, .primary-cta {
   position: sticky;
   top: 0;
   z-index: 10;
-  height: 72px;
+  padding: 1rem 0;
   border-bottom: 1px solid var(--brand-border);
   background: var(--white);
 }
@@ -63,10 +65,32 @@ h1, h2, h3, .brand, .primary-cta {
 .nav-link.active { color: var(--brand-primary); font-weight: 600; }
 
 .header-actions { display: flex; align-items: center; gap: 0.75rem; }
-.icon-button { border: none; background: transparent; padding: 8px; border-radius: 999px; cursor: pointer; }
+.icon-button {
+  border: none;
+  background: transparent;
+  width: var(--round-button-size);
+  height: var(--round-button-size);
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
 .icon-button:hover { background: #f0f2f4; }
-.avatar { width: 46px; height: 46px; border-radius: 999px; overflow: hidden; border: 1px solid var(--brand-border); display: grid; place-items: center; background: #fff; color: var(--brand-text-primary); font-weight: 700; }
-.avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.avatar-button { display: grid; place-items: center; padding: 0; }
+.avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--brand-border);
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--brand-text-primary);
+  font-weight: 700;
+}
+.avatar img { display: block; width: 100%; height: 100%; object-fit: cover; vertical-align: middle; }
 
 /* User menu */
 .user-menu { position: relative; }
