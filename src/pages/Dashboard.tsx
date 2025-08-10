@@ -1,9 +1,43 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import PrimaryButton from '../components/core/PrimaryButton';
+import StyledTable from '../components/core/StyledTable';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { useFirestore } from '../hooks/useFirestore';
+import type { DocumentEntity } from '../types/document';
+import { generateDocumentPdf } from '../utils/pdf';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { items: documents, loading, error } = useFirestore<DocumentEntity>({
+    collectionName: 'documents',
+    userId: user?.uid,
+    orderByField: 'createdAt',
+  });
+
+  const handleDownload = useCallback(async (doc: DocumentEntity) => {
+    const pdfBytes = await generateDocumentPdf({
+      type: doc.type,
+      docNumber: doc.docNumber,
+      date: doc.date,
+      customerDetails: doc.customerDetails,
+      items: doc.items,
+      subtotal: doc.subtotal,
+      total: doc.total,
+    });
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const prefix = doc.type === 'invoice' ? 'INV' : 'QUO';
+    const filename = doc.docNumber ? doc.docNumber : `${prefix}-${doc.date}`;
+    a.href = url;
+    a.download = `${filename}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, []);
 
   return (
     <div style={{ padding: '1rem' }}>
@@ -14,97 +48,59 @@ const Dashboard: React.FC = () => {
         </div>
 
 
-        <div className="table-wrapper card">
-          <table className="table">
-            <thead>
-              <tr>
-                <th scope="col">Doc #</th>
-                <th scope="col">Type</th>
-                <th scope="col">Customer</th>
-                <th scope="col">Date</th>
-                <th scope="col">Total</th>
-                <th scope="col">Status</th>
-                <th scope="col" className="td-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="td-strong">INV-2024-001</td>
-                <td>Invoice</td>
-                <td>Acme Corp</td>
-                <td>2024-07-26</td>
-                <td>$1,200.00</td>
-                <td>
-                  <span className="status-badge status-finalized">Finalized</span>
-                </td>
-                <td className="td-right"><a href="#" style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Download</a></td>
-              </tr>
-              <tr>
-                <td className="td-strong">QUO-2024-002</td>
-                <td>Quotation</td>
-                <td>Beta Inc</td>
-                <td>2024-07-25</td>
-                <td>$850.00</td>
-                <td>
-                  <span className="status-badge status-draft">Draft</span>
-                </td>
-                <td className="td-right"><a href="#" style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Edit</a></td>
-              </tr>
-              <tr>
-                <td className="td-strong">INV-2024-002</td>
-                <td>Invoice</td>
-                <td>Gamma Ltd</td>
-                <td>2024-07-24</td>
-                <td>$2,500.00</td>
-                <td>
-                  <span className="status-badge status-finalized">Finalized</span>
-                </td>
-                <td className="td-right"><a href="#" style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Download</a></td>
-              </tr>
-              <tr>
-                <td className="td-strong">QUO-2024-001</td>
-                <td>Quotation</td>
-                <td>Delta LLC</td>
-                <td>2024-07-23</td>
-                <td>$450.00</td>
-                <td>
-                  <span className="status-badge status-draft">Draft</span>
-                </td>
-                <td className="td-right"><a href="#" style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Edit</a></td>
-              </tr>
-            </tbody>
-          </table>
+        <div>
+          {loading && <div>Loading documents…</div>}
+          {error && <div role="alert" style={{ color: 'crimson' }}>{error}</div>}
+          {!loading && !error && (
+            <StyledTable>
+              <thead>
+                <tr>
+                  <th scope="col">Doc #</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Customer</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="td-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {documents.map((d) => (
+                  <tr key={d.id}>
+                    <td className="td-strong">{d.docNumber || '—'}</td>
+                    <td>{d.type === 'invoice' ? 'Invoice' : 'Quotation'}</td>
+                    <td>{d.customerDetails?.name || '—'}</td>
+                    <td>{d.date}</td>
+                    <td>${d.total.toFixed(2)}</td>
+                    <td>
+                      <span className={`status-badge ${d.status === 'finalized' ? 'status-finalized' : 'status-draft'}`}>
+                        {d.status === 'finalized' ? 'Finalized' : 'Draft'}
+                      </span>
+                    </td>
+                    <td className="td-right">
+                      <div className="actions">
+                        {d.status === 'draft' ? (
+                          <button className="link-btn" onClick={() => navigate(`/documents/${d.id}/edit`)}>Edit</button>
+                        ) : (
+                          <button className="link-btn" onClick={() => handleDownload(d)}>Download</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {documents.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '1rem' }}>
+                      No documents yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </StyledTable>
+          )}
         </div>
 
-        <div className="doc-cards">
-          <div className="doc-card">
-            <div className="body">
-              <div className="row">
-                <span className="td-strong">INV-2024-001</span>
-                <span className="status-badge status-finalized">Finalized</span>
-              </div>
-              <p className="muted" style={{ marginTop: 8 }}>Acme Corp</p>
-              <div className="row" style={{ marginTop: 12 }}>
-                <span className="muted">$1,200.00</span>
-                <a href="#" style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Download</a>
-              </div>
-            </div>
-          </div>
-
-          <div className="doc-card">
-            <div className="body">
-              <div className="row">
-                <span className="td-strong">QUO-2024-002</span>
-                <span className="status-badge status-draft">Draft</span>
-              </div>
-              <p className="muted" style={{ marginTop: 8 }}>Beta Inc</p>
-              <div className="row" style={{ marginTop: 12 }}>
-                <span className="muted">$850.00</span>
-                <a href="#" style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>Edit</a>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Optional card view removed for simplicity in Phase 4.4 */}
       </div>
     </div>
   );
