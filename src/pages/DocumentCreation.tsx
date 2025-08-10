@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useReducer } from 'react';
+import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import StyledDropdown from '../components/core/StyledDropdown';
 import StyledInput from '../components/core/StyledInput';
 import StyledTextarea from '../components/core/StyledTextarea';
@@ -25,6 +25,7 @@ type Item = BaseEntity & {
 };
 
 type DocumentType = 'invoice' | 'quotation';
+type DocumentStatus = 'draft' | 'finalized';
 
 type LineItem = {
   id: string;
@@ -43,6 +44,30 @@ type DocumentFormState = {
   customerId?: string;
   notes?: string;
   lineItems: LineItem[];
+};
+
+type DocumentLineItem = {
+  itemId?: string;
+  name: string;
+  description?: string;
+  unitPrice: number;
+  quantity: number;
+  amount: number;
+};
+
+type DocumentEntity = BaseEntity & {
+  userId: string;
+  type: DocumentType;
+  docNumber: string;
+  date: string; // ISO yyyy-mm-dd
+  customerId?: string;
+  customerDetails?: { name?: string; email?: string; address?: string };
+  items: DocumentLineItem[];
+  subtotal: number;
+  total: number;
+  notes?: string;
+  status: DocumentStatus;
+  finalizedAt?: import('firebase/firestore').Timestamp;
 };
 
 type SetFieldAction =
@@ -142,6 +167,12 @@ const DocumentCreation: React.FC = () => {
     orderByField: 'createdAt',
   });
 
+  const { add: addDocument } = useFirestore<DocumentEntity>({
+    collectionName: 'documents',
+    userId: user?.uid,
+    subscribe: false,
+  });
+
   const [state, dispatch] = useReducer(reducer, {
     documentType: 'invoice',
     documentNumber: '',
@@ -168,6 +199,47 @@ const DocumentCreation: React.FC = () => {
 
   const findItemById = (id?: string) => itemCatalog.find((i) => i.id === id);
 
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const handleSaveDraft = async () => {
+    setSaveError(null);
+    if (!user?.uid) return;
+    setSaving(true);
+    try {
+      const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const payload: Omit<DocumentEntity, 'id' | 'createdAt' | 'updatedAt'> = {
+        userId: user.uid,
+        type: state.documentType,
+        docNumber: state.documentNumber || '',
+        date: state.date,
+        customerId: state.customerId,
+        customerDetails: selectedCustomer
+          ? { name: selectedCustomer.name, email: selectedCustomer.email, address: selectedCustomer.address }
+          : undefined,
+        items: state.lineItems.map((li) => ({
+          itemId: li.itemId,
+          name: li.name,
+          description: li.description,
+          unitPrice: Number.isFinite(li.unitPrice) ? li.unitPrice : 0,
+          quantity: Number.isFinite(li.quantity) ? li.quantity : 0,
+          amount: Number.isFinite(li.amount) ? li.amount : 0,
+        })),
+        subtotal,
+        total,
+        notes: state.notes,
+        status: 'draft',
+      };
+      const id = await addDocument(payload);
+      if (id) navigate('/dashboard');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to save draft';
+      setSaveError(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div style={{ padding: '1rem' }}>
       <div className="container-xl">
@@ -175,9 +247,15 @@ const DocumentCreation: React.FC = () => {
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Create Document</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <SecondaryButton onClick={() => navigate('/dashboard')}>Cancel</SecondaryButton>
-            <PrimaryButton disabled title="Saving is coming in the next phase">Save Draft</PrimaryButton>
+            <PrimaryButton onClick={handleSaveDraft} disabled={saving}>
+              {saving ? 'Saving…' : 'Save Draft'}
+            </PrimaryButton>
           </div>
         </div>
+
+        {saveError && (
+          <div role="alert" style={{ color: 'crimson', marginBottom: 12 }}>{saveError}</div>
+        )}
 
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
