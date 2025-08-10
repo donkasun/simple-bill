@@ -56,6 +56,13 @@ export function useFirestore<T extends BaseEntity = BaseEntity>(options: UseFire
   useEffect(() => {
     setLoading(true);
     setError(null);
+    // Avoid running queries that would violate security rules before we know the userId.
+    // Many collections are user-scoped; running an unscoped query can trigger permission errors.
+    if (!userId && (!whereEqual || whereEqual.length === 0)) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
     const q = buildQuery();
     if (!subscribe) {
       getDocs(q)
