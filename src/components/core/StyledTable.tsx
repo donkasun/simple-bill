@@ -40,8 +40,8 @@ const StyledTable: React.FC<StyledTableProps> = ({ children, style, ...props }) 
   }, []);
 
   return (
-    <div ref={wrapperRef} className="table-wrapper card" style={{ position: 'relative', borderRadius: 12, ...style }}>
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 12 }} />
+    <div ref={wrapperRef} className="table-wrapper card" style={{ position: 'relative', ...style }}>
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
       <table {...props} className="table" style={{ position: 'relative', zIndex: 1, width: '100%', borderCollapse: 'collapse' }}>
         {children}
       </table>

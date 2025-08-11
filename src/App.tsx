@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
 import Items from "./pages/Items";
+import DocumentCreation from "./pages/DocumentCreation";
 
 function App() {
   return (
@@ -23,6 +24,9 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="customers" element={<Customers />} />
           <Route path="items" element={<Items />} />
+          <Route path="documents">
+            <Route path="new" element={<DocumentCreation />} />
+          </Route>
         </Route>
       </Routes>
     </Router>
