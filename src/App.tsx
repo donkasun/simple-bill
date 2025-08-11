@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
 import Items from "./pages/Items";
 import DocumentCreation from "./pages/DocumentCreation";
+import DocumentEdit from "./pages/DocumentEdit";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="items" element={<Items />} />
           <Route path="documents">
             <Route path="new" element={<DocumentCreation />} />
+            <Route path=":id/edit" element={<DocumentEdit />} />
           </Route>
         </Route>
       </Routes>
