@@ -39,12 +39,15 @@ const Dashboard: React.FC = () => {
     URL.revokeObjectURL(url);
   }, []);
 
+
   return (
     <div style={{ padding: '1rem' }}>
       <div className="container-xl">
         <div className="page-header">
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Dashboard</h2>
-          <PrimaryButton onClick={() => navigate('/documents/new')}>Create New Document</PrimaryButton>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <PrimaryButton onClick={() => navigate('/documents/new')}>Create New Document</PrimaryButton>
+          </div>
         </div>
 
 
