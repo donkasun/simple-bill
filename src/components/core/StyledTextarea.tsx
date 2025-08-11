@@ -43,9 +43,9 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({ label, style, ...props 
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {label && <span style={{ fontSize: 14 }}>{label}</span>}
-      <div ref={wrapperRef} style={{ position: 'relative', borderRadius: 8, ...style }}>
-        <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 8 }} />
-        <textarea ref={textareaRef} {...props} style={{ position: 'relative', zIndex: 1, width: '100%', padding: '10px 12px', border: 'none', outline: 'none', background: 'transparent', resize: 'vertical' }} />
+      <div ref={wrapperRef} style={{ position: 'relative', ...style }}>
+        <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+        <textarea ref={textareaRef} {...props} style={{ position: 'relative', zIndex: 1, width: 'calc(100% - 28px)', padding: '10px 12px', border: 'none', outline: 'none', background: 'transparent', resize: 'vertical' }} />
       </div>
     </label>
   );
