@@ -22,6 +22,14 @@ service cloud.firestore {
         && request.resource.data.userId == resource.data.userId;
     }
 
+    match /documents/{docId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
