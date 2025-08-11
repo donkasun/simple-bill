@@ -10,6 +10,7 @@ import { useFirestore, type BaseEntity } from '../hooks/useFirestore';
 import { useNavigate } from 'react-router-dom';
 import { generateDocumentPdf } from '../utils/pdf';
 import { serverTimestamp } from 'firebase/firestore';
+import { allocateNextDocumentNumber } from '../utils/docNumber';
 
 type Customer = BaseEntity & {
   userId: string;
@@ -212,10 +213,13 @@ const DocumentCreation: React.FC = () => {
     setSaving(true);
     try {
       const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const autoDocNumber = state.documentNumber?.trim()
+        ? state.documentNumber.trim()
+        : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
       const payload: Omit<DocumentEntity, 'id' | 'createdAt' | 'updatedAt'> = {
         userId: user.uid,
         type: state.documentType,
-        docNumber: state.documentNumber || '',
+        docNumber: autoDocNumber,
         date: state.date,
         customerId: state.customerId,
         customerDetails: selectedCustomer
@@ -250,10 +254,13 @@ const DocumentCreation: React.FC = () => {
     setFinalizing(true);
     try {
       const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const autoDocNumber = state.documentNumber?.trim()
+        ? state.documentNumber.trim()
+        : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
       const payload: Omit<DocumentEntity, 'id' | 'createdAt' | 'updatedAt'> = {
         userId: user.uid,
         type: state.documentType,
-        docNumber: state.documentNumber || '',
+        docNumber: autoDocNumber,
         date: state.date,
         customerId: state.customerId,
         customerDetails: selectedCustomer
