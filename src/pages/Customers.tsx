@@ -2,16 +2,9 @@ import React, { useState } from "react";
 import StyledTable from "../components/core/StyledTable";
 import PrimaryButton from "../components/core/PrimaryButton";
 import { useAuth } from "../hooks/useAuth";
-import { useFirestore, type BaseEntity } from "../hooks/useFirestore";
+import { useFirestore } from "../hooks/useFirestore";
 import CustomerModal, { type CustomerFormData } from "../components/customers/CustomerModal";
-
-type Customer = BaseEntity & {
-  userId: string;
-  name: string;
-  email?: string;
-  address?: string;
-  showEmail?: boolean;
-};
+import type { Customer } from "../types/customer";
 
 const Customers: React.FC = () => {
   const { user } = useAuth();
