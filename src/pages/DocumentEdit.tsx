@@ -16,6 +16,8 @@ import type { Customer } from '../types/customer';
 import type { Item } from '../types/item';
 import { allocateNextDocumentNumber } from '../utils/docNumber';
 import { formatCurrency } from '../utils/currency';
+import { downloadBlob } from '../utils/download';
+import { getDocumentFilename } from '../utils/documents';
 
 type DocumentStatus = 'draft' | 'finalized';
 
@@ -386,8 +388,6 @@ const DocumentEdit: React.FC = () => {
         subtotal: payload.subtotal as number,
         total: payload.total as number,
       });
-      const { getDocumentFilename } = await import('../utils/documents');
-      const { downloadBlob } = await import('../utils/download');
       const filename = `${getDocumentFilename(payload.type as DocumentType, payload.docNumber as string, payload.date as string)}.pdf`;
       downloadBlob(filename, pdfBytes, 'application/pdf');
 
