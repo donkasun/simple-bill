@@ -214,13 +214,85 @@ const DocumentEdit: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState<string | null>(null);
-  // Validation state will be added in a follow-up extraction shared with creation page
+  const [headerErrors, setHeaderErrors] = useState<{ documentType?: string; date?: string; customerId?: string }>({});
+  const [itemErrors, setItemErrors] = useState<Record<string, { name?: string; unitPrice?: string; quantity?: string }>>({});
+
+  function validateDraft(s: DocumentFormState) {
+    const header: { documentType?: string; date?: string } = {};
+    const items: Record<string, { unitPrice?: string; quantity?: string }> = {};
+    if (!s.documentType) header.documentType = 'Document type is required';
+    if (!s.date?.trim()) header.date = 'Date is required';
+    for (const li of s.lineItems) {
+      const err: { unitPrice?: string; quantity?: string } = {};
+      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
+      if (!Number.isFinite(li.quantity) || li.quantity < 0) err.quantity = 'Quantity must be ≥ 0';
+      if (Object.keys(err).length > 0) items[li.id] = err;
+    }
+    return { header, items };
+  }
+
+  function validateFinalize(s: DocumentFormState) {
+    const header: { documentType?: string; date?: string; customerId?: string } = {};
+    const items: Record<string, { name?: string; unitPrice?: string; quantity?: string }> = {};
+    if (!s.documentType) header.documentType = 'Document type is required';
+    if (!s.date?.trim()) header.date = 'Date is required';
+    if (!s.customerId) header.customerId = 'Customer is required to finalize';
+    for (const li of s.lineItems) {
+      const err: { name?: string; unitPrice?: string; quantity?: string } = {};
+      if (!li.name?.trim()) err.name = 'Item name is required';
+      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
+      if (!Number.isFinite(li.quantity) || li.quantity < 1) err.quantity = 'Quantity must be ≥ 1';
+      if (Object.keys(err).length > 0) items[li.id] = err;
+    }
+    return { header, items };
+  }
+
+  const finalizeDisabled = useMemo(() => {
+    const res = validateFinalize(state);
+    return Object.keys(res.header).length > 0 || Object.keys(res.items).length > 0;
+  }, [state]);
+
+  function focusFirstError(res: { header: { documentType?: string; date?: string; customerId?: string }; items: Record<string, { name?: string; unitPrice?: string; quantity?: string }> }) {
+    const orderHeaderIds = [
+      res.header.documentType ? 'doc-documentType' : null,
+      res.header.date ? 'doc-date' : null,
+      res.header.customerId ? 'doc-customerId' : null,
+    ].filter(Boolean) as string[];
+    if (orderHeaderIds.length > 0) {
+      document.getElementById(orderHeaderIds[0])?.focus();
+      return;
+    }
+    for (const li of state.lineItems) {
+      const e = res.items[li.id];
+      if (!e) continue;
+      const id = e.name
+        ? `li-${li.id}-name`
+        : e.unitPrice
+        ? `li-${li.id}-unitPrice`
+        : e.quantity
+        ? `li-${li.id}-quantity`
+        : null;
+      if (id) {
+        document.getElementById(id)?.focus();
+        return;
+      }
+    }
+  }
 
   const handleSaveChanges = async () => {
     setSaveError(null);
     if (!id || !user?.uid) return;
     setSaving(true);
     try {
+      const validation = validateDraft(state);
+      setHeaderErrors(validation.header);
+      setItemErrors(validation.items);
+      const hasErrors = Object.keys(validation.header).length > 0 || Object.keys(validation.items).length > 0;
+      if (hasErrors) {
+        setSaveError('Please fix the highlighted fields before saving changes.');
+        focusFirstError(validation);
+        return;
+      }
       const selectedCustomer = customers.find((c) => c.id === state.customerId);
       const docNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
@@ -261,6 +333,15 @@ const DocumentEdit: React.FC = () => {
     if (!id || !user?.uid) return;
     setFinalizing(true);
     try {
+      const validation = validateFinalize(state);
+      setHeaderErrors(validation.header);
+      setItemErrors(validation.items);
+      const hasErrors = Object.keys(validation.header).length > 0 || Object.keys(validation.items).length > 0;
+      if (hasErrors) {
+        setFinalizeError('Please resolve the errors to finalize.');
+        focusFirstError(validation);
+        return;
+      }
       const selectedCustomer = customers.find((c) => c.id === state.customerId);
       const docNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
@@ -330,10 +411,10 @@ const DocumentEdit: React.FC = () => {
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{headerTitle}</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <SecondaryButton onClick={() => navigate('/dashboard')}>Cancel</SecondaryButton>
-            <PrimaryButton onClick={handleSaveChanges} disabled={saving || finalizing || initializing || !canEdit}>
+            <PrimaryButton onClick={handleSaveChanges} disabled={saving || finalizing || initializing || !canEdit} aria-disabled={saving || finalizing || initializing || !canEdit}>
               {saving ? 'Saving…' : 'Save Changes'}
             </PrimaryButton>
-            <PrimaryButton onClick={handleFinalizeAndDownload} disabled={saving || finalizing || initializing || !canEdit}>
+            <PrimaryButton onClick={handleFinalizeAndDownload} disabled={saving || finalizing || initializing || !canEdit || finalizeDisabled} aria-disabled={saving || finalizing || initializing || !canEdit || finalizeDisabled}>
               {finalizing ? 'Finalizing…' : 'Finalize & Download PDF'}
             </PrimaryButton>
           </div>
@@ -361,9 +442,12 @@ const DocumentEdit: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <StyledDropdown
                   label="Document Type"
+                  id="doc-documentType"
                   value={state.documentType}
                   onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'documentType', value: e.target.value as DocumentType })}
                   disabled={!canEdit}
+                  required
+                  error={headerErrors.documentType}
                 >
                   <option value="invoice">Invoice</option>
                   <option value="quotation">Quotation</option>
@@ -380,16 +464,21 @@ const DocumentEdit: React.FC = () => {
                 <StyledInput
                   label="Date"
                   type="date"
+                  id="doc-date"
                   value={state.date}
                   onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'date', value: e.target.value })}
                   disabled={!canEdit}
+                  required
+                  error={headerErrors.date}
                 />
 
                 <StyledDropdown
                   label="Bill To"
+                  id="doc-customerId"
                   value={state.customerId ?? ''}
                   onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'customerId', value: e.target.value || undefined })}
                   disabled={loadingCustomers || !canEdit}
+                  error={headerErrors.customerId}
                 >
                   <option value="" disabled>
                     {loadingCustomers ? 'Loading customers…' : 'Select a customer'}
@@ -436,10 +525,12 @@ const DocumentEdit: React.FC = () => {
                         </StyledDropdown>
                         <StyledInput
                           placeholder="Custom item name"
+                          id={`li-${li.id}-name`}
                           value={li.name}
                           onChange={(e) => dispatch({ type: 'UPDATE_LINE_ITEM', id: li.id, changes: { name: e.target.value } })}
                           style={{ marginTop: 8 }}
                           disabled={!canEdit}
+                          error={itemErrors[li.id]?.name}
                         />
                       </td>
                       <td>
@@ -456,6 +547,7 @@ const DocumentEdit: React.FC = () => {
                           inputMode="decimal"
                           min={0}
                           step={0.01}
+                          id={`li-${li.id}-unitPrice`}
                           value={Number.isFinite(li.unitPrice) ? String(li.unitPrice) : ''}
                           onChange={(e) =>
                             dispatch({
@@ -465,6 +557,7 @@ const DocumentEdit: React.FC = () => {
                             })
                           }
                           disabled={!canEdit}
+                          error={itemErrors[li.id]?.unitPrice}
                         />
                       </td>
                       <td className="td-right">
@@ -473,6 +566,7 @@ const DocumentEdit: React.FC = () => {
                           inputMode="numeric"
                           min={0}
                           step={1}
+                          id={`li-${li.id}-quantity`}
                           value={Number.isFinite(li.quantity) ? String(li.quantity) : ''}
                           onChange={(e) =>
                             dispatch({
@@ -482,6 +576,7 @@ const DocumentEdit: React.FC = () => {
                             })
                           }
                           disabled={!canEdit}
+                          error={itemErrors[li.id]?.quantity}
                         />
                       </td>
                       <td className="td-right">
