@@ -2,15 +2,9 @@ import React, { useState } from 'react';
 import StyledTable from '../components/core/StyledTable';
 import PrimaryButton from '../components/core/PrimaryButton';
 import { useAuth } from '../hooks/useAuth';
-import { useFirestore, type BaseEntity } from '../hooks/useFirestore';
+import { useFirestore } from '../hooks/useFirestore';
 import ItemModal, { type ItemFormData } from '../components/items/ItemModal';
-
-type Item = BaseEntity & {
-  userId: string;
-  name: string;
-  unitPrice: number;
-  description?: string;
-};
+import type { Item } from '../types/item';
 
 const Items: React.FC = () => {
   const { user } = useAuth();

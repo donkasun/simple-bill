@@ -32,8 +32,6 @@ const Header: React.FC<HeaderProps> = () => {
 
   const navClass = ({ isActive }: { isActive: boolean }) => `nav-link${isActive ? ' active' : ''}`;
 
-  console.log(user);
-
   return (
     <header className="top-header">
       <div className="top-header__inner">

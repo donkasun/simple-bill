@@ -17,7 +17,7 @@ import type { Customer } from '../types/customer';
 import type { Item } from '../types/item';
 import { computeAmount, computeSubtotal } from '../utils/documentMath';
 import { todayIso } from '../utils/date';
-import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename } from '../utils/documents';
+import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename, getDocNumberPlaceholder } from '../utils/documents';
 import { downloadBlob } from '../utils/download';
 
 type LineItem = FormLineItem;
@@ -193,6 +193,7 @@ const DocumentCreation: React.FC = () => {
     if (!s.date?.trim()) header.date = 'Date is required';
     if (!s.customerId) header.customerId = 'Customer is required to finalize';
     if (!Array.isArray(s.lineItems) || s.lineItems.length === 0) {
+      // UI enforces at least one line item; keep branch for clarity without empty block
     }
     for (const li of s.lineItems) {
       const err: LineItemFieldErrors = {};
@@ -369,7 +370,7 @@ const DocumentCreation: React.FC = () => {
 
             <StyledInput
               label="Document #"
-              placeholder={state.documentType === 'invoice' ? 'INV-YYYY-XXX' : 'QUO-YYYY-XXX'}
+              placeholder={getDocNumberPlaceholder(state.documentType)}
               value={state.documentNumber}
               onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'documentNumber', value: e.target.value })}
             />

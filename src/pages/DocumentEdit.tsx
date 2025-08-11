@@ -11,15 +11,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { generateDocumentPdf } from '../utils/pdf';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import type { DocumentEntity as PersistedDocumentEntity, DocumentFormState, FormLineItem, DocumentType } from '../types/document';
+import type { DocumentEntity as PersistedDocumentEntity, DocumentFormState, FormLineItem, DocumentType, DocumentStatus } from '../types/document';
 import type { Customer } from '../types/customer';
 import type { Item } from '../types/item';
 import { allocateNextDocumentNumber } from '../utils/docNumber';
 import { formatCurrency } from '../utils/currency';
 import { downloadBlob } from '../utils/download';
-import { getDocumentFilename } from '../utils/documents';
+import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename, getDocNumberPlaceholder } from '../utils/documents';
 
-type DocumentStatus = 'draft' | 'finalized';
+// using shared DocumentStatus type from types
 
 type LineItem = FormLineItem;
 
@@ -295,31 +295,17 @@ const DocumentEdit: React.FC = () => {
         focusFirstError(validation);
         return;
       }
-      const selectedCustomer = customers.find((c) => c.id === state.customerId);
       const docNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
         : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
-      const payload: Partial<PersistedDocumentEntity> = {
-        type: state.documentType,
+      const payload = buildDocumentPayload(
+        user.uid,
+        state,
+        'draft',
         docNumber,
-        date: state.date,
-        customerId: state.customerId,
-        customerDetails: selectedCustomer
-          ? { name: selectedCustomer.name, email: selectedCustomer.email, address: selectedCustomer.address }
-          : undefined,
-        items: state.lineItems.map((li) => ({
-          itemId: li.itemId,
-          name: li.name,
-          description: li.description,
-          unitPrice: Number.isFinite(li.unitPrice) ? li.unitPrice : 0,
-          quantity: Number.isFinite(li.quantity) ? li.quantity : 0,
-          amount: Number.isFinite(li.amount) ? li.amount : 0,
-        })),
-        subtotal,
-        total,
-        notes: state.notes,
-        status: 'draft',
-      };
+        selectCustomerDetails(customers, state.customerId),
+        { subtotal, total }
+      );
       await setDocument(id, payload);
       navigate('/dashboard');
     } catch (e: unknown) {
@@ -344,51 +330,34 @@ const DocumentEdit: React.FC = () => {
         focusFirstError(validation);
         return;
       }
-      const selectedCustomer = customers.find((c) => c.id === state.customerId);
       const docNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
         : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
-      const payload: Partial<PersistedDocumentEntity> = {
-        type: state.documentType,
+      const base = buildDocumentPayload(
+        user.uid,
+        state,
+        'finalized',
         docNumber,
-        date: state.date,
-        customerId: state.customerId,
-        customerDetails: selectedCustomer
-          ? { name: selectedCustomer.name, email: selectedCustomer.email, address: selectedCustomer.address }
-          : undefined,
-        items: state.lineItems.map((li) => ({
-          itemId: li.itemId,
-          name: li.name,
-          description: li.description,
-          unitPrice: Number.isFinite(li.unitPrice) ? li.unitPrice : 0,
-          quantity: Number.isFinite(li.quantity) ? li.quantity : 0,
-          amount: Number.isFinite(li.amount) ? li.amount : 0,
-        })),
-        subtotal,
-        total,
-        notes: state.notes,
-        status: 'finalized',
+        selectCustomerDetails(customers, state.customerId),
+        { subtotal, total }
+      );
+      const payload: Partial<PersistedDocumentEntity> = {
+        ...base,
         finalizedAt: serverTimestamp() as unknown as import('firebase/firestore').Timestamp,
       };
 
       await setDocument(id, payload);
 
       const pdfBytes = await generateDocumentPdf({
-        type: payload.type as DocumentType,
-        docNumber: payload.docNumber || '',
-        date: payload.date as string,
-        customerDetails: payload.customerDetails,
-        items: (payload.items || []).map((it) => ({
-          name: it.name,
-          description: it.description,
-          unitPrice: it.unitPrice,
-          quantity: it.quantity,
-          amount: it.amount,
-        })),
-        subtotal: payload.subtotal as number,
-        total: payload.total as number,
+        type: base.type as DocumentType,
+        docNumber: base.docNumber || '',
+        date: base.date as string,
+        customerDetails: base.customerDetails,
+        items: base.items,
+        subtotal: base.subtotal as number,
+        total: base.total as number,
       });
-      const filename = `${getDocumentFilename(payload.type as DocumentType, payload.docNumber as string, payload.date as string)}.pdf`;
+      const filename = `${getDocumentFilename(base.type as DocumentType, base.docNumber as string, base.date as string)}.pdf`;
       downloadBlob(filename, pdfBytes, 'application/pdf');
 
       navigate('/dashboard');
@@ -455,7 +424,7 @@ const DocumentEdit: React.FC = () => {
 
                 <StyledInput
                   label="Document #"
-                  placeholder={state.documentType === 'invoice' ? 'INV-YYYY-XXX' : 'QUO-YYYY-XXX'}
+                  placeholder={getDocNumberPlaceholder(state.documentType)}
                   value={state.documentNumber}
                   onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'documentNumber', value: e.target.value })}
                   disabled={!canEdit}

@@ -1,16 +1,18 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from 'react';
 import AppShell from "./components/layout/AppShell";
 import ProtectedRoute from "./components/core/ProtectedRoute";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Customers from "./pages/Customers";
-import Items from "./pages/Items";
-import DocumentCreation from "./pages/DocumentCreation";
-import DocumentEdit from "./pages/DocumentEdit";
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Items = lazy(() => import('./pages/Items'));
+const DocumentCreation = lazy(() => import('./pages/DocumentCreation'));
+const DocumentEdit = lazy(() => import('./pages/DocumentEdit'));
 
 function App() {
   return (
     <Router>
+      <Suspense fallback={<div style={{ padding: '1rem' }}>Loading…</div>}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
@@ -31,6 +33,7 @@ function App() {
           </Route>
         </Route>
       </Routes>
+      </Suspense>
     </Router>
   );
 }
