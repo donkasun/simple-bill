@@ -12,6 +12,7 @@ import { generateDocumentPdf } from '../utils/pdf';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { DocumentEntity as PersistedDocumentEntity } from '../types/document';
+import { allocateNextDocumentNumber } from '../utils/docNumber';
 
 type DocumentType = 'invoice' | 'quotation';
 type DocumentStatus = 'draft' | 'finalized';
@@ -248,13 +249,16 @@ const DocumentEdit: React.FC = () => {
 
   const handleSaveChanges = async () => {
     setSaveError(null);
-    if (!id) return;
+    if (!id || !user?.uid) return;
     setSaving(true);
     try {
       const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const docNumber = state.documentNumber?.trim()
+        ? state.documentNumber.trim()
+        : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
       const payload: Partial<PersistedDocumentEntity> = {
         type: state.documentType,
-        docNumber: state.documentNumber || '',
+        docNumber,
         date: state.date,
         customerId: state.customerId,
         customerDetails: selectedCustomer
@@ -285,13 +289,16 @@ const DocumentEdit: React.FC = () => {
 
   const handleFinalizeAndDownload = async () => {
     setFinalizeError(null);
-    if (!id) return;
+    if (!id || !user?.uid) return;
     setFinalizing(true);
     try {
       const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const docNumber = state.documentNumber?.trim()
+        ? state.documentNumber.trim()
+        : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
       const payload: Partial<PersistedDocumentEntity> = {
         type: state.documentType,
-        docNumber: state.documentNumber || '',
+        docNumber,
         date: state.date,
         customerId: state.customerId,
         customerDetails: selectedCustomer
