@@ -14,6 +14,7 @@ import {
   updateDoc,
   where,
   Timestamp,
+  type QueryConstraint,
 } from 'firebase/firestore';
 
 export type FirestoreId = string;
@@ -44,7 +45,7 @@ export function useFirestore<T extends BaseEntity = BaseEntity>(options: UseFire
   const collectionRef = useMemo(() => collection(db, collectionName), [collectionName]);
 
   const buildQuery = useCallback(() => {
-    const constraints: any[] = [];
+    const constraints: QueryConstraint[] = [];
     if (userId) constraints.push(where('userId', '==', userId));
     if (whereEqual) {
       for (const w of whereEqual) constraints.push(where(w.field, '==', w.value));
@@ -87,13 +88,18 @@ export function useFirestore<T extends BaseEntity = BaseEntity>(options: UseFire
       }
     );
     return () => unsub();
-  }, [buildQuery, subscribe]);
+  }, [buildQuery, subscribe, userId, whereEqual]);
 
   const add = useCallback(
-    async (data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>) => {
+    async (data: Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { userId?: string }) => {
       const now = serverTimestamp();
-      const payload: any = { ...data, userId: userId ?? (data as any).userId, createdAt: now, updatedAt: now };
-      const ref = await addDoc(collectionRef, payload);
+      const payload: Omit<T, 'id'> = {
+        ...(data as T),
+        userId: (userId || data.userId) as string | undefined,
+        createdAt: now as unknown as Timestamp,
+        updatedAt: now as unknown as Timestamp,
+      };
+      const ref = await addDoc(collectionRef, payload as unknown as Record<string, unknown>);
       return ref.id as FirestoreId;
     },
     [collectionRef, userId]

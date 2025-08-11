@@ -20,12 +20,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        console.log("Sign-in popup closed by user.");
-      } else {
-        console.error("Error signing in with Google: ", error);
+    } catch (error) {
+      const err = error as { code?: string } | unknown;
+      if (typeof err === 'object' && err && 'code' in err && (err as { code?: string }).code === 'auth/popup-closed-by-user') {
+        // no-op: user closed popup
+        return;
       }
+      console.error('Error signing in with Google:', error);
     }
   };
 
@@ -56,6 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

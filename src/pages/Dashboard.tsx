@@ -6,6 +6,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import type { DocumentEntity } from '../types/document';
 import { generateDocumentPdf } from '../utils/pdf';
+import { formatCurrency } from '../utils/currency';
+import { downloadBlob } from '../utils/download';
+import { getDocumentFilename } from '../utils/documents';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -26,17 +29,8 @@ const Dashboard: React.FC = () => {
       subtotal: doc.subtotal,
       total: doc.total,
     });
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const prefix = doc.type === 'invoice' ? 'INV' : 'QUO';
-    const filename = doc.docNumber ? doc.docNumber : `${prefix}-${doc.date}`;
-    a.href = url;
-    a.download = `${filename}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const filename = `${getDocumentFilename(doc.type, doc.docNumber, doc.date)}.pdf`;
+    downloadBlob(filename, pdfBytes, 'application/pdf');
   }, []);
 
 
@@ -74,7 +68,7 @@ const Dashboard: React.FC = () => {
                     <td>{d.type === 'invoice' ? 'Invoice' : 'Quotation'}</td>
                     <td>{d.customerDetails?.name || '—'}</td>
                     <td>{d.date}</td>
-                    <td>${d.total.toFixed(2)}</td>
+                    <td>{formatCurrency(d.total)}</td>
                     <td>
                       <span className={`status-badge ${d.status === 'finalized' ? 'status-finalized' : 'status-draft'}`}>
                         {d.status === 'finalized' ? 'Finalized' : 'Draft'}
