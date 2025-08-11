@@ -28,4 +28,15 @@ export type DocumentEntity = BaseEntity & {
   finalizedAt?: Timestamp;
 };
 
+export type FormLineItem = DocumentLineItem & { id: string };
+
+export type DocumentFormState = {
+  documentType: DocumentType;
+  documentNumber: string;
+  date: string; // yyyy-mm-dd
+  customerId?: string;
+  notes?: string;
+  lineItems: FormLineItem[];
+};
+
 

@@ -6,50 +6,24 @@ import StyledTable from '../components/core/StyledTable';
 import PrimaryButton from '../components/core/PrimaryButton';
 import SecondaryButton from '../components/core/SecondaryButton';
 import { useAuth } from '../hooks/useAuth';
-import { useFirestore, type BaseEntity } from '../hooks/useFirestore';
+import { useFirestore } from '../hooks/useFirestore';
 import { useNavigate, useParams } from 'react-router-dom';
 import { generateDocumentPdf } from '../utils/pdf';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import type { DocumentEntity as PersistedDocumentEntity } from '../types/document';
+import type { DocumentEntity as PersistedDocumentEntity, DocumentFormState, FormLineItem, DocumentType } from '../types/document';
+import type { Customer } from '../types/customer';
+import type { Item } from '../types/item';
 import { allocateNextDocumentNumber } from '../utils/docNumber';
+import { formatCurrency } from '../utils/currency';
 
-type DocumentType = 'invoice' | 'quotation';
 type DocumentStatus = 'draft' | 'finalized';
 
-type LineItem = {
-  id: string;
-  itemId?: string;
-  name: string;
-  description?: string;
-  unitPrice: number;
-  quantity: number;
-  amount: number;
-};
+type LineItem = FormLineItem;
 
-type DocumentFormState = {
-  documentType: DocumentType;
-  documentNumber: string;
-  date: string; // yyyy-mm-dd
-  customerId?: string;
-  notes?: string;
-  lineItems: LineItem[];
-};
+// Use DocumentFormState from types
 
-type Customer = BaseEntity & {
-  userId: string;
-  name: string;
-  email?: string;
-  address?: string;
-  showEmail?: boolean;
-};
-
-type Item = BaseEntity & {
-  userId: string;
-  name: string;
-  unitPrice: number;
-  description?: string;
-};
+// Use shared Customer and Item types
 
 type SetFieldAction =
   | { type: 'SET_FIELD'; field: 'documentType'; value: DocumentType }
@@ -77,11 +51,7 @@ function createEmptyLineItem(): LineItem {
   };
 }
 
-function computeAmount(unitPrice: number, quantity: number): number {
-  const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
-  const safeQuantity = Number.isFinite(quantity) ? quantity : 0;
-  return Math.max(0, safeUnitPrice * safeQuantity);
-}
+import { computeAmount, computeSubtotal } from '../utils/documentMath';
 
 function reducer(state: DocumentFormState, action: Action): DocumentFormState {
   switch (action.type) {
@@ -138,7 +108,7 @@ function reducer(state: DocumentFormState, action: Action): DocumentFormState {
   }
 }
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+import { todayIso } from '../utils/date';
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -234,9 +204,7 @@ const DocumentEdit: React.FC = () => {
     }
   }, [customers, state.customerId]);
 
-  const subtotal = useMemo(() => {
-    return state.lineItems.reduce((sum, li) => sum + (Number.isFinite(li.amount) ? li.amount : 0), 0);
-  }, [state.lineItems]);
+  const subtotal = useMemo(() => computeSubtotal(state.lineItems), [state.lineItems]);
 
   const total = subtotal;
 
@@ -246,6 +214,7 @@ const DocumentEdit: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState<string | null>(null);
+  // Validation state will be added in a follow-up extraction shared with creation page
 
   const handleSaveChanges = async () => {
     setSaveError(null);
@@ -336,17 +305,10 @@ const DocumentEdit: React.FC = () => {
         subtotal: payload.subtotal as number,
         total: payload.total as number,
       });
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const filenamePrefix = (payload.type as DocumentType) === 'invoice' ? 'INV' : 'QUO';
-      const filename = payload.docNumber ? payload.docNumber : `${filenamePrefix}-${payload.date}`;
-      a.href = url;
-      a.download = `${filename}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const { getDocumentFilename } = await import('../utils/documents');
+      const { downloadBlob } = await import('../utils/download');
+      const filename = `${getDocumentFilename(payload.type as DocumentType, payload.docNumber as string, payload.date as string)}.pdf`;
+      downloadBlob(filename, pdfBytes, 'application/pdf');
 
       navigate('/dashboard');
     } catch (e: unknown) {
@@ -523,7 +485,7 @@ const DocumentEdit: React.FC = () => {
                         />
                       </td>
                       <td className="td-right">
-                        <span className="td-strong">{li.amount.toFixed(2)}</span>
+                        <span className="td-strong">{formatCurrency(li.amount)}</span>
                       </td>
                       <td className="td-right">
                         <button
@@ -543,11 +505,11 @@ const DocumentEdit: React.FC = () => {
                 <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
                   <div>
                     <div className="muted" style={{ fontSize: 12 }}>Subtotal</div>
-                    <div className="td-strong" style={{ textAlign: 'right' }}>{subtotal.toFixed(2)}</div>
+                    <div className="td-strong" style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
                   </div>
                   <div>
                     <div className="muted" style={{ fontSize: 12 }}>Total</div>
-                    <div className="td-strong" style={{ textAlign: 'right', fontSize: 18 }}>{total.toFixed(2)}</div>
+                    <div className="td-strong" style={{ textAlign: 'right', fontSize: 18 }}>{formatCurrency(total)}</div>
                   </div>
                 </div>
               </div>

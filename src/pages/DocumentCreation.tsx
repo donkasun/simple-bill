@@ -6,72 +6,40 @@ import StyledTable from '../components/core/StyledTable';
 import PrimaryButton from '../components/core/PrimaryButton';
 import SecondaryButton from '../components/core/SecondaryButton';
 import { useAuth } from '../hooks/useAuth';
-import { useFirestore, type BaseEntity } from '../hooks/useFirestore';
+import { useFirestore } from '../hooks/useFirestore';
 import { useNavigate } from 'react-router-dom';
 import { generateDocumentPdf } from '../utils/pdf';
 import { serverTimestamp } from 'firebase/firestore';
 import { allocateNextDocumentNumber } from '../utils/docNumber';
+import { formatCurrency } from '../utils/currency';
+import type { DocumentEntity, DocumentFormState, FormLineItem, DocumentType } from '../types/document';
+import type { Customer } from '../types/customer';
+import type { Item } from '../types/item';
+import { computeAmount, computeSubtotal } from '../utils/documentMath';
+import { todayIso } from '../utils/date';
+import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename } from '../utils/documents';
+import { downloadBlob } from '../utils/download';
 
-type Customer = BaseEntity & {
-  userId: string;
-  name: string;
-  email?: string;
-  address?: string;
-  showEmail?: boolean;
-};
+type LineItem = FormLineItem;
 
-type Item = BaseEntity & {
-  userId: string;
-  name: string;
-  unitPrice: number;
-  description?: string;
-};
-
-type DocumentType = 'invoice' | 'quotation';
-type DocumentStatus = 'draft' | 'finalized';
-
-type LineItem = {
-  id: string;
-  itemId?: string;
-  name: string;
-  description?: string;
-  unitPrice: number;
-  quantity: number;
-  amount: number;
-};
-
-type DocumentFormState = {
-  documentType: DocumentType;
-  documentNumber: string;
-  date: string; // yyyy-mm-dd
+type HeaderErrors = {
+  documentType?: string;
+  date?: string;
   customerId?: string;
-  notes?: string;
-  lineItems: LineItem[];
 };
 
-type DocumentLineItem = {
-  itemId?: string;
-  name: string;
-  description?: string;
-  unitPrice: number;
-  quantity: number;
-  amount: number;
+type LineItemFieldErrors = {
+  name?: string;
+  unitPrice?: string;
+  quantity?: string;
 };
 
-type DocumentEntity = BaseEntity & {
-  userId: string;
-  type: DocumentType;
-  docNumber: string;
-  date: string; // ISO yyyy-mm-dd
-  customerId?: string;
-  customerDetails?: { name?: string; email?: string; address?: string };
-  items: DocumentLineItem[];
-  subtotal: number;
-  total: number;
-  notes?: string;
-  status: DocumentStatus;
-  finalizedAt?: import('firebase/firestore').Timestamp;
+type ValidationResult = {
+  header: HeaderErrors;
+  items: Record<string, LineItemFieldErrors>;
 };
+
+// DocumentEntity comes from types
 
 type SetFieldAction =
   | { type: 'SET_FIELD'; field: 'documentType'; value: DocumentType }
@@ -147,13 +115,7 @@ function reducer(state: DocumentFormState, action: Action): DocumentFormState {
   }
 }
 
-function computeAmount(unitPrice: number, quantity: number): number {
-  const up = Number.isFinite(unitPrice) ? unitPrice : 0;
-  const qty = Number.isFinite(quantity) ? quantity : 0;
-  return Math.max(0, up * qty);
-}
-
-const todayIso = () => new Date().toISOString().slice(0, 10);
+// computeAmount and todayIso imported from utils
 
 const DocumentCreation: React.FC = () => {
   const navigate = useNavigate();
@@ -191,9 +153,7 @@ const DocumentCreation: React.FC = () => {
     }
   }, [customers, state.customerId]);
 
-  const subtotal = useMemo(() => {
-    return state.lineItems.reduce((sum, li) => sum + (Number.isFinite(li.amount) ? li.amount : 0), 0);
-  }, [state.lineItems]);
+  const subtotal = useMemo(() => computeSubtotal(state.lineItems), [state.lineItems]);
 
   const total = subtotal; // Placeholder for future tax/discount logic
 
@@ -206,38 +166,105 @@ const DocumentCreation: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState<string | null>(null);
+  const [headerErrors, setHeaderErrors] = useState<HeaderErrors>({});
+  const [itemErrors, setItemErrors] = useState<Record<string, LineItemFieldErrors>>({});
+
+  function validateDraft(s: DocumentFormState): ValidationResult {
+    const header: HeaderErrors = {};
+    const items: Record<string, LineItemFieldErrors> = {};
+    if (!s.documentType) header.documentType = 'Document type is required';
+    if (!s.date?.trim()) header.date = 'Date is required';
+    if (!Array.isArray(s.lineItems) || s.lineItems.length === 0) {
+      // Ensure at least one row; UI always keeps one, but guard anyway
+    }
+    for (const li of s.lineItems) {
+      const err: LineItemFieldErrors = {};
+      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
+      if (!Number.isFinite(li.quantity) || li.quantity < 0) err.quantity = 'Quantity must be ≥ 0';
+      if (Object.keys(err).length > 0) items[li.id] = err;
+    }
+    return { header, items };
+  }
+
+  function validateFinalize(s: DocumentFormState): ValidationResult {
+    const header: HeaderErrors = {};
+    const items: Record<string, LineItemFieldErrors> = {};
+    if (!s.documentType) header.documentType = 'Document type is required';
+    if (!s.date?.trim()) header.date = 'Date is required';
+    if (!s.customerId) header.customerId = 'Customer is required to finalize';
+    if (!Array.isArray(s.lineItems) || s.lineItems.length === 0) {
+    }
+    for (const li of s.lineItems) {
+      const err: LineItemFieldErrors = {};
+      if (!li.name?.trim()) err.name = 'Item name is required';
+      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
+      if (!Number.isFinite(li.quantity) || li.quantity < 1) err.quantity = 'Quantity must be ≥ 1';
+      if (Object.keys(err).length > 0) items[li.id] = err;
+    }
+    return { header, items };
+  }
+
+  const finalizeDisabled = useMemo(() => {
+    const res = validateFinalize(state);
+    return (
+      Object.keys(res.header).length > 0 ||
+      Object.keys(res.items).length > 0
+    );
+  }, [state]);
+
+  function focusFirstError(res: ValidationResult) {
+    const orderHeaderIds = [
+      res.header.documentType ? 'doc-documentType' : null,
+      res.header.date ? 'doc-date' : null,
+      res.header.customerId ? 'doc-customerId' : null,
+    ].filter(Boolean) as string[];
+    if (orderHeaderIds.length > 0) {
+      document.getElementById(orderHeaderIds[0])?.focus();
+      return;
+    }
+    for (const li of state.lineItems) {
+      const e = res.items[li.id];
+      if (!e) continue;
+      const id = e.name
+        ? `li-${li.id}-name`
+        : e.unitPrice
+        ? `li-${li.id}-unitPrice`
+        : e.quantity
+        ? `li-${li.id}-quantity`
+        : null;
+      if (id) {
+        document.getElementById(id)?.focus();
+        return;
+      }
+    }
+  }
 
   const handleSaveDraft = async () => {
     setSaveError(null);
     if (!user?.uid) return;
     setSaving(true);
     try {
-      const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const validation = validateDraft(state);
+      setHeaderErrors(validation.header);
+      setItemErrors(validation.items);
+      const hasErrors = Object.keys(validation.header).length > 0 || Object.keys(validation.items).length > 0;
+      if (hasErrors) {
+        setSaveError('Please fix the highlighted fields before saving the draft.');
+        focusFirstError(validation);
+        return;
+      }
+      // kept for parity with edit page structure
       const autoDocNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
         : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
-      const payload: Omit<DocumentEntity, 'id' | 'createdAt' | 'updatedAt'> = {
-        userId: user.uid,
-        type: state.documentType,
-        docNumber: autoDocNumber,
-        date: state.date,
-        customerId: state.customerId,
-        customerDetails: selectedCustomer
-          ? { name: selectedCustomer.name, email: selectedCustomer.email, address: selectedCustomer.address }
-          : undefined,
-        items: state.lineItems.map((li) => ({
-          itemId: li.itemId,
-          name: li.name,
-          description: li.description,
-          unitPrice: Number.isFinite(li.unitPrice) ? li.unitPrice : 0,
-          quantity: Number.isFinite(li.quantity) ? li.quantity : 0,
-          amount: Number.isFinite(li.amount) ? li.amount : 0,
-        })),
-        subtotal,
-        total,
-        notes: state.notes,
-        status: 'draft',
-      };
+      const payload = buildDocumentPayload(
+        user.uid,
+        state,
+        'draft',
+        autoDocNumber,
+        selectCustomerDetails(customers, state.customerId),
+        { subtotal, total }
+      );
       const id = await addDocument(payload);
       if (id) navigate('/dashboard');
     } catch (e: unknown) {
@@ -253,33 +280,30 @@ const DocumentCreation: React.FC = () => {
     if (!user?.uid) return;
     setFinalizing(true);
     try {
-      const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      const validation = validateFinalize(state);
+      setHeaderErrors(validation.header);
+      setItemErrors(validation.items);
+      const hasErrors = Object.keys(validation.header).length > 0 || Object.keys(validation.items).length > 0;
+      if (hasErrors) {
+        setFinalizeError('Please resolve the errors to finalize.');
+        focusFirstError(validation);
+        return;
+      }
+      // kept for parity with edit page structure
       const autoDocNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
         : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
-      const payload: Omit<DocumentEntity, 'id' | 'createdAt' | 'updatedAt'> = {
-        userId: user.uid,
-        type: state.documentType,
-        docNumber: autoDocNumber,
-        date: state.date,
-        customerId: state.customerId,
-        customerDetails: selectedCustomer
-          ? { name: selectedCustomer.name, email: selectedCustomer.email, address: selectedCustomer.address }
-          : undefined,
-        items: state.lineItems.map((li) => ({
-          itemId: li.itemId,
-          name: li.name,
-          description: li.description,
-          unitPrice: Number.isFinite(li.unitPrice) ? li.unitPrice : 0,
-          quantity: Number.isFinite(li.quantity) ? li.quantity : 0,
-          amount: Number.isFinite(li.amount) ? li.amount : 0,
-        })),
-        subtotal,
-        total,
-        notes: state.notes,
-        status: 'finalized',
+      const payload = {
+        ...buildDocumentPayload(
+          user.uid,
+          state,
+          'finalized',
+          autoDocNumber,
+          selectCustomerDetails(customers, state.customerId),
+          { subtotal, total }
+        ),
         finalizedAt: serverTimestamp() as unknown as import('firebase/firestore').Timestamp,
-      };
+      } as Omit<DocumentEntity, 'id' | 'createdAt' | 'updatedAt'> & { finalizedAt: import('firebase/firestore').Timestamp };
 
       // Save finalized doc
       const id = await addDocument(payload);
@@ -294,17 +318,8 @@ const DocumentCreation: React.FC = () => {
         subtotal: payload.subtotal,
         total: payload.total,
       });
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const filenamePrefix = payload.type === 'invoice' ? 'INV' : 'QUO';
-      const filename = payload.docNumber ? payload.docNumber : `${filenamePrefix}-${payload.date}`;
-      a.href = url;
-      a.download = `${filename}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const filename = `${getDocumentFilename(payload.type, payload.docNumber, payload.date)}.pdf`;
+      downloadBlob(filename, pdfBytes, 'application/pdf');
 
       if (id) navigate('/dashboard');
     } catch (e: unknown) {
@@ -322,10 +337,10 @@ const DocumentCreation: React.FC = () => {
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Create Document</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <SecondaryButton onClick={() => navigate('/dashboard')}>Cancel</SecondaryButton>
-            <PrimaryButton onClick={handleSaveDraft} disabled={saving || finalizing}>
+            <PrimaryButton onClick={handleSaveDraft} disabled={saving || finalizing} aria-disabled={saving || finalizing}>
               {saving ? 'Saving…' : 'Save Draft'}
             </PrimaryButton>
-            <PrimaryButton onClick={handleFinalizeAndDownload} disabled={saving || finalizing}>
+            <PrimaryButton onClick={handleFinalizeAndDownload} disabled={saving || finalizing || finalizeDisabled} aria-disabled={saving || finalizing || finalizeDisabled}>
               {finalizing ? 'Finalizing…' : 'Finalize & Download PDF'}
             </PrimaryButton>
           </div>
@@ -342,8 +357,11 @@ const DocumentCreation: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <StyledDropdown
               label="Document Type"
+              id="doc-documentType"
               value={state.documentType}
               onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'documentType', value: e.target.value as DocumentType })}
+              required
+              error={headerErrors.documentType}
             >
               <option value="invoice">Invoice</option>
               <option value="quotation">Quotation</option>
@@ -359,15 +377,21 @@ const DocumentCreation: React.FC = () => {
             <StyledInput
               label="Date"
               type="date"
+              id="doc-date"
               value={state.date}
               onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'date', value: e.target.value })}
+              required
+              error={headerErrors.date}
             />
 
             <StyledDropdown
               label="Bill To"
+              id="doc-customerId"
               value={state.customerId ?? ''}
               onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'customerId', value: e.target.value || undefined })}
               disabled={loadingCustomers}
+              required={false}
+              error={headerErrors.customerId}
             >
               <option value="" disabled>
                 {loadingCustomers ? 'Loading customers…' : 'Select a customer'}
@@ -414,9 +438,12 @@ const DocumentCreation: React.FC = () => {
                     </StyledDropdown>
                     <StyledInput
                       placeholder="Custom item name"
+                      id={`li-${li.id}-name`}
                       value={li.name}
                       onChange={(e) => dispatch({ type: 'UPDATE_LINE_ITEM', id: li.id, changes: { name: e.target.value } })}
                       style={{ marginTop: 8 }}
+                      error={itemErrors[li.id]?.name}
+                      required={false}
                     />
                   </td>
                   <td>
@@ -432,6 +459,7 @@ const DocumentCreation: React.FC = () => {
                       inputMode="decimal"
                       min={0}
                       step={0.01}
+                      id={`li-${li.id}-unitPrice`}
                       value={Number.isFinite(li.unitPrice) ? String(li.unitPrice) : ''}
                       onChange={(e) =>
                         dispatch({
@@ -440,6 +468,7 @@ const DocumentCreation: React.FC = () => {
                           changes: { unitPrice: parseFloat(e.target.value || '0') },
                         })
                       }
+                      error={itemErrors[li.id]?.unitPrice}
                     />
                   </td>
                   <td className="td-right">
@@ -448,6 +477,7 @@ const DocumentCreation: React.FC = () => {
                       inputMode="numeric"
                       min={0}
                       step={1}
+                      id={`li-${li.id}-quantity`}
                       value={Number.isFinite(li.quantity) ? String(li.quantity) : ''}
                       onChange={(e) =>
                         dispatch({
@@ -456,10 +486,11 @@ const DocumentCreation: React.FC = () => {
                           changes: { quantity: parseInt(e.target.value || '0', 10) },
                         })
                       }
+                      error={itemErrors[li.id]?.quantity}
                     />
                   </td>
                   <td className="td-right">
-                    <span className="td-strong">{li.amount.toFixed(2)}</span>
+                    <span className="td-strong">{formatCurrency(li.amount)}</span>
                   </td>
                   <td className="td-right">
                     <button className="link-btn link-danger" onClick={() => handleRemoveRow(li.id)} disabled={state.lineItems.length <= 1}>
@@ -475,11 +506,11 @@ const DocumentCreation: React.FC = () => {
             <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
               <div>
                 <div className="muted" style={{ fontSize: 12 }}>Subtotal</div>
-                <div className="td-strong" style={{ textAlign: 'right' }}>{subtotal.toFixed(2)}</div>
+                <div className="td-strong" style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12 }}>Total</div>
-                <div className="td-strong" style={{ textAlign: 'right', fontSize: 18 }}>{total.toFixed(2)}</div>
+                <div className="td-strong" style={{ textAlign: 'right', fontSize: 18 }}>{formatCurrency(total)}</div>
               </div>
             </div>
           </div>
