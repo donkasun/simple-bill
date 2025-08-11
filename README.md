@@ -1,5 +1,13 @@
 # SimpleBill
 
+[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![React Router](https://img.shields.io/badge/React%20Router-CA4245?logo=react-router&logoColor=white)](https://reactrouter.com/)
+[![pdf-lib](https://img.shields.io/badge/pdf--lib-0A7EA4)](https://pdf-lib.js.org/)
+[![Rough.js](https://img.shields.io/badge/Rough.js-888)](https://roughjs.com/)
+
 A minimal, charming invoicing app built with React + TypeScript, Firebase, and Rough.js. Create and manage customers, items, and billing documents quickly.
 
 ## Tech Stack
