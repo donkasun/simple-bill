@@ -8,7 +8,7 @@ import SecondaryButton from '../components/core/SecondaryButton';
 import { useAuth } from '../hooks/useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { useNavigate } from 'react-router-dom';
-import { generateDocumentPdf } from '../utils/pdf';
+// PDF generator dynamically imported on demand
 import { serverTimestamp } from 'firebase/firestore';
 import { allocateNextDocumentNumber } from '../utils/docNumber';
 import { formatCurrency } from '../utils/currency';
@@ -174,7 +174,8 @@ const DocumentCreation: React.FC = () => {
       // Save finalized doc
       const id = await addDocument(payload);
 
-      // Generate PDF and download
+      // Generate PDF and download (dynamic import)
+      const { generateDocumentPdf } = await import('../utils/pdf');
       const pdfBytes = await generateDocumentPdf({
         type: payload.type,
         docNumber: payload.docNumber,

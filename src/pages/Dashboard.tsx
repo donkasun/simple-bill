@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import type { DocumentEntity } from '../types/document';
-import { generateDocumentPdf } from '../utils/pdf';
+// PDF generator dynamically imported on demand
 import { formatCurrency } from '../utils/currency';
 import { downloadBlob } from '../utils/download';
 import { getDocumentFilename } from '../utils/documents';
@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
   });
 
   const handleDownload = useCallback(async (doc: DocumentEntity) => {
+    const { generateDocumentPdf } = await import('../utils/pdf');
     const pdfBytes = await generateDocumentPdf({
       type: doc.type,
       docNumber: doc.docNumber,

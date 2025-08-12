@@ -8,7 +8,7 @@ import SecondaryButton from '../components/core/SecondaryButton';
 import { useAuth } from '../hooks/useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { useNavigate, useParams } from 'react-router-dom';
-import { generateDocumentPdf } from '../utils/pdf';
+// PDF generator dynamically imported on demand
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { DocumentEntity as PersistedDocumentEntity, DocumentFormState, FormLineItem, DocumentType, DocumentStatus } from '../types/document';
@@ -263,6 +263,7 @@ const DocumentEdit: React.FC = () => {
 
       await setDocument(id, payload);
 
+      const { generateDocumentPdf } = await import('../utils/pdf');
       const pdfBytes = await generateDocumentPdf({
         type: base.type as DocumentType,
         docNumber: base.docNumber || '',
