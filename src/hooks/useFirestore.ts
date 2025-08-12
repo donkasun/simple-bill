@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../firebase/config';
 import {
   addDoc,
@@ -48,6 +48,11 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
 
   const collectionRef = useMemo(() => collection(db, collectionName), [collectionName]);
 
+  const selectRef = useRef<typeof select>(select);
+  useEffect(() => {
+    selectRef.current = select;
+  }, [select]);
+
   const buildQuery = useCallback(() => {
     const constraints: QueryConstraint[] = [];
     if (userId) constraints.push(where('userId', '==', userId));
@@ -73,7 +78,7 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
       getDocs(q)
         .then((snap) => {
           const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) } as T));
-          const mapped = (select ? data.map((t) => select(t)) : (data as unknown as U[]));
+          const mapped = (selectRef.current ? data.map((t) => selectRef.current!(t)) : (data as unknown as U[]));
           setItems(mapped);
         })
         .catch((e) => setError(e?.message ?? 'Failed to fetch'))
@@ -84,7 +89,7 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
       q,
       (snap) => {
         const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) } as T));
-        const mapped = (select ? data.map((t) => select(t)) : (data as unknown as U[]));
+        const mapped = (selectRef.current ? data.map((t) => selectRef.current!(t)) : (data as unknown as U[]));
         setItems(mapped);
         setLoading(false);
       },
@@ -94,7 +99,7 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
       }
     );
     return () => unsub();
-  }, [buildQuery, subscribe, userId, whereEqual, select]);
+  }, [buildQuery, subscribe, userId, whereEqual]);
 
   const add = useCallback(
     async (data: WithoutMeta<T> & { userId?: string }) => {
@@ -141,17 +146,17 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
       const snap = await getDoc(ref);
       if (!snap.exists()) return null;
       const raw = { id: snap.id, ...(snap.data() as T) } as T;
-      return select ? select(raw) : ((raw as unknown) as U);
+      return selectRef.current ? selectRef.current(raw) : ((raw as unknown) as U);
     },
-    [collectionRef, select]
+    [collectionRef]
   );
 
   const getOnce = useCallback(async (): Promise<U[]> => {
     const q = buildQuery();
     const snap = await getDocs(q);
     const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) } as T));
-    return select ? data.map((t) => select(t)) : ((data as unknown) as U[]);
-  }, [buildQuery, select]);
+    return selectRef.current ? data.map((t) => selectRef.current!(t)) : ((data as unknown) as U[]);
+  }, [buildQuery]);
 
   return { items, loading, error, add, set, update, remove, getById, getOnce } as const;
 }
