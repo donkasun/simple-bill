@@ -30,7 +30,8 @@
       "@pages/*": ["src/pages/*"],
       "@utils/*": ["src/utils/*"],
       "@hooks/*": ["src/hooks/*"],
-      "@auth/*": ["src/auth/*"]
+      "@auth/*": ["src/auth/*"],
+      "@models/*": ["src/types/*"]
     }
   },
   "include": ["src"]

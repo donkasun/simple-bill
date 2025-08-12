@@ -1,4 +1,4 @@
-import type { BaseEntity } from "@hooks/useFirestore";
+import type { BaseEntity } from "@models/firestore";
 import type { Timestamp } from "firebase/firestore";
 
 export type DocumentType = "invoice" | "quotation";
