@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import StyledDropdown from "../components/core/StyledDropdown";
-import StyledInput from "../components/core/StyledInput";
-import StyledTextarea from "../components/core/StyledTextarea";
-import LineItemsTable from "../components/documents/LineItemsTable";
-import PrimaryButton from "../components/core/PrimaryButton";
-import SecondaryButton from "../components/core/SecondaryButton";
-import ErrorBanner from "../components/core/ErrorBanner";
-import { useAuth } from "../auth/useAuth";
-import { useFirestore } from "../hooks/useFirestore";
+import StyledDropdown from "@components/core/StyledDropdown";
+import StyledInput from "@components/core/StyledInput";
+import StyledTextarea from "@components/core/StyledTextarea";
+import LineItemsTable from "@components/documents/LineItemsTable";
+import PrimaryButton from "@components/core/PrimaryButton";
+import SecondaryButton from "@components/core/SecondaryButton";
+import ErrorBanner from "@components/core/ErrorBanner";
+import { useAuth } from "@auth/useAuth";
+import { useFirestore } from "@hooks/useFirestore";
 import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase/config";
@@ -20,15 +20,15 @@ import type {
 } from "../types/document";
 import type { Customer } from "../types/customer";
 import type { Item } from "../types/item";
-import { allocateNextDocumentNumber } from "../utils/docNumber";
-import { formatCurrency } from "../utils/currency";
-import { downloadBlob } from "../utils/download";
+import { allocateNextDocumentNumber } from "@utils/docNumber";
+import { formatCurrency } from "@utils/currency";
+import { downloadBlob } from "@utils/download";
 import {
   buildDocumentPayload,
   selectCustomerDetails,
   getDocumentFilename,
   getDocNumberPlaceholder,
-} from "../utils/documents";
+} from "@utils/documents";
 
 type LineItem = FormLineItem;
 
@@ -43,14 +43,14 @@ function createEmptyLineItem(): LineItem {
   };
 }
 
-import { computeAmount } from "../utils/documentMath";
+import { computeAmount } from "@utils/documentMath";
 
-import { todayIso } from "../utils/date";
-import { useDocumentForm } from "../hooks/useDocumentForm";
+import { todayIso } from "@utils/date";
+import { useDocumentForm } from "@hooks/useDocumentForm";
 import {
   validateDraft as validateDraftShared,
   validateFinalize as validateFinalizeShared,
-} from "../utils/documentValidation";
+} from "@utils/documentValidation";
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -213,10 +213,10 @@ const DocumentEdit: React.FC = () => {
       const id = e.name
         ? `li-${li.id}-name`
         : e.unitPrice
-        ? `li-${li.id}-unitPrice`
-        : e.quantity
-        ? `li-${li.id}-quantity`
-        : null;
+          ? `li-${li.id}-unitPrice`
+          : e.quantity
+            ? `li-${li.id}-quantity`
+            : null;
       if (id) {
         document.getElementById(id)?.focus();
         return;
@@ -237,7 +237,7 @@ const DocumentEdit: React.FC = () => {
         Object.keys(validation.items).length > 0;
       if (hasErrors) {
         setSaveError(
-          "Please fix the highlighted fields before saving changes."
+          "Please fix the highlighted fields before saving changes.",
         );
         focusFirstError(validation);
         return;
@@ -247,7 +247,7 @@ const DocumentEdit: React.FC = () => {
         : await allocateNextDocumentNumber(
             user.uid,
             state.documentType,
-            state.date
+            state.date,
           );
       const payload = buildDocumentPayload(
         user.uid,
@@ -255,7 +255,7 @@ const DocumentEdit: React.FC = () => {
         "draft",
         docNumber,
         selectCustomerDetails(customers, state.customerId),
-        { subtotal, total }
+        { subtotal, total },
       );
       await setDocument(id, payload);
       navigate("/dashboard");
@@ -288,7 +288,7 @@ const DocumentEdit: React.FC = () => {
         : await allocateNextDocumentNumber(
             user.uid,
             state.documentType,
-            state.date
+            state.date,
           );
       const base = buildDocumentPayload(
         user.uid,
@@ -296,7 +296,7 @@ const DocumentEdit: React.FC = () => {
         "finalized",
         docNumber,
         selectCustomerDetails(customers, state.customerId),
-        { subtotal, total }
+        { subtotal, total },
       );
       const payload: Partial<PersistedDocumentEntity> = {
         ...base,
@@ -319,7 +319,7 @@ const DocumentEdit: React.FC = () => {
       const filename = `${getDocumentFilename(
         base.type as DocumentType,
         base.docNumber as string,
-        base.date as string
+        base.date as string,
       )}.pdf`;
       downloadBlob(filename, pdfBytes, "application/pdf");
 

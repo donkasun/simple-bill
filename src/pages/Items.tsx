@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
-import StyledTable from '../components/core/StyledTable';
-import PrimaryButton from '../components/core/PrimaryButton';
-import { useAuth } from '../auth/useAuth';
-import { useFirestore } from '../hooks/useFirestore';
-import ItemModal, { type ItemFormData } from '../components/items/ItemModal';
-import type { Item } from '../types/item';
+import React, { useState } from "react";
+import StyledTable from "@components/core/StyledTable";
+import PrimaryButton from "@components/core/PrimaryButton";
+import { useAuth } from "@auth/useAuth";
+import { useFirestore } from "@hooks/useFirestore";
+import ItemModal, { type ItemFormData } from "@components/items/ItemModal";
+import type { Item } from "../types/item";
 
 const Items: React.FC = () => {
   const { user } = useAuth();
   type ItemRow = Item & { unitPriceLabel: string };
-  const { items, loading, error, add, update, remove } = useFirestore<Item, ItemRow>({
-    collectionName: 'items',
+  const { items, loading, error, add, update, remove } = useFirestore<
+    Item,
+    ItemRow
+  >({
+    collectionName: "items",
     userId: user?.uid,
-    orderByField: 'createdAt',
+    orderByField: "createdAt",
     select: (it) => ({ ...it, unitPriceLabel: it.unitPrice.toFixed(2) }),
   });
 
@@ -39,19 +42,20 @@ const Items: React.FC = () => {
         await update(editingItem.id, {
           name: data.name,
           unitPrice: data.unitPrice,
-          description: data.description ?? '',
+          description: data.description ?? "",
         });
       } else {
         await add({
           name: data.name,
           unitPrice: data.unitPrice,
-          description: data.description ?? '',
-          userId: user?.uid || '',
+          description: data.description ?? "",
+          userId: user?.uid || "",
         });
       }
       setModalOpen(false);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to save item';
+      const message =
+        err instanceof Error ? err.message : "Failed to save item";
       setPageError(message);
     } finally {
       setModalSubmitting(false);
@@ -59,24 +63,24 @@ const Items: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{ padding: "1rem" }}>
       <div className="container-xl">
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: '1rem',
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "1rem",
           }}
         >
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Items</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
             <PrimaryButton onClick={handleAddClick}>Add New Item</PrimaryButton>
           </div>
         </div>
 
         {loading && <div>Loading items…</div>}
         {(error || pageError) && (
-          <div role="alert" style={{ color: 'crimson' }}>
+          <div role="alert" style={{ color: "crimson" }}>
             {error || pageError}
           </div>
         )}
@@ -97,15 +101,23 @@ const Items: React.FC = () => {
                   <td>{it.name}</td>
                   <td className="td-right">{it.unitPriceLabel}</td>
                   <td>
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{it.description ?? '-'}</div>
+                    <div style={{ whiteSpace: "pre-wrap" }}>
+                      {it.description ?? "-"}
+                    </div>
                   </td>
                   <td className="td-right">
                     <div className="actions">
-                      <button className="link-btn" onClick={() => handleEditClick(it)}>Edit</button>
+                      <button
+                        className="link-btn"
+                        onClick={() => handleEditClick(it)}
+                      >
+                        Edit
+                      </button>
                       <button
                         className="link-btn link-danger"
                         onClick={async () => {
-                          if (it.id && window.confirm('Delete this item?')) await remove(it.id);
+                          if (it.id && window.confirm("Delete this item?"))
+                            await remove(it.id);
                         }}
                       >
                         Delete
@@ -120,7 +132,7 @@ const Items: React.FC = () => {
 
         <ItemModal
           open={modalOpen}
-          title={editingItem ? 'Edit Item' : 'Add Item'}
+          title={editingItem ? "Edit Item" : "Add Item"}
           initial={
             editingItem
               ? {

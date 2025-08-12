@@ -1,11 +1,11 @@
-import React from 'react';
-import type { FormLineItem } from '../../types/document';
-import type { Item } from '../../types/item';
-import StyledTable from '../core/StyledTable';
-import StyledDropdown from '../core/StyledDropdown';
-import StyledInput from '../core/StyledInput';
-import StyledTextarea from '../core/StyledTextarea';
-import { formatCurrency } from '../../utils/currency';
+import React from "react";
+import type { FormLineItem } from "../../types/document";
+import type { Item } from "../../types/item";
+import StyledTable from "../core/StyledTable";
+import StyledDropdown from "../core/StyledDropdown";
+import StyledInput from "../core/StyledInput";
+import StyledTextarea from "@components/core/StyledTextarea";
+import { formatCurrency } from "@utils/currency";
 
 type ItemErrors = { name?: string; unitPrice?: string; quantity?: string };
 
@@ -34,12 +34,20 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
     <StyledTable>
       <thead>
         <tr>
-          <th style={{ width: '22%' }}>Item</th>
+          <th style={{ width: "22%" }}>Item</th>
           <th>Description</th>
-          <th className="td-right" style={{ width: 140 }}>Unit Price</th>
-          <th className="td-right" style={{ width: 120 }}>Qty</th>
-          <th className="td-right" style={{ width: 140 }}>Amount</th>
-          <th className="td-right" style={{ width: 90 }}>Actions</th>
+          <th className="td-right" style={{ width: 140 }}>
+            Unit Price
+          </th>
+          <th className="td-right" style={{ width: 120 }}>
+            Qty
+          </th>
+          <th className="td-right" style={{ width: 140 }}>
+            Amount
+          </th>
+          <th className="td-right" style={{ width: 90 }}>
+            Actions
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -47,11 +55,15 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
           <tr key={li.id}>
             <td>
               <StyledDropdown
-                value={li.itemId ?? ''}
-                onChange={(e) => onSelectItem(li.id, e.target.value || undefined)}
+                value={li.itemId ?? ""}
+                onChange={(e) =>
+                  onSelectItem(li.id, e.target.value || undefined)
+                }
                 disabled={loadingCatalog || !canEdit}
               >
-                <option value="">{loadingCatalog ? 'Loading…' : 'Select item'}</option>
+                <option value="">
+                  {loadingCatalog ? "Loading…" : "Select item"}
+                </option>
                 {catalog.map((it) => (
                   <option key={it.id} value={it.id}>
                     {it.name}
@@ -72,7 +84,9 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
               <StyledTextarea
                 placeholder="Description"
                 value={li.description}
-                onChange={(e) => onChange(li.id, { description: e.target.value })}
+                onChange={(e) =>
+                  onChange(li.id, { description: e.target.value })
+                }
                 disabled={!canEdit}
               />
             </td>
@@ -83,8 +97,14 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 min={0}
                 step={0.01}
                 id={`li-${li.id}-unitPrice`}
-                value={Number.isFinite(li.unitPrice) ? String(li.unitPrice) : ''}
-                onChange={(e) => onChange(li.id, { unitPrice: parseFloat(e.target.value || '0') })}
+                value={
+                  Number.isFinite(li.unitPrice) ? String(li.unitPrice) : ""
+                }
+                onChange={(e) =>
+                  onChange(li.id, {
+                    unitPrice: parseFloat(e.target.value || "0"),
+                  })
+                }
                 disabled={!canEdit}
                 error={itemErrors[li.id]?.unitPrice}
               />
@@ -96,8 +116,12 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 min={0}
                 step={1}
                 id={`li-${li.id}-quantity`}
-                value={Number.isFinite(li.quantity) ? String(li.quantity) : ''}
-                onChange={(e) => onChange(li.id, { quantity: parseInt(e.target.value || '0', 10) })}
+                value={Number.isFinite(li.quantity) ? String(li.quantity) : ""}
+                onChange={(e) =>
+                  onChange(li.id, {
+                    quantity: parseInt(e.target.value || "0", 10),
+                  })
+                }
                 disabled={!canEdit}
                 error={itemErrors[li.id]?.quantity}
               />
@@ -122,5 +146,3 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
 };
 
 export default LineItemsTable;
-
-

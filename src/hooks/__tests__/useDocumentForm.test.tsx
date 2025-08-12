@@ -1,4 +1,3 @@
-import React from "react";
 import { describe, it, expect } from "vitest";
 import { render, waitFor } from "@testing-library/react";
 import { useDocumentForm, getDefaultInitialState } from "../useDocumentForm";
@@ -20,19 +19,33 @@ describe("useDocumentForm", () => {
 
     // update first line
     const firstId = api!.state.lineItems[0].id;
-    api!.dispatch({ type: "UPDATE_LINE_ITEM", id: firstId, changes: { unitPrice: 5, quantity: 3 } });
+    api!.dispatch({
+      type: "UPDATE_LINE_ITEM",
+      id: firstId,
+      changes: { unitPrice: 5, quantity: 3 },
+    });
     await waitFor(() => expect(api!.state.lineItems[0].amount).toBe(15));
 
     // set a header field
-    api!.dispatch({ type: "SET_FIELD", field: "documentType", value: "quotation" });
+    api!.dispatch({
+      type: "SET_FIELD",
+      field: "documentType",
+      value: "quotation",
+    });
     await waitFor(() => expect(api!.state.documentType).toBe("quotation"));
   });
 
   it("defaults customer when provided and blocks edits when canEdit=false", async () => {
     let api: ReturnType<typeof useDocumentForm> | null = null;
-    const customers: Customer[] = [{ id: "1", userId: "u", name: "Acme" } as any];
+    const customers: Customer[] = [
+      { id: "1", userId: "u", name: "Acme" } as unknown as Customer,
+    ];
     const Comp = () => {
-      api = useDocumentForm({ initial: getDefaultInitialState(), customers, canEdit: false });
+      api = useDocumentForm({
+        initial: getDefaultInitialState(),
+        customers,
+        canEdit: false,
+      });
       return null;
     };
     render(<Comp />);
@@ -50,10 +63,18 @@ describe("useDocumentForm", () => {
   it("selects item from catalog by id", async () => {
     let api: ReturnType<typeof useDocumentForm> | null = null;
     const items: Item[] = [
-      { id: "a", userId: "u", name: "Service", unitPrice: 12 } as any,
+      {
+        id: "a",
+        userId: "u",
+        name: "Service",
+        unitPrice: 12,
+      } as unknown as Item,
     ];
     const Comp = () => {
-      api = useDocumentForm({ initial: getDefaultInitialState(), itemCatalog: items });
+      api = useDocumentForm({
+        initial: getDefaultInitialState(),
+        itemCatalog: items,
+      });
       return null;
     };
     render(<Comp />);
@@ -63,5 +84,3 @@ describe("useDocumentForm", () => {
     await waitFor(() => expect(api!.state.lineItems[0].unitPrice).toBe(12));
   });
 });
-
-

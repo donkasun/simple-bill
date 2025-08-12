@@ -19,7 +19,7 @@ I built SimpleBill for my non‑tech‑savvy dad, who only needs to make an invo
 - React (Vite, TypeScript)
 - Firebase (Auth with Google, Firestore)
 - Rough.js for sketch‑style UI accents
-- pdf-lib for PDF generation (planned)
+- pdf-lib for PDF generation
 
 ## Prerequisites
 
@@ -95,7 +95,7 @@ npm run dev
 
 - `src/components/core/*` – Reusable UI components
 - `src/components/customers/CustomerModal.tsx` – Add/Edit customer modal
-- `src/hooks/useAuth.tsx` – Google Auth context
+- `src/auth/*` – Google Auth provider and hook
 - `src/hooks/useFirestore.ts` – Generic Firestore CRUD hook
 - `src/pages/*` – Route pages (Dashboard, Customers, Items)
 

@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import StyledDropdown from "../components/core/StyledDropdown";
-import StyledInput from "../components/core/StyledInput";
-import StyledTextarea from "../components/core/StyledTextarea";
-import LineItemsTable from "../components/documents/LineItemsTable";
-import PrimaryButton from "../components/core/PrimaryButton";
-import SecondaryButton from "../components/core/SecondaryButton";
-import { useAuth } from "../auth/useAuth";
-import { useFirestore } from "../hooks/useFirestore";
+import StyledDropdown from "@components/core/StyledDropdown";
+import StyledInput from "@components/core/StyledInput";
+import StyledTextarea from "@components/core/StyledTextarea";
+import LineItemsTable from "@components/documents/LineItemsTable";
+import PrimaryButton from "@components/core/PrimaryButton";
+import SecondaryButton from "@components/core/SecondaryButton";
+import { useAuth } from "@auth/useAuth";
+import { useFirestore } from "@hooks/useFirestore";
 import { useNavigate } from "react-router-dom";
 import { serverTimestamp } from "firebase/firestore";
-import { allocateNextDocumentNumber } from "../utils/docNumber";
-import { formatCurrency } from "../utils/currency";
+import { allocateNextDocumentNumber } from "@utils/docNumber";
+import { formatCurrency } from "@utils/currency";
 import type { DocumentEntity, DocumentType } from "../types/document";
 import type { Customer } from "../types/customer";
 import type { Item } from "../types/item";
@@ -19,17 +19,17 @@ import {
   selectCustomerDetails,
   getDocumentFilename,
   getDocNumberPlaceholder,
-} from "../utils/documents";
+} from "@utils/documents";
 import { downloadBlob } from "../utils/download";
-import ErrorBanner from "../components/core/ErrorBanner";
+import ErrorBanner from "@components/core/ErrorBanner";
 import {
   useDocumentForm,
   type LineItemFieldErrors,
   type HeaderErrors,
   type ValidationResult,
   getDefaultInitialState,
-} from "../hooks/useDocumentForm";
-import { validateDraft, validateFinalize } from "../utils/documentValidation";
+} from "@hooks/useDocumentForm";
+import { validateDraft, validateFinalize } from "@utils/documentValidation";
 
 const DocumentCreation: React.FC = () => {
   const navigate = useNavigate();
@@ -113,10 +113,10 @@ const DocumentCreation: React.FC = () => {
       const id = e.name
         ? `li-${li.id}-name`
         : e.unitPrice
-        ? `li-${li.id}-unitPrice`
-        : e.quantity
-        ? `li-${li.id}-quantity`
-        : null;
+          ? `li-${li.id}-unitPrice`
+          : e.quantity
+            ? `li-${li.id}-quantity`
+            : null;
       if (id) {
         document.getElementById(id)?.focus();
         return;
@@ -137,7 +137,7 @@ const DocumentCreation: React.FC = () => {
         Object.keys(validation.items).length > 0;
       if (hasErrors) {
         setSaveError(
-          "Please fix the highlighted fields before saving the draft."
+          "Please fix the highlighted fields before saving the draft.",
         );
         focusFirstError(validation);
         return;
@@ -148,7 +148,7 @@ const DocumentCreation: React.FC = () => {
         : await allocateNextDocumentNumber(
             user.uid,
             state.documentType,
-            state.date
+            state.date,
           );
       const payload = buildDocumentPayload(
         user.uid,
@@ -156,7 +156,7 @@ const DocumentCreation: React.FC = () => {
         "draft",
         autoDocNumber,
         selectCustomerDetails(customers, state.customerId),
-        { subtotal, total }
+        { subtotal, total },
       );
       const id = await addDocument(payload);
       if (id) navigate("/dashboard");
@@ -190,7 +190,7 @@ const DocumentCreation: React.FC = () => {
         : await allocateNextDocumentNumber(
             user.uid,
             state.documentType,
-            state.date
+            state.date,
           );
       const payload = {
         ...buildDocumentPayload(
@@ -199,7 +199,7 @@ const DocumentCreation: React.FC = () => {
           "finalized",
           autoDocNumber,
           selectCustomerDetails(customers, state.customerId),
-          { subtotal, total }
+          { subtotal, total },
         ),
         finalizedAt:
           serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
@@ -222,7 +222,7 @@ const DocumentCreation: React.FC = () => {
       const filename = `${getDocumentFilename(
         payload.type,
         payload.docNumber,
-        payload.date
+        payload.date,
       )}.pdf`;
       downloadBlob(filename, pdfBytes, "application/pdf");
 

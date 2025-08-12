@@ -1,14 +1,14 @@
 import React, { useCallback } from "react";
-import PrimaryButton from "../components/core/PrimaryButton";
-import StyledTable from "../components/core/StyledTable";
-import ErrorBanner from "../components/core/ErrorBanner";
+import PrimaryButton from "@components/core/PrimaryButton";
+import StyledTable from "@components/core/StyledTable";
+import ErrorBanner from "@components/core/ErrorBanner";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/useAuth";
-import { useFirestore } from "../hooks/useFirestore";
+import { useAuth } from "@auth/useAuth";
+import { useFirestore } from "@hooks/useFirestore";
 import type { DocumentEntity } from "../types/document";
-import { formatCurrency } from "../utils/currency";
-import { downloadBlob } from "../utils/download";
-import { getDocumentFilename } from "../utils/documents";
+import { formatCurrency } from "@utils/currency";
+import { downloadBlob } from "@utils/download";
+import { getDocumentFilename } from "@utils/documents";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const Dashboard: React.FC = () => {
     const filename = `${getDocumentFilename(
       doc.type,
       doc.docNumber,
-      doc.date
+      doc.date,
     )}.pdf`;
     downloadBlob(filename, pdfBytes, "application/pdf");
   }, []);
