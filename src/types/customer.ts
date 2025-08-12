@@ -1,4 +1,4 @@
-import type { BaseEntity } from '../hooks/useFirestore';
+import type { BaseEntity } from "@models/firestore";
 
 export type Customer = BaseEntity & {
   userId: string;
@@ -7,5 +7,3 @@ export type Customer = BaseEntity & {
   address?: string;
   showEmail?: boolean;
 };
-
-

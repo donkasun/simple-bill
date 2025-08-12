@@ -1,4 +1,4 @@
-import type { BaseEntity } from '../hooks/useFirestore';
+import type { BaseEntity } from "@models/firestore";
 
 export type Item = BaseEntity & {
   userId: string;
@@ -6,5 +6,3 @@ export type Item = BaseEntity & {
   unitPrice: number;
   description?: string;
 };
-
-
