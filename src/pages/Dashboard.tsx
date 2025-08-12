@@ -13,10 +13,16 @@ import { getDocumentFilename } from '../utils/documents';
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { items: documents, loading, error } = useFirestore<DocumentEntity>({
+  type DocumentRow = DocumentEntity & { typeLabel: string; customerName: string };
+  const { items: documents, loading, error } = useFirestore<DocumentEntity, DocumentRow>({
     collectionName: 'documents',
     userId: user?.uid,
     orderByField: 'createdAt',
+    select: (doc) => ({
+      ...doc,
+      typeLabel: doc.type === 'invoice' ? 'Invoice' : 'Quotation',
+      customerName: doc.customerDetails?.name ?? '—',
+    }),
   });
 
   const handleDownload = useCallback(async (doc: DocumentEntity) => {
@@ -53,8 +59,8 @@ const Dashboard: React.FC = () => {
               <thead>
                 <tr>
                   <th scope="col">Doc #</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Customer</th>
+                <th scope="col">Type</th>
+                <th scope="col">Customer</th>
                   <th scope="col">Date</th>
                   <th scope="col">Total</th>
                   <th scope="col">Status</th>
@@ -65,8 +71,8 @@ const Dashboard: React.FC = () => {
                 {documents.map((d) => (
                   <tr key={d.id}>
                     <td className="td-strong">{d.docNumber || '—'}</td>
-                    <td>{d.type === 'invoice' ? 'Invoice' : 'Quotation'}</td>
-                    <td>{d.customerDetails?.name || '—'}</td>
+                    <td>{d.typeLabel}</td>
+                    <td>{d.customerName}</td>
                     <td>{d.date}</td>
                     <td>{formatCurrency(d.total)}</td>
                     <td>

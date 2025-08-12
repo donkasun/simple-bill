@@ -8,10 +8,12 @@ import type { Item } from '../types/item';
 
 const Items: React.FC = () => {
   const { user } = useAuth();
-  const { items, loading, error, add, update, remove } = useFirestore<Item>({
+  type ItemRow = Item & { unitPriceLabel: string };
+  const { items, loading, error, add, update, remove } = useFirestore<Item, ItemRow>({
     collectionName: 'items',
     userId: user?.uid,
     orderByField: 'createdAt',
+    select: (it) => ({ ...it, unitPriceLabel: it.unitPrice.toFixed(2) }),
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -93,7 +95,7 @@ const Items: React.FC = () => {
               {items.map((it) => (
                 <tr key={it.id}>
                   <td>{it.name}</td>
-                  <td className="td-right">{it.unitPrice.toFixed(2)}</td>
+                  <td className="td-right">{it.unitPriceLabel}</td>
                   <td>
                     <div style={{ whiteSpace: 'pre-wrap' }}>{it.description ?? '-'}</div>
                   </td>

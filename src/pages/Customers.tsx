@@ -8,10 +8,12 @@ import type { Customer } from "../types/customer";
 
 const Customers: React.FC = () => {
   const { user } = useAuth();
-  const { items, loading, error, add, update, remove } = useFirestore<Customer>({
+  type CustomerRow = Customer & { addressDisplay: string };
+  const { items, loading, error, add, update, remove } = useFirestore<Customer, CustomerRow>({
     collectionName: "customers",
     userId: user?.uid,
     orderByField: "createdAt",
+    select: (c) => ({ ...c, addressDisplay: c.address ?? "-" }),
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -101,7 +103,7 @@ const Customers: React.FC = () => {
                   <td>{c.name}</td>
                   <td>{c.email}</td>
                   <td>
-                    <div style={{ whiteSpace: "pre-wrap" }}>{c.address ?? "-"}</div>
+                    <div style={{ whiteSpace: "pre-wrap" }}>{c.addressDisplay}</div>
                   </td>
                   <td className="td-right">
                     <div className="actions">
