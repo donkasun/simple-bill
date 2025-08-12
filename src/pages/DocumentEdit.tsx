@@ -1,87 +1,94 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import StyledDropdown from '../components/core/StyledDropdown';
-import StyledInput from '../components/core/StyledInput';
-import StyledTextarea from '../components/core/StyledTextarea';
-import LineItemsTable from '../components/documents/LineItemsTable';
-import PrimaryButton from '../components/core/PrimaryButton';
-import SecondaryButton from '../components/core/SecondaryButton';
-import { useAuth } from '../hooks/useAuth';
-import { useFirestore } from '../hooks/useFirestore';
-import { useNavigate, useParams } from 'react-router-dom';
-// PDF generator dynamically imported on demand
-import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
-import type { DocumentEntity as PersistedDocumentEntity, DocumentFormState, FormLineItem, DocumentType, DocumentStatus } from '../types/document';
-import type { Customer } from '../types/customer';
-import type { Item } from '../types/item';
-import { allocateNextDocumentNumber } from '../utils/docNumber';
-import { formatCurrency } from '../utils/currency';
-import { downloadBlob } from '../utils/download';
-import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename, getDocNumberPlaceholder } from '../utils/documents';
-
-// using shared DocumentStatus type from types
+import React, { useEffect, useMemo, useState } from "react";
+import StyledDropdown from "../components/core/StyledDropdown";
+import StyledInput from "../components/core/StyledInput";
+import StyledTextarea from "../components/core/StyledTextarea";
+import LineItemsTable from "../components/documents/LineItemsTable";
+import PrimaryButton from "../components/core/PrimaryButton";
+import SecondaryButton from "../components/core/SecondaryButton";
+import { useAuth } from "../hooks/useAuth";
+import { useFirestore } from "../hooks/useFirestore";
+import { useNavigate, useParams } from "react-router-dom";
+import { doc, getDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase/config";
+import type {
+  DocumentEntity as PersistedDocumentEntity,
+  DocumentFormState,
+  FormLineItem,
+  DocumentType,
+  DocumentStatus,
+} from "../types/document";
+import type { Customer } from "../types/customer";
+import type { Item } from "../types/item";
+import { allocateNextDocumentNumber } from "../utils/docNumber";
+import { formatCurrency } from "../utils/currency";
+import { downloadBlob } from "../utils/download";
+import {
+  buildDocumentPayload,
+  selectCustomerDetails,
+  getDocumentFilename,
+  getDocNumberPlaceholder,
+} from "../utils/documents";
 
 type LineItem = FormLineItem;
-
-// Use DocumentFormState from types
-
-// Use shared Customer and Item types
-
-// SetFieldAction handled by useDocumentForm
-
-// Action type handled by useDocumentForm
 
 function createEmptyLineItem(): LineItem {
   return {
     id: crypto.randomUUID(),
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     unitPrice: 0,
     quantity: 1,
     amount: 0,
   };
 }
 
-import { computeAmount } from '../utils/documentMath';
+import { computeAmount } from "../utils/documentMath";
 
-// reducer moved to useDocumentForm
-
-import { todayIso } from '../utils/date';
-import { useDocumentForm } from '../hooks/useDocumentForm';
-import { validateDraft as validateDraftShared, validateFinalize as validateFinalizeShared } from '../utils/documentValidation';
+import { todayIso } from "../utils/date";
+import { useDocumentForm } from "../hooks/useDocumentForm";
+import {
+  validateDraft as validateDraftShared,
+  validateFinalize as validateFinalizeShared,
+} from "../utils/documentValidation";
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
 
-  const { items: customers, loading: loadingCustomers } = useFirestore<Customer>({
-    collectionName: 'customers',
-    userId: user?.uid,
-    orderByField: 'createdAt',
-  });
+  const { items: customers, loading: loadingCustomers } =
+    useFirestore<Customer>({
+      collectionName: "customers",
+      userId: user?.uid,
+      orderByField: "createdAt",
+    });
   const { items: itemCatalog, loading: loadingItems } = useFirestore<Item>({
-    collectionName: 'items',
+    collectionName: "items",
     userId: user?.uid,
-    orderByField: 'createdAt',
+    orderByField: "createdAt",
   });
 
   const { set: setDocument } = useFirestore<PersistedDocumentEntity>({
-    collectionName: 'documents',
+    collectionName: "documents",
     userId: user?.uid,
     subscribe: false,
   });
 
-  const [documentStatus, setDocumentStatus] = useState<DocumentStatus>('draft');
+  const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
 
-  const { state, dispatch, subtotal, total } = useDocumentForm({ initial: {
-    documentType: 'invoice',
-    documentNumber: '',
-    date: todayIso(),
-    customerId: undefined,
-    notes: '',
-    lineItems: [createEmptyLineItem()],
-  }, customers, itemCatalog, canEdit: documentStatus === 'draft' });
+  const { state, dispatch, subtotal, total } = useDocumentForm({
+    initial: {
+      documentType: "invoice",
+      documentNumber: "",
+      date: todayIso(),
+      customerId: undefined,
+      notes: "",
+      lineItems: [createEmptyLineItem()],
+    },
+    customers,
+    itemCatalog,
+    canEdit: documentStatus === "draft",
+  });
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -90,16 +97,16 @@ const DocumentEdit: React.FC = () => {
     let mounted = true;
     async function loadDocument() {
       if (!id) {
-        setLoadError('Missing document id');
+        setLoadError("Missing document id");
         setInitializing(false);
         return;
       }
       try {
-        const ref = doc(db, 'documents', id);
+        const ref = doc(db, "documents", id);
         const snap = await getDoc(ref);
         if (!snap.exists()) {
           if (!mounted) return;
-          setLoadError('Document not found');
+          setLoadError("Document not found");
           setInitializing(false);
           return;
         }
@@ -113,13 +120,15 @@ const DocumentEdit: React.FC = () => {
           description: it.description,
           unitPrice: Number.isFinite(it.unitPrice) ? it.unitPrice : 0,
           quantity: Number.isFinite(it.quantity) ? it.quantity : 0,
-          amount: Number.isFinite(it.amount) ? it.amount : computeAmount(it.unitPrice ?? 0, it.quantity ?? 0),
+          amount: Number.isFinite(it.amount)
+            ? it.amount
+            : computeAmount(it.unitPrice ?? 0, it.quantity ?? 0),
         }));
         dispatch({
-          type: 'SET_ALL',
+          type: "SET_ALL",
           value: {
             documentType: data.type,
-            documentNumber: data.docNumber ?? '',
+            documentNumber: data.docNumber ?? "",
             date: data.date,
             customerId: data.customerId,
             notes: data.notes,
@@ -127,7 +136,8 @@ const DocumentEdit: React.FC = () => {
           },
         });
       } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : 'Failed to load document';
+        const message =
+          e instanceof Error ? e.message : "Failed to load document";
         setLoadError(message);
       } finally {
         if (mounted) setInitializing(false);
@@ -141,20 +151,29 @@ const DocumentEdit: React.FC = () => {
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
-      dispatch({ type: 'SET_FIELD', field: 'customerId', value: customers[0].id });
+      dispatch({
+        type: "SET_FIELD",
+        field: "customerId",
+        value: customers[0].id,
+      });
     }
   }, [customers, state.customerId]);
 
-  // subtotal/total provided by useDocumentForm
-
-  const findItemById = (itemId?: string) => itemCatalog.find((i) => i.id === itemId);
+  const findItemById = (itemId?: string) =>
+    itemCatalog.find((i) => i.id === itemId);
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState<string | null>(null);
-  const [headerErrors, setHeaderErrors] = useState<{ documentType?: string; date?: string; customerId?: string }>({});
-  const [itemErrors, setItemErrors] = useState<Record<string, { name?: string; unitPrice?: string; quantity?: string }>>({});
+  const [headerErrors, setHeaderErrors] = useState<{
+    documentType?: string;
+    date?: string;
+    customerId?: string;
+  }>({});
+  const [itemErrors, setItemErrors] = useState<
+    Record<string, { name?: string; unitPrice?: string; quantity?: string }>
+  >({});
 
   function validateDraft(s: DocumentFormState) {
     return validateDraftShared(s);
@@ -166,14 +185,22 @@ const DocumentEdit: React.FC = () => {
 
   const finalizeDisabled = useMemo(() => {
     const res = validateFinalize(state);
-    return Object.keys(res.header).length > 0 || Object.keys(res.items).length > 0;
+    return (
+      Object.keys(res.header).length > 0 || Object.keys(res.items).length > 0
+    );
   }, [state]);
 
-  function focusFirstError(res: { header: { documentType?: string; date?: string; customerId?: string }; items: Record<string, { name?: string; unitPrice?: string; quantity?: string }> }) {
+  function focusFirstError(res: {
+    header: { documentType?: string; date?: string; customerId?: string };
+    items: Record<
+      string,
+      { name?: string; unitPrice?: string; quantity?: string }
+    >;
+  }) {
     const orderHeaderIds = [
-      res.header.documentType ? 'doc-documentType' : null,
-      res.header.date ? 'doc-date' : null,
-      res.header.customerId ? 'doc-customerId' : null,
+      res.header.documentType ? "doc-documentType" : null,
+      res.header.date ? "doc-date" : null,
+      res.header.customerId ? "doc-customerId" : null,
     ].filter(Boolean) as string[];
     if (orderHeaderIds.length > 0) {
       document.getElementById(orderHeaderIds[0])?.focus();
@@ -204,27 +231,35 @@ const DocumentEdit: React.FC = () => {
       const validation = validateDraft(state);
       setHeaderErrors(validation.header);
       setItemErrors(validation.items);
-      const hasErrors = Object.keys(validation.header).length > 0 || Object.keys(validation.items).length > 0;
+      const hasErrors =
+        Object.keys(validation.header).length > 0 ||
+        Object.keys(validation.items).length > 0;
       if (hasErrors) {
-        setSaveError('Please fix the highlighted fields before saving changes.');
+        setSaveError(
+          "Please fix the highlighted fields before saving changes."
+        );
         focusFirstError(validation);
         return;
       }
       const docNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
-        : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
+        : await allocateNextDocumentNumber(
+            user.uid,
+            state.documentType,
+            state.date
+          );
       const payload = buildDocumentPayload(
         user.uid,
         state,
-        'draft',
+        "draft",
         docNumber,
         selectCustomerDetails(customers, state.customerId),
         { subtotal, total }
       );
       await setDocument(id, payload);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to save changes';
+      const message = e instanceof Error ? e.message : "Failed to save changes";
       setSaveError(message);
     } finally {
       setSaving(false);
@@ -239,97 +274,160 @@ const DocumentEdit: React.FC = () => {
       const validation = validateFinalize(state);
       setHeaderErrors(validation.header);
       setItemErrors(validation.items);
-      const hasErrors = Object.keys(validation.header).length > 0 || Object.keys(validation.items).length > 0;
+      const hasErrors =
+        Object.keys(validation.header).length > 0 ||
+        Object.keys(validation.items).length > 0;
       if (hasErrors) {
-        setFinalizeError('Please resolve the errors to finalize.');
+        setFinalizeError("Please resolve the errors to finalize.");
         focusFirstError(validation);
         return;
       }
       const docNumber = state.documentNumber?.trim()
         ? state.documentNumber.trim()
-        : await allocateNextDocumentNumber(user.uid, state.documentType, state.date);
+        : await allocateNextDocumentNumber(
+            user.uid,
+            state.documentType,
+            state.date
+          );
       const base = buildDocumentPayload(
         user.uid,
         state,
-        'finalized',
+        "finalized",
         docNumber,
         selectCustomerDetails(customers, state.customerId),
         { subtotal, total }
       );
       const payload: Partial<PersistedDocumentEntity> = {
         ...base,
-        finalizedAt: serverTimestamp() as unknown as import('firebase/firestore').Timestamp,
+        finalizedAt:
+          serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
       };
 
       await setDocument(id, payload);
 
-      const { generateDocumentPdf } = await import('../utils/pdf');
+      const { generateDocumentPdf } = await import("../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
         type: base.type as DocumentType,
-        docNumber: base.docNumber || '',
+        docNumber: base.docNumber || "",
         date: base.date as string,
         customerDetails: base.customerDetails,
         items: base.items,
         subtotal: base.subtotal as number,
         total: base.total as number,
       });
-      const filename = `${getDocumentFilename(base.type as DocumentType, base.docNumber as string, base.date as string)}.pdf`;
-      downloadBlob(filename, pdfBytes, 'application/pdf');
+      const filename = `${getDocumentFilename(
+        base.type as DocumentType,
+        base.docNumber as string,
+        base.date as string
+      )}.pdf`;
+      downloadBlob(filename, pdfBytes, "application/pdf");
 
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to finalize & download';
+      const message =
+        e instanceof Error ? e.message : "Failed to finalize & download";
       setFinalizeError(message);
     } finally {
       setFinalizing(false);
     }
   };
 
-  const canEdit = documentStatus === 'draft';
+  const canEdit = documentStatus === "draft";
 
-  const headerTitle = 'Edit Document';
+  const headerTitle = "Edit Document";
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{ padding: "1rem" }}>
       <div className="container-xl">
         <div className="page-header">
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{headerTitle}</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <SecondaryButton onClick={() => navigate('/dashboard')}>Cancel</SecondaryButton>
-            <PrimaryButton onClick={handleSaveChanges} disabled={saving || finalizing || initializing || !canEdit} aria-disabled={saving || finalizing || initializing || !canEdit}>
-              {saving ? 'Saving…' : 'Save Changes'}
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
+            {headerTitle}
+          </h2>
+          <div style={{ display: "flex", gap: 8 }}>
+            <SecondaryButton onClick={() => navigate("/dashboard")}>
+              Cancel
+            </SecondaryButton>
+            <PrimaryButton
+              onClick={handleSaveChanges}
+              disabled={saving || finalizing || initializing || !canEdit}
+              aria-disabled={saving || finalizing || initializing || !canEdit}
+            >
+              {saving ? "Saving…" : "Save Changes"}
             </PrimaryButton>
-            <PrimaryButton onClick={handleFinalizeAndDownload} disabled={saving || finalizing || initializing || !canEdit || finalizeDisabled} aria-disabled={saving || finalizing || initializing || !canEdit || finalizeDisabled}>
-              {finalizing ? 'Finalizing…' : 'Finalize & Download PDF'}
+            <PrimaryButton
+              onClick={handleFinalizeAndDownload}
+              disabled={
+                saving ||
+                finalizing ||
+                initializing ||
+                !canEdit ||
+                finalizeDisabled
+              }
+              aria-disabled={
+                saving ||
+                finalizing ||
+                initializing ||
+                !canEdit ||
+                finalizeDisabled
+              }
+            >
+              {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
             </PrimaryButton>
           </div>
         </div>
 
         {initializing && <div>Loading document…</div>}
         {loadError && (
-          <div role="alert" style={{ color: 'crimson', marginBottom: 12 }}>{loadError}</div>
+          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
+            {loadError}
+          </div>
         )}
         {!canEdit && !initializing && !loadError && (
-          <div role="alert" style={{ color: '#8a6d3b', background: '#fcf8e3', padding: 12, borderRadius: 6, marginBottom: 12 }}>
+          <div
+            role="alert"
+            style={{
+              color: "#8a6d3b",
+              background: "#fcf8e3",
+              padding: 12,
+              borderRadius: 6,
+              marginBottom: 12,
+            }}
+          >
             This document has been finalized and cannot be edited.
           </div>
         )}
         {saveError && (
-          <div role="alert" style={{ color: 'crimson', marginBottom: 12 }}>{saveError}</div>
+          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
+            {saveError}
+          </div>
         )}
         {finalizeError && (
-          <div role="alert" style={{ color: 'crimson', marginBottom: 12 }}>{finalizeError}</div>
+          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
+            {finalizeError}
+          </div>
         )}
 
         {!initializing && !loadError && (
           <>
             <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                }}
+              >
                 <StyledDropdown
                   label="Document Type"
                   id="doc-documentType"
                   value={state.documentType}
-                  onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'documentType', value: e.target.value as DocumentType })}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "documentType",
+                      value: e.target.value as DocumentType,
+                    })
+                  }
                   disabled={!canEdit}
                   required
                   error={headerErrors.documentType}
@@ -342,7 +440,13 @@ const DocumentEdit: React.FC = () => {
                   label="Document #"
                   placeholder={getDocNumberPlaceholder(state.documentType)}
                   value={state.documentNumber}
-                  onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'documentNumber', value: e.target.value })}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "documentNumber",
+                      value: e.target.value,
+                    })
+                  }
                   disabled={!canEdit}
                 />
 
@@ -351,7 +455,13 @@ const DocumentEdit: React.FC = () => {
                   type="date"
                   id="doc-date"
                   value={state.date}
-                  onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'date', value: e.target.value })}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "date",
+                      value: e.target.value,
+                    })
+                  }
                   disabled={!canEdit}
                   required
                   error={headerErrors.date}
@@ -360,13 +470,21 @@ const DocumentEdit: React.FC = () => {
                 <StyledDropdown
                   label="Bill To"
                   id="doc-customerId"
-                  value={state.customerId ?? ''}
-                  onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'customerId', value: e.target.value || undefined })}
+                  value={state.customerId ?? ""}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "customerId",
+                      value: e.target.value || undefined,
+                    })
+                  }
                   disabled={loadingCustomers || !canEdit}
                   error={headerErrors.customerId}
                 >
                   <option value="" disabled>
-                    {loadingCustomers ? 'Loading customers…' : 'Select a customer'}
+                    {loadingCustomers
+                      ? "Loading customers…"
+                      : "Select a customer"}
                   </option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -386,21 +504,51 @@ const DocumentEdit: React.FC = () => {
                 canEdit={canEdit}
                 onSelectItem={(lineId, itemId) => {
                   const selected = findItemById(itemId);
-                  dispatch({ type: 'SET_ITEM_SELECTION', id: lineId, item: selected });
+                  dispatch({
+                    type: "SET_ITEM_SELECTION",
+                    id: lineId,
+                    item: selected,
+                  });
                 }}
-                onChange={(lineId, changes) => dispatch({ type: 'UPDATE_LINE_ITEM', id: lineId, changes })}
-                onRemove={(lineId) => dispatch({ type: 'REMOVE_LINE_ITEM', id: lineId })}
+                onChange={(lineId, changes) =>
+                  dispatch({ type: "UPDATE_LINE_ITEM", id: lineId, changes })
+                }
+                onRemove={(lineId) =>
+                  dispatch({ type: "REMOVE_LINE_ITEM", id: lineId })
+                }
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
-                <SecondaryButton onClick={() => dispatch({ type: 'ADD_LINE_ITEM' })} disabled={!canEdit}>Add Line Item</SecondaryButton>
-                <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: 12,
+                }}
+              >
+                <SecondaryButton
+                  onClick={() => dispatch({ type: "ADD_LINE_ITEM" })}
+                  disabled={!canEdit}
+                >
+                  Add Line Item
+                </SecondaryButton>
+                <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
                   <div>
-                    <div className="muted" style={{ fontSize: 12 }}>Subtotal</div>
-                    <div className="td-strong" style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Subtotal
+                    </div>
+                    <div className="td-strong" style={{ textAlign: "right" }}>
+                      {formatCurrency(subtotal)}
+                    </div>
                   </div>
                   <div>
-                    <div className="muted" style={{ fontSize: 12 }}>Total</div>
-                    <div className="td-strong" style={{ textAlign: 'right', fontSize: 18 }}>{formatCurrency(total)}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Total
+                    </div>
+                    <div
+                      className="td-strong"
+                      style={{ textAlign: "right", fontSize: 18 }}
+                    >
+                      {formatCurrency(total)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -411,7 +559,13 @@ const DocumentEdit: React.FC = () => {
                 label="Notes"
                 placeholder="Additional notes for the customer"
                 value={state.notes}
-                onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'notes', value: e.target.value })}
+                onChange={(e) =>
+                  dispatch({
+                    type: "SET_FIELD",
+                    field: "notes",
+                    value: e.target.value,
+                  })
+                }
                 disabled={!canEdit}
               />
             </div>
@@ -423,5 +577,3 @@ const DocumentEdit: React.FC = () => {
 };
 
 export default DocumentEdit;
-
-

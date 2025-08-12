@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { db } from '../firebase/config';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { db } from "../firebase/config";
 import {
   addDoc,
   collection,
@@ -16,7 +16,7 @@ import {
   where,
   Timestamp,
   type QueryConstraint,
-} from 'firebase/firestore';
+} from "firebase/firestore";
 
 export type FirestoreId = string;
 
@@ -31,22 +31,38 @@ export type UseFirestoreOptions<T extends BaseEntity, U> = {
   collectionName: string;
   userId?: string;
   orderByField?: keyof T & string;
-  orderDirection?: 'asc' | 'desc';
+  orderDirection?: "asc" | "desc";
   subscribe?: boolean;
   whereEqual?: Array<{ field: keyof T & string; value: unknown }>;
   select?: (doc: T) => U;
 };
 
-type WithoutMeta<T extends BaseEntity> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>;
+type WithoutMeta<T extends BaseEntity> = Omit<
+  T,
+  "id" | "createdAt" | "updatedAt"
+>;
 
-export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: UseFirestoreOptions<T, U>) {
-  const { collectionName, userId, orderByField, orderDirection = 'desc', subscribe = true, whereEqual, select } = options;
+export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(
+  options: UseFirestoreOptions<T, U>
+) {
+  const {
+    collectionName,
+    userId,
+    orderByField,
+    orderDirection = "desc",
+    subscribe = true,
+    whereEqual,
+    select,
+  } = options;
 
   const [items, setItems] = useState<U[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const collectionRef = useMemo(() => collection(db, collectionName), [collectionName]);
+  const collectionRef = useMemo(
+    () => collection(db, collectionName),
+    [collectionName]
+  );
 
   const selectRef = useRef<typeof select>(select);
   useEffect(() => {
@@ -55,19 +71,21 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
 
   const buildQuery = useCallback(() => {
     const constraints: QueryConstraint[] = [];
-    if (userId) constraints.push(where('userId', '==', userId));
+    if (userId) constraints.push(where("userId", "==", userId));
     if (whereEqual) {
-      for (const w of whereEqual) constraints.push(where(w.field, '==', w.value));
+      for (const w of whereEqual)
+        constraints.push(where(w.field, "==", w.value));
     }
     if (orderByField) constraints.push(orderBy(orderByField, orderDirection));
-    return constraints.length ? query(collectionRef, ...constraints) : query(collectionRef);
+    return constraints.length
+      ? query(collectionRef, ...constraints)
+      : query(collectionRef);
   }, [collectionRef, userId, whereEqual, orderByField, orderDirection]);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    // Avoid running queries that would violate security rules before we know the userId.
-    // Many collections are user-scoped; running an unscoped query can trigger permission errors.
+
     if (!userId && (!whereEqual || whereEqual.length === 0)) {
       setItems([]);
       setLoading(false);
@@ -77,24 +95,32 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
     if (!subscribe) {
       getDocs(q)
         .then((snap) => {
-          const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) } as T));
-          const mapped = (selectRef.current ? data.map((t) => selectRef.current!(t)) : (data as unknown as U[]));
+          const data = snap.docs.map(
+            (d) => ({ id: d.id, ...(d.data() as T) } as T)
+          );
+          const mapped = selectRef.current
+            ? data.map((t) => selectRef.current!(t))
+            : (data as unknown as U[]);
           setItems(mapped);
         })
-        .catch((e) => setError(e?.message ?? 'Failed to fetch'))
+        .catch((e) => setError(e?.message ?? "Failed to fetch"))
         .finally(() => setLoading(false));
       return;
     }
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) } as T));
-        const mapped = (selectRef.current ? data.map((t) => selectRef.current!(t)) : (data as unknown as U[]));
+        const data = snap.docs.map(
+          (d) => ({ id: d.id, ...(d.data() as T) } as T)
+        );
+        const mapped = selectRef.current
+          ? data.map((t) => selectRef.current!(t))
+          : (data as unknown as U[]);
         setItems(mapped);
         setLoading(false);
       },
       (e) => {
-        setError(e?.message ?? 'Failed to subscribe');
+        setError(e?.message ?? "Failed to subscribe");
         setLoading(false);
       }
     );
@@ -104,13 +130,16 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
   const add = useCallback(
     async (data: WithoutMeta<T> & { userId?: string }) => {
       const now = serverTimestamp();
-      const payload: Omit<T, 'id'> = {
+      const payload: Omit<T, "id"> = {
         ...(data as T),
         userId: (userId || data.userId) as string | undefined,
         createdAt: now as unknown as Timestamp,
         updatedAt: now as unknown as Timestamp,
       };
-      const ref = await addDoc(collectionRef, payload as unknown as Record<string, unknown>);
+      const ref = await addDoc(
+        collectionRef,
+        payload as unknown as Record<string, unknown>
+      );
       return ref.id as FirestoreId;
     },
     [collectionRef, userId]
@@ -119,7 +148,11 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
   const set = useCallback(
     async (id: FirestoreId, data: Partial<T>) => {
       const ref = doc(collectionRef, id);
-      await setDoc(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+      await setDoc(
+        ref,
+        { ...data, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
     },
     [collectionRef]
   );
@@ -146,7 +179,7 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
       const snap = await getDoc(ref);
       if (!snap.exists()) return null;
       const raw = { id: snap.id, ...(snap.data() as T) } as T;
-      return selectRef.current ? selectRef.current(raw) : ((raw as unknown) as U);
+      return selectRef.current ? selectRef.current(raw) : (raw as unknown as U);
     },
     [collectionRef]
   );
@@ -155,10 +188,20 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(options: 
     const q = buildQuery();
     const snap = await getDocs(q);
     const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) } as T));
-    return selectRef.current ? data.map((t) => selectRef.current!(t)) : ((data as unknown) as U[]);
+    return selectRef.current
+      ? data.map((t) => selectRef.current!(t))
+      : (data as unknown as U[]);
   }, [buildQuery]);
 
-  return { items, loading, error, add, set, update, remove, getById, getOnce } as const;
+  return {
+    items,
+    loading,
+    error,
+    add,
+    set,
+    update,
+    remove,
+    getById,
+    getOnce,
+  } as const;
 }
-
-
