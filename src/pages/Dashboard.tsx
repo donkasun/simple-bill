@@ -3,7 +3,7 @@ import PrimaryButton from "../components/core/PrimaryButton";
 import StyledTable from "../components/core/StyledTable";
 import ErrorBanner from "../components/core/ErrorBanner";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../auth/useAuth";
 import { useFirestore } from "../hooks/useFirestore";
 import type { DocumentEntity } from "../types/document";
 import { formatCurrency } from "../utils/currency";

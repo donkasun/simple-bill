@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import Logo from '../../assets/logo.svg';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../auth/useAuth';
 import { getFallbackAvatar } from '../../utils/fallbackAvatar';
 
 type HeaderProps = { title?: string };

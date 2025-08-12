@@ -5,7 +5,7 @@ import StyledTextarea from "../components/core/StyledTextarea";
 import LineItemsTable from "../components/documents/LineItemsTable";
 import PrimaryButton from "../components/core/PrimaryButton";
 import SecondaryButton from "../components/core/SecondaryButton";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../auth/useAuth";
 import { useFirestore } from "../hooks/useFirestore";
 import { useNavigate } from "react-router-dom";
 import { serverTimestamp } from "firebase/firestore";

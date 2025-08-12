@@ -6,7 +6,7 @@ import LineItemsTable from "../components/documents/LineItemsTable";
 import PrimaryButton from "../components/core/PrimaryButton";
 import SecondaryButton from "../components/core/SecondaryButton";
 import ErrorBanner from "../components/core/ErrorBanner";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../auth/useAuth";
 import { useFirestore } from "../hooks/useFirestore";
 import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, serverTimestamp } from "firebase/firestore";

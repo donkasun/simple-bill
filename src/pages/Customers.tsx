@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import StyledTable from "../components/core/StyledTable";
 import PrimaryButton from "../components/core/PrimaryButton";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../auth/useAuth";
 import { useFirestore } from "../hooks/useFirestore";
 import CustomerModal, { type CustomerFormData } from "../components/customers/CustomerModal";
 import type { Customer } from "../types/customer";

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../auth/useAuth';
 import PrimaryButton from '../components/core/PrimaryButton';
 import { useNavigate } from 'react-router-dom';
 
