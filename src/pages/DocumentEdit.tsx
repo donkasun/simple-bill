@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useReducer, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import StyledDropdown from '../components/core/StyledDropdown';
 import StyledInput from '../components/core/StyledInput';
 import StyledTextarea from '../components/core/StyledTextarea';
@@ -27,20 +27,9 @@ type LineItem = FormLineItem;
 
 // Use shared Customer and Item types
 
-type SetFieldAction =
-  | { type: 'SET_FIELD'; field: 'documentType'; value: DocumentType }
-  | { type: 'SET_FIELD'; field: 'documentNumber'; value: string }
-  | { type: 'SET_FIELD'; field: 'date'; value: string }
-  | { type: 'SET_FIELD'; field: 'customerId'; value: string | undefined }
-  | { type: 'SET_FIELD'; field: 'notes'; value: string | undefined };
+// SetFieldAction handled by useDocumentForm
 
-type Action =
-  | SetFieldAction
-  | { type: 'ADD_LINE_ITEM' }
-  | { type: 'REMOVE_LINE_ITEM'; id: string }
-  | { type: 'UPDATE_LINE_ITEM'; id: string; changes: Partial<LineItem> }
-  | { type: 'SET_ITEM_SELECTION'; id: string; item?: Item }
-  | { type: 'SET_ALL'; value: DocumentFormState };
+// Action type handled by useDocumentForm
 
 function createEmptyLineItem(): LineItem {
   return {
@@ -55,62 +44,10 @@ function createEmptyLineItem(): LineItem {
 
 import { computeAmount, computeSubtotal } from '../utils/documentMath';
 
-function reducer(state: DocumentFormState, action: Action): DocumentFormState {
-  switch (action.type) {
-    case 'SET_FIELD': {
-      return { ...state, [action.field]: action.value } as DocumentFormState;
-    }
-    case 'ADD_LINE_ITEM': {
-      return { ...state, lineItems: [...state.lineItems, createEmptyLineItem()] };
-    }
-    case 'REMOVE_LINE_ITEM': {
-      return { ...state, lineItems: state.lineItems.filter((li) => li.id !== action.id) };
-    }
-    case 'UPDATE_LINE_ITEM': {
-      return {
-        ...state,
-        lineItems: state.lineItems.map((li) =>
-          li.id === action.id
-            ? {
-                ...li,
-                ...action.changes,
-                amount: computeAmount(
-                  action.changes.unitPrice ?? li.unitPrice,
-                  action.changes.quantity ?? li.quantity
-                ),
-              }
-            : li
-        ),
-      };
-    }
-    case 'SET_ITEM_SELECTION': {
-      return {
-        ...state,
-        lineItems: state.lineItems.map((li) =>
-          li.id === action.id
-            ? action.item
-              ? {
-                  ...li,
-                  itemId: action.item.id,
-                  name: action.item.name,
-                  description: action.item.description ?? li.description,
-                  unitPrice: action.item.unitPrice ?? 0,
-                  amount: computeAmount(action.item.unitPrice ?? 0, li.quantity),
-                }
-              : { ...li, itemId: undefined }
-            : li
-        ),
-      };
-    }
-    case 'SET_ALL': {
-      return action.value;
-    }
-    default:
-      return state;
-  }
-}
+// reducer moved to useDocumentForm
 
 import { todayIso } from '../utils/date';
+import { useDocumentForm } from '../hooks/useDocumentForm';
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -134,18 +71,19 @@ const DocumentEdit: React.FC = () => {
     subscribe: false,
   });
 
-  const [state, dispatch] = useReducer(reducer, {
+  const [documentStatus, setDocumentStatus] = useState<DocumentStatus>('draft');
+
+  const { state, dispatch } = useDocumentForm({ initial: {
     documentType: 'invoice',
     documentNumber: '',
     date: todayIso(),
     customerId: undefined,
     notes: '',
     lineItems: [createEmptyLineItem()],
-  });
+  }, customers, itemCatalog, canEdit: documentStatus === 'draft' });
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [documentStatus, setDocumentStatus] = useState<DocumentStatus>('draft');
 
   useEffect(() => {
     let mounted = true;

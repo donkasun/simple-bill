@@ -47,7 +47,7 @@ const DocumentCreation: React.FC = () => {
     subscribe: false,
   });
 
-  const { state, dispatch } = useDocumentForm(getDefaultInitialState());
+  const { state, dispatch, addLine, removeLine, changeLine, selectItemById } = useDocumentForm({ initial: getDefaultInitialState(), customers, itemCatalog, canEdit: true });
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
@@ -59,7 +59,7 @@ const DocumentCreation: React.FC = () => {
 
   const total = subtotal; // Placeholder for future tax/discount logic
 
-  const handleAddRow = () => dispatch({ type: 'ADD_LINE_ITEM' });
+  const handleAddRow = () => addLine();
   // rows managed via LineItemsTable callbacks
 
   const [saving, setSaving] = useState(false);
@@ -279,12 +279,9 @@ const DocumentCreation: React.FC = () => {
             catalog={itemCatalog}
             loadingCatalog={loadingItems}
             canEdit
-            onSelectItem={(lineId, itemId) => {
-              const selected = itemCatalog.find((i) => i.id === itemId);
-              dispatch({ type: 'SET_ITEM_SELECTION', id: lineId, item: selected });
-            }}
-            onChange={(lineId, changes) => dispatch({ type: 'UPDATE_LINE_ITEM', id: lineId, changes })}
-            onRemove={(lineId) => dispatch({ type: 'REMOVE_LINE_ITEM', id: lineId })}
+            onSelectItem={selectItemById}
+            onChange={changeLine}
+            onRemove={removeLine}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
             <SecondaryButton onClick={handleAddRow}>Add Line Item</SecondaryButton>

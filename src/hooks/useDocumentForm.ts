@@ -1,6 +1,7 @@
-import { useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import type { DocumentFormState, FormLineItem, DocumentType } from '../types/document';
 import type { Item } from '../types/item';
+import type { Customer } from '../types/customer';
 import { todayIso } from '../utils/date';
 import { computeAmount } from '../utils/documentMath';
 
@@ -110,9 +111,49 @@ function reducer(state: DocumentFormState, action: FormAction): DocumentFormStat
   }
 }
 
-export function useDocumentForm(initial?: DocumentFormState) {
-  const [state, dispatch] = useReducer(reducer, initial ?? getDefaultInitialState());
-  return { state, dispatch } as const;
+export type UseDocumentFormOptions = {
+  initial?: DocumentFormState;
+  customers?: Customer[];
+  itemCatalog?: Item[];
+  canEdit?: boolean;
+};
+
+function isMutatingAction(action: FormAction): boolean {
+  return action.type !== 'SET_ALL';
+}
+
+export function useDocumentForm(options?: UseDocumentFormOptions) {
+  const { initial, customers, itemCatalog, canEdit = true } = options ?? {};
+  const [state, rawDispatch] = useReducer(reducer, initial ?? getDefaultInitialState());
+
+  const dispatch = useCallback(
+    (action: FormAction) => {
+      if (!canEdit && isMutatingAction(action)) return;
+      rawDispatch(action);
+    },
+    [canEdit]
+  );
+
+  useEffect(() => {
+    if (!canEdit) return;
+    if (!state.customerId && customers && customers.length > 0) {
+      rawDispatch({ type: 'SET_FIELD', field: 'customerId', value: customers[0].id });
+    }
+  }, [customers, state.customerId, canEdit]);
+
+  const addLine = useCallback(() => dispatch({ type: 'ADD_LINE_ITEM' }), [dispatch]);
+  const removeLine = useCallback((id: string) => dispatch({ type: 'REMOVE_LINE_ITEM', id }), [dispatch]);
+  const changeLine = useCallback((id: string, changes: Partial<FormLineItem>) => dispatch({ type: 'UPDATE_LINE_ITEM', id, changes }), [dispatch]);
+  const setField = useCallback(<K extends keyof DocumentFormState>(field: K, value: DocumentFormState[K]) => dispatch({ type: 'SET_FIELD', field: field as any, value: value as any }), [dispatch]);
+  const selectItemById = useCallback(
+    (lineId: string, itemId?: string) => {
+      const selected = itemId ? itemCatalog?.find((i) => i.id === itemId) : undefined;
+      dispatch({ type: 'SET_ITEM_SELECTION', id: lineId, item: selected });
+    },
+    [dispatch, itemCatalog]
+  );
+
+  return { state, dispatch, addLine, removeLine, changeLine, setField, selectItemById } as const;
 }
 
 export function validateDraft(s: DocumentFormState): ValidationResult {
