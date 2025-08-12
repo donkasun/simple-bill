@@ -502,6 +502,7 @@ const DocumentEdit: React.FC = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   marginTop: 12,
+                  padding: "0 16px",
                 }}
               >
                 <SecondaryButton

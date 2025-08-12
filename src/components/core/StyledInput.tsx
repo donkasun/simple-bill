@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import rough from 'roughjs/bundled/rough.esm.js';
+import React from 'react';
+import FieldWrapper from './FieldWrapper';
 
 type StyledInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -7,69 +7,10 @@ type StyledInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 };
 
 const StyledInput: React.FC<StyledInputProps> = ({ label, style, error, required, id, ...props }) => {
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const errorId = useMemo(() => `input-error-${Math.random().toString(36).slice(2)}`, []);
-
-  useEffect(() => {
-    const wrapper = wrapperRef.current;
-    const canvas = canvasRef.current;
-    if (!wrapper || !canvas) return;
-    const draw = () => {
-      const rect = wrapper.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(1, Math.round(rect.width));
-      const h = Math.max(1, Math.round(rect.height));
-      canvas.width = Math.max(1, Math.round(w * dpr));
-      canvas.height = Math.max(1, Math.round(h * dpr));
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, w, h);
-      const rc = rough.canvas(canvas);
-      rc.rectangle(0.5, 0.5, w - 1, h - 1, {
-        roughness: 1,
-        stroke: error ? 'rgba(220, 20, 60, 0.85)' : 'rgba(0,0,0,0.25)',
-        strokeWidth: 1,
-      });
-    };
-    draw();
-    const ro = new ResizeObserver(draw);
-    ro.observe(wrapper);
-    window.addEventListener('resize', draw);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', draw);
-    };
-  }, [error]);
-
   return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label && (
-        <span style={{ fontSize: 14 }}>
-          {label}
-          {required ? <span aria-hidden="true" style={{ color: 'crimson' }}>&nbsp;*</span> : null}
-        </span>
-      )}
-      <div ref={wrapperRef} style={{ position: 'relative', ...style }}>
-        <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
-        <input
-          id={id}
-          ref={inputRef}
-          aria-invalid={!!error}
-          aria-describedby={error ? errorId : undefined}
-          required={required}
-          {...props}
-          style={{ position: 'relative', zIndex: 1, width: 'calc(100% - 28px)', padding: '10px 12px', border: 'none', outline: 'none', background: 'transparent' }}
-        />
-      </div>
-      {error && (
-        <div id={errorId} role="alert" style={{ color: 'crimson', fontSize: 13, marginTop: 6 }}>{error}</div>
-      )}
-    </label>
+    <FieldWrapper label={label} required={required} error={error} style={style}>
+      <input id={id} {...props} />
+    </FieldWrapper>
   );
 };
 
