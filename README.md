@@ -80,8 +80,14 @@ npm run dev
   - Address supports multiple lines
   - Email is optional; validated if provided
   - `showEmail` boolean to control whether email appears on documents
-- Items (scaffolded)
-- Dashboard (static placeholder)
+- Items
+  - Add/Edit in modal
+  - Unit price with currency formatting
+- Documents (Invoices/Quotations)
+  - Create, edit, validate draft/finalize
+  - Auto document number allocation
+  - PDF export (pdf-lib) with dynamic import
+- Dashboard: list and download recent documents
 
 ## Design Language
 
@@ -95,9 +101,13 @@ npm run dev
 
 - `src/components/core/*` – Reusable UI components
 - `src/components/customers/CustomerModal.tsx` – Add/Edit customer modal
+- `src/components/items/ItemModal.tsx` – Add/Edit item modal
+- `src/components/documents/LineItemsTable.tsx` – Line items editor
 - `src/auth/*` – Google Auth provider and hook
 - `src/hooks/useFirestore.ts` – Generic Firestore CRUD hook
-- `src/pages/*` – Route pages (Dashboard, Customers, Items)
+- `src/hooks/useDocumentForm.ts` – Document form state/validation utilities
+- `src/types/*` – Shared models (`@models/firestore`, `document`, `item`, `customer`)
+- `src/pages/*` – Route pages (Dashboard, Customers, Items, DocumentCreation, DocumentEdit)
 
 ## Roadmap
 
