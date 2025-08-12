@@ -1,5 +1,4 @@
 import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
 
 export type AutoNumberDocumentType = 'invoice' | 'quotation';
 
@@ -14,6 +13,7 @@ export async function allocateNextDocumentNumber(
   type: AutoNumberDocumentType,
   date: string
 ): Promise<string> {
+  const { db } = await import('../firebase/config');
   const year = String(date ?? '').slice(0, 4) || String(new Date().getFullYear());
   const counterId = `${userId}_${type}_${year}`;
   const counterRef = doc(db, 'docCounters', counterId);

@@ -7,8 +7,7 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
-    }
-    ,
+    },
     {
       "collectionGroup": "items",
       "queryScope": "COLLECTION",

@@ -1,8 +1,8 @@
-import type { BaseEntity } from '../hooks/useFirestore';
-import type { Timestamp } from 'firebase/firestore';
+import type { BaseEntity } from "@models/firestore";
+import type { Timestamp } from "firebase/firestore";
 
-export type DocumentType = 'invoice' | 'quotation';
-export type DocumentStatus = 'draft' | 'finalized';
+export type DocumentType = "invoice" | "quotation";
+export type DocumentStatus = "draft" | "finalized";
 
 export type DocumentLineItem = {
   itemId?: string;
@@ -38,5 +38,3 @@ export type DocumentFormState = {
   notes?: string;
   lineItems: FormLineItem[];
 };
-
-

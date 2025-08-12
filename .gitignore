@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .env
 temp_docs/*
+
+# Local notes
+/temp_docs/
