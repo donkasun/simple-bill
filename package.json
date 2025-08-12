@@ -2,6 +2,16 @@
   "name": "simple-bill-temp",
   "private": true,
   "version": "0.0.0",
+  "license": "MIT",
+  "author": "Don Kasun Gallage",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/donkasun/simple-bill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/donkasun/simple-bill/issues"
+  },
+  "homepage": "https://github.com/donkasun/simple-bill#readme",
   "type": "module",
   "scripts": {
     "dev": "vite",
