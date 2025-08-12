@@ -42,7 +42,7 @@ function createEmptyLineItem(): LineItem {
   };
 }
 
-import { computeAmount, computeSubtotal } from '../utils/documentMath';
+import { computeAmount } from '../utils/documentMath';
 
 // reducer moved to useDocumentForm
 
@@ -73,7 +73,7 @@ const DocumentEdit: React.FC = () => {
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>('draft');
 
-  const { state, dispatch } = useDocumentForm({ initial: {
+  const { state, dispatch, subtotal, total } = useDocumentForm({ initial: {
     documentType: 'invoice',
     documentNumber: '',
     date: todayIso(),
@@ -144,9 +144,7 @@ const DocumentEdit: React.FC = () => {
     }
   }, [customers, state.customerId]);
 
-  const subtotal = useMemo(() => computeSubtotal(state.lineItems), [state.lineItems]);
-
-  const total = subtotal;
+  // subtotal/total provided by useDocumentForm
 
   const findItemById = (itemId?: string) => itemCatalog.find((i) => i.id === itemId);
 

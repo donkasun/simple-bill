@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import type { DocumentFormState, FormLineItem, DocumentType } from '../types/document';
 import type { Item } from '../types/item';
 import type { Customer } from '../types/customer';
 import { todayIso } from '../utils/date';
-import { computeAmount } from '../utils/documentMath';
+import { computeAmount, computeSubtotal } from '../utils/documentMath';
 
 export type HeaderErrors = {
   documentType?: string;
@@ -111,11 +111,14 @@ function reducer(state: DocumentFormState, action: FormAction): DocumentFormStat
   }
 }
 
+export type TotalsCalculator = (state: DocumentFormState) => { subtotal: number; total: number };
+
 export type UseDocumentFormOptions = {
   initial?: DocumentFormState;
   customers?: Customer[];
   itemCatalog?: Item[];
   canEdit?: boolean;
+  totalsCalculator?: TotalsCalculator;
 };
 
 function isMutatingAction(action: FormAction): boolean {
@@ -123,7 +126,7 @@ function isMutatingAction(action: FormAction): boolean {
 }
 
 export function useDocumentForm(options?: UseDocumentFormOptions) {
-  const { initial, customers, itemCatalog, canEdit = true } = options ?? {};
+  const { initial, customers, itemCatalog, canEdit = true, totalsCalculator } = options ?? {};
   const [state, rawDispatch] = useReducer(reducer, initial ?? getDefaultInitialState());
 
   const dispatch = useCallback(
@@ -153,7 +156,13 @@ export function useDocumentForm(options?: UseDocumentFormOptions) {
     [dispatch, itemCatalog]
   );
 
-  return { state, dispatch, addLine, removeLine, changeLine, setField, selectItemById } as const;
+  const totals = useMemo(() => {
+    if (typeof totalsCalculator === 'function') return totalsCalculator(state);
+    const sub = computeSubtotal(state.lineItems);
+    return { subtotal: sub, total: sub };
+  }, [state, totalsCalculator]);
+
+  return { state, dispatch, addLine, removeLine, changeLine, setField, selectItemById, subtotal: totals.subtotal, total: totals.total } as const;
 }
 
 export function validateDraft(s: DocumentFormState): ValidationResult {

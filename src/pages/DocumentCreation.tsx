@@ -15,7 +15,7 @@ import { formatCurrency } from '../utils/currency';
 import type { DocumentEntity, DocumentType } from '../types/document';
 import type { Customer } from '../types/customer';
 import type { Item } from '../types/item';
-import { computeSubtotal } from '../utils/documentMath';
+// totals handled by useDocumentForm
 // date helper now provided via useDocumentForm default state
 import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename, getDocNumberPlaceholder } from '../utils/documents';
 import { downloadBlob } from '../utils/download';
@@ -47,7 +47,7 @@ const DocumentCreation: React.FC = () => {
     subscribe: false,
   });
 
-  const { state, dispatch, addLine, removeLine, changeLine, selectItemById } = useDocumentForm({ initial: getDefaultInitialState(), customers, itemCatalog, canEdit: true });
+  const { state, dispatch, addLine, removeLine, changeLine, selectItemById, subtotal, total } = useDocumentForm({ initial: getDefaultInitialState(), customers, itemCatalog, canEdit: true });
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
@@ -55,9 +55,7 @@ const DocumentCreation: React.FC = () => {
     }
   }, [customers, state.customerId]);
 
-  const subtotal = useMemo(() => computeSubtotal(state.lineItems), [state.lineItems]);
-
-  const total = subtotal; // Placeholder for future tax/discount logic
+  // subtotal/total provided by useDocumentForm
 
   const handleAddRow = () => addLine();
   // rows managed via LineItemsTable callbacks
