@@ -21,6 +21,7 @@ import {
   getDocNumberPlaceholder,
 } from "../utils/documents";
 import { downloadBlob } from "../utils/download";
+import ErrorBanner from "../components/core/ErrorBanner";
 import {
   useDocumentForm,
   type LineItemFieldErrors,
@@ -263,16 +264,8 @@ const DocumentCreation: React.FC = () => {
           </div>
         </div>
 
-        {saveError && (
-          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
-            {saveError}
-          </div>
-        )}
-        {finalizeError && (
-          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
-            {finalizeError}
-          </div>
-        )}
+        {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
+        {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
 
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
           <div

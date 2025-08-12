@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import PrimaryButton from "../components/core/PrimaryButton";
 import StyledTable from "../components/core/StyledTable";
+import ErrorBanner from "../components/core/ErrorBanner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useFirestore } from "../hooks/useFirestore";
@@ -66,11 +67,7 @@ const Dashboard: React.FC = () => {
 
         <div>
           {loading && <div>Loading documents…</div>}
-          {error && (
-            <div role="alert" style={{ color: "crimson" }}>
-              {error}
-            </div>
-          )}
+          {error && <ErrorBanner>{error}</ErrorBanner>}
           {!loading && !error && (
             <StyledTable>
               <thead>

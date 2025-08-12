@@ -5,6 +5,7 @@ import StyledTextarea from "../components/core/StyledTextarea";
 import LineItemsTable from "../components/documents/LineItemsTable";
 import PrimaryButton from "../components/core/PrimaryButton";
 import SecondaryButton from "../components/core/SecondaryButton";
+import ErrorBanner from "../components/core/ErrorBanner";
 import { useAuth } from "../hooks/useAuth";
 import { useFirestore } from "../hooks/useFirestore";
 import { useNavigate, useParams } from "react-router-dom";
@@ -377,35 +378,14 @@ const DocumentEdit: React.FC = () => {
         </div>
 
         {initializing && <div>Loading document…</div>}
-        {loadError && (
-          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
-            {loadError}
-          </div>
-        )}
+        {loadError && <ErrorBanner>{loadError}</ErrorBanner>}
         {!canEdit && !initializing && !loadError && (
-          <div
-            role="alert"
-            style={{
-              color: "#8a6d3b",
-              background: "#fcf8e3",
-              padding: 12,
-              borderRadius: 6,
-              marginBottom: 12,
-            }}
-          >
+          <ErrorBanner variant="warning">
             This document has been finalized and cannot be edited.
-          </div>
+          </ErrorBanner>
         )}
-        {saveError && (
-          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
-            {saveError}
-          </div>
-        )}
-        {finalizeError && (
-          <div role="alert" style={{ color: "crimson", marginBottom: 12 }}>
-            {finalizeError}
-          </div>
-        )}
+        {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
+        {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
 
         {!initializing && !loadError && (
           <>
