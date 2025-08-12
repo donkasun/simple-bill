@@ -38,10 +38,14 @@ const Header: React.FC<HeaderProps> = () => {
   return (
     <header className="top-header">
       <div className="top-header__inner">
-        <div className="brand-group">
+        <NavLink
+          to="/dashboard"
+          className="brand-group"
+          aria-label="Go to dashboard"
+        >
           <img src={Logo} alt="SimpleBill logo" className="brand-icon" />
           <h1 className="brand-title">SimpleBill</h1>
-        </div>
+        </NavLink>
 
         <nav className="nav-links">
           <NavLink to="/dashboard" className={navClass} end>
@@ -93,8 +97,26 @@ const Header: React.FC<HeaderProps> = () => {
                 <div className="menu-user">{user?.displayName ?? "User"}</div>
                 {user?.email && <div className="menu-email">{user.email}</div>}
               </div>
+              <div className="menu-links">
+                <NavLink
+                  to="/profile"
+                  className="menu-link"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Profile
+                </NavLink>
+                <NavLink
+                  to="/settings"
+                  className="menu-link"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Settings
+                </NavLink>
+              </div>
               <button
-                className="menu-item"
+                className="menu-item menu-item--center"
                 role="menuitem"
                 onClick={handleSignOut}
               >
