@@ -61,8 +61,8 @@ firebase deploy --only firestore:rules,firestore:indexes
 Files used:
 
 - `firebase.json` – Firestore config (database, region, files)
-- `firestore.rules` – Secure, per‑user access rules
-- `firestore.indexes.json` – Composite index for `customers` (userId ASC, createdAt DESC)
+- `config/firebase/firestore.rules` – Secure, per‑user access rules
+- `config/firebase/firestore.indexes.json` – Composite index for `customers` (userId ASC, createdAt DESC)
 
 ## Development
 
@@ -107,7 +107,7 @@ npm run dev
 
 ## Contributing
 
-Contributions are welcome! See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+Contributions are welcome! See [CONTRIBUTING](.github/CONTRIBUTING.md) and [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
 ## License
 
