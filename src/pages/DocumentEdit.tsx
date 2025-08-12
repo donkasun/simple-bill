@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import StyledDropdown from '../components/core/StyledDropdown';
 import StyledInput from '../components/core/StyledInput';
 import StyledTextarea from '../components/core/StyledTextarea';
-import StyledTable from '../components/core/StyledTable';
+import LineItemsTable from '../components/documents/LineItemsTable';
 import PrimaryButton from '../components/core/PrimaryButton';
 import SecondaryButton from '../components/core/SecondaryButton';
 import { useAuth } from '../hooks/useAuth';
@@ -462,108 +462,19 @@ const DocumentEdit: React.FC = () => {
             </div>
 
             <div>
-              <StyledTable>
-                <thead>
-                  <tr>
-                    <th style={{ width: '22%' }}>Item</th>
-                    <th>Description</th>
-                    <th className="td-right" style={{ width: 140 }}>Unit Price</th>
-                    <th className="td-right" style={{ width: 120 }}>Qty</th>
-                    <th className="td-right" style={{ width: 140 }}>Amount</th>
-                    <th className="td-right" style={{ width: 90 }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.lineItems.map((li) => (
-                    <tr key={li.id}>
-                      <td>
-                        <StyledDropdown
-                          value={li.itemId ?? ''}
-                          onChange={(e) => {
-                            const selected = findItemById(e.target.value);
-                            dispatch({ type: 'SET_ITEM_SELECTION', id: li.id, item: selected });
-                          }}
-                          disabled={loadingItems || !canEdit}
-                        >
-                          <option value="">{loadingItems ? 'Loading…' : 'Select item'}</option>
-                          {itemCatalog.map((it) => (
-                            <option key={it.id} value={it.id}>
-                              {it.name}
-                            </option>
-                          ))}
-                        </StyledDropdown>
-                        <StyledInput
-                          placeholder="Custom item name"
-                          id={`li-${li.id}-name`}
-                          value={li.name}
-                          onChange={(e) => dispatch({ type: 'UPDATE_LINE_ITEM', id: li.id, changes: { name: e.target.value } })}
-                          style={{ marginTop: 8 }}
-                          disabled={!canEdit}
-                          error={itemErrors[li.id]?.name}
-                        />
-                      </td>
-                      <td>
-                        <StyledTextarea
-                          placeholder="Description"
-                          value={li.description}
-                          onChange={(e) => dispatch({ type: 'UPDATE_LINE_ITEM', id: li.id, changes: { description: e.target.value } })}
-                          disabled={!canEdit}
-                        />
-                      </td>
-                      <td className="td-right">
-                        <StyledInput
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step={0.01}
-                          id={`li-${li.id}-unitPrice`}
-                          value={Number.isFinite(li.unitPrice) ? String(li.unitPrice) : ''}
-                          onChange={(e) =>
-                            dispatch({
-                              type: 'UPDATE_LINE_ITEM',
-                              id: li.id,
-                              changes: { unitPrice: parseFloat(e.target.value || '0') },
-                            })
-                          }
-                          disabled={!canEdit}
-                          error={itemErrors[li.id]?.unitPrice}
-                        />
-                      </td>
-                      <td className="td-right">
-                        <StyledInput
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          step={1}
-                          id={`li-${li.id}-quantity`}
-                          value={Number.isFinite(li.quantity) ? String(li.quantity) : ''}
-                          onChange={(e) =>
-                            dispatch({
-                              type: 'UPDATE_LINE_ITEM',
-                              id: li.id,
-                              changes: { quantity: parseInt(e.target.value || '0', 10) },
-                            })
-                          }
-                          disabled={!canEdit}
-                          error={itemErrors[li.id]?.quantity}
-                        />
-                      </td>
-                      <td className="td-right">
-                        <span className="td-strong">{formatCurrency(li.amount)}</span>
-                      </td>
-                      <td className="td-right">
-                        <button
-                          className="link-btn link-danger"
-                          onClick={() => dispatch({ type: 'REMOVE_LINE_ITEM', id: li.id })}
-                          disabled={state.lineItems.length <= 1 || !canEdit}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </StyledTable>
+              <LineItemsTable
+                items={state.lineItems}
+                itemErrors={itemErrors}
+                catalog={itemCatalog}
+                loadingCatalog={loadingItems}
+                canEdit={canEdit}
+                onSelectItem={(lineId, itemId) => {
+                  const selected = findItemById(itemId);
+                  dispatch({ type: 'SET_ITEM_SELECTION', id: lineId, item: selected });
+                }}
+                onChange={(lineId, changes) => dispatch({ type: 'UPDATE_LINE_ITEM', id: lineId, changes })}
+                onRemove={(lineId) => dispatch({ type: 'REMOVE_LINE_ITEM', id: lineId })}
+              />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
                 <SecondaryButton onClick={() => dispatch({ type: 'ADD_LINE_ITEM' })} disabled={!canEdit}>Add Line Item</SecondaryButton>
                 <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>

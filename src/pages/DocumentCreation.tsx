@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useReducer, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import StyledDropdown from '../components/core/StyledDropdown';
 import StyledInput from '../components/core/StyledInput';
 import StyledTextarea from '../components/core/StyledTextarea';
-import StyledTable from '../components/core/StyledTable';
+import LineItemsTable from '../components/documents/LineItemsTable';
 import PrimaryButton from '../components/core/PrimaryButton';
 import SecondaryButton from '../components/core/SecondaryButton';
 import { useAuth } from '../hooks/useAuth';
@@ -12,108 +12,17 @@ import { generateDocumentPdf } from '../utils/pdf';
 import { serverTimestamp } from 'firebase/firestore';
 import { allocateNextDocumentNumber } from '../utils/docNumber';
 import { formatCurrency } from '../utils/currency';
-import type { DocumentEntity, DocumentFormState, FormLineItem, DocumentType } from '../types/document';
+import type { DocumentEntity, DocumentType } from '../types/document';
 import type { Customer } from '../types/customer';
 import type { Item } from '../types/item';
-import { computeAmount, computeSubtotal } from '../utils/documentMath';
-import { todayIso } from '../utils/date';
+import { computeSubtotal } from '../utils/documentMath';
+// date helper now provided via useDocumentForm default state
 import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename, getDocNumberPlaceholder } from '../utils/documents';
 import { downloadBlob } from '../utils/download';
 
-type LineItem = FormLineItem;
+import { useDocumentForm, type LineItemFieldErrors, type HeaderErrors, type ValidationResult, getDefaultInitialState, validateDraft, validateFinalize } from '../hooks/useDocumentForm';
 
-type HeaderErrors = {
-  documentType?: string;
-  date?: string;
-  customerId?: string;
-};
-
-type LineItemFieldErrors = {
-  name?: string;
-  unitPrice?: string;
-  quantity?: string;
-};
-
-type ValidationResult = {
-  header: HeaderErrors;
-  items: Record<string, LineItemFieldErrors>;
-};
-
-// DocumentEntity comes from types
-
-type SetFieldAction =
-  | { type: 'SET_FIELD'; field: 'documentType'; value: DocumentType }
-  | { type: 'SET_FIELD'; field: 'documentNumber'; value: string }
-  | { type: 'SET_FIELD'; field: 'date'; value: string }
-  | { type: 'SET_FIELD'; field: 'customerId'; value: string | undefined }
-  | { type: 'SET_FIELD'; field: 'notes'; value: string | undefined };
-
-type Action =
-  | SetFieldAction
-  | { type: 'ADD_LINE_ITEM' }
-  | { type: 'REMOVE_LINE_ITEM'; id: string }
-  | { type: 'UPDATE_LINE_ITEM'; id: string; changes: Partial<LineItem> }
-  | { type: 'SET_ITEM_SELECTION'; id: string; item?: Item };
-
-function createEmptyLineItem(): LineItem {
-  return {
-    id: crypto.randomUUID(),
-    name: '',
-    description: '',
-    unitPrice: 0,
-    quantity: 1,
-    amount: 0,
-  };
-}
-
-function reducer(state: DocumentFormState, action: Action): DocumentFormState {
-  switch (action.type) {
-    case 'SET_FIELD': {
-      return { ...state, [action.field]: action.value } as DocumentFormState;
-    }
-    case 'ADD_LINE_ITEM': {
-      return { ...state, lineItems: [...state.lineItems, createEmptyLineItem()] };
-    }
-    case 'REMOVE_LINE_ITEM': {
-      return { ...state, lineItems: state.lineItems.filter((li) => li.id !== action.id) };
-    }
-    case 'UPDATE_LINE_ITEM': {
-      return {
-        ...state,
-        lineItems: state.lineItems.map((li) =>
-          li.id === action.id
-            ? {
-                ...li,
-                ...action.changes,
-                amount: computeAmount(action.changes.unitPrice ?? li.unitPrice, action.changes.quantity ?? li.quantity),
-              }
-            : li
-        ),
-      };
-    }
-    case 'SET_ITEM_SELECTION': {
-      return {
-        ...state,
-        lineItems: state.lineItems.map((li) =>
-          li.id === action.id
-            ? action.item
-              ? {
-                  ...li,
-                  itemId: action.item.id,
-                  name: action.item.name,
-                  description: action.item.description ?? li.description,
-                  unitPrice: action.item.unitPrice ?? 0,
-                  amount: computeAmount(action.item.unitPrice ?? 0, li.quantity),
-                }
-              : { ...li, itemId: undefined }
-            : li
-        ),
-      };
-    }
-    default:
-      return state;
-  }
-}
+// createEmptyLineItem not used directly here
 
 // computeAmount and todayIso imported from utils
 
@@ -138,14 +47,7 @@ const DocumentCreation: React.FC = () => {
     subscribe: false,
   });
 
-  const [state, dispatch] = useReducer(reducer, {
-    documentType: 'invoice',
-    documentNumber: '',
-    date: todayIso(),
-    customerId: undefined,
-    notes: '',
-    lineItems: [createEmptyLineItem()],
-  });
+  const { state, dispatch } = useDocumentForm(getDefaultInitialState());
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
@@ -158,9 +60,7 @@ const DocumentCreation: React.FC = () => {
   const total = subtotal; // Placeholder for future tax/discount logic
 
   const handleAddRow = () => dispatch({ type: 'ADD_LINE_ITEM' });
-  const handleRemoveRow = (id: string) => dispatch({ type: 'REMOVE_LINE_ITEM', id });
-
-  const findItemById = (id?: string) => itemCatalog.find((i) => i.id === id);
+  // rows managed via LineItemsTable callbacks
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -169,41 +69,7 @@ const DocumentCreation: React.FC = () => {
   const [headerErrors, setHeaderErrors] = useState<HeaderErrors>({});
   const [itemErrors, setItemErrors] = useState<Record<string, LineItemFieldErrors>>({});
 
-  function validateDraft(s: DocumentFormState): ValidationResult {
-    const header: HeaderErrors = {};
-    const items: Record<string, LineItemFieldErrors> = {};
-    if (!s.documentType) header.documentType = 'Document type is required';
-    if (!s.date?.trim()) header.date = 'Date is required';
-    if (!Array.isArray(s.lineItems) || s.lineItems.length === 0) {
-      // Ensure at least one row; UI always keeps one, but guard anyway
-    }
-    for (const li of s.lineItems) {
-      const err: LineItemFieldErrors = {};
-      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
-      if (!Number.isFinite(li.quantity) || li.quantity < 0) err.quantity = 'Quantity must be ≥ 0';
-      if (Object.keys(err).length > 0) items[li.id] = err;
-    }
-    return { header, items };
-  }
-
-  function validateFinalize(s: DocumentFormState): ValidationResult {
-    const header: HeaderErrors = {};
-    const items: Record<string, LineItemFieldErrors> = {};
-    if (!s.documentType) header.documentType = 'Document type is required';
-    if (!s.date?.trim()) header.date = 'Date is required';
-    if (!s.customerId) header.customerId = 'Customer is required to finalize';
-    if (!Array.isArray(s.lineItems) || s.lineItems.length === 0) {
-      // UI enforces at least one line item; keep branch for clarity without empty block
-    }
-    for (const li of s.lineItems) {
-      const err: LineItemFieldErrors = {};
-      if (!li.name?.trim()) err.name = 'Item name is required';
-      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
-      if (!Number.isFinite(li.quantity) || li.quantity < 1) err.quantity = 'Quantity must be ≥ 1';
-      if (Object.keys(err).length > 0) items[li.id] = err;
-    }
-    return { header, items };
-  }
+  // validation imported from useDocumentForm
 
   const finalizeDisabled = useMemo(() => {
     const res = validateFinalize(state);
@@ -407,101 +273,19 @@ const DocumentCreation: React.FC = () => {
         </div>
 
         <div>
-          <StyledTable>
-            <thead>
-              <tr>
-                <th style={{ width: '22%' }}>Item</th>
-                <th>Description</th>
-                <th className="td-right" style={{ width: 140 }}>Unit Price</th>
-                <th className="td-right" style={{ width: 120 }}>Qty</th>
-                <th className="td-right" style={{ width: 140 }}>Amount</th>
-                <th className="td-right" style={{ width: 90 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.lineItems.map((li) => (
-                <tr key={li.id}>
-                  <td>
-                    <StyledDropdown
-                      value={li.itemId ?? ''}
-                      onChange={(e) => {
-                        const selected = findItemById(e.target.value);
-                        dispatch({ type: 'SET_ITEM_SELECTION', id: li.id, item: selected });
-                      }}
-                      disabled={loadingItems}
-                    >
-                      <option value="">{loadingItems ? 'Loading…' : 'Select item'}</option>
-                      {itemCatalog.map((it) => (
-                        <option key={it.id} value={it.id}>
-                          {it.name}
-                        </option>
-                      ))}
-                    </StyledDropdown>
-                    <StyledInput
-                      placeholder="Custom item name"
-                      id={`li-${li.id}-name`}
-                      value={li.name}
-                      onChange={(e) => dispatch({ type: 'UPDATE_LINE_ITEM', id: li.id, changes: { name: e.target.value } })}
-                      style={{ marginTop: 8 }}
-                      error={itemErrors[li.id]?.name}
-                      required={false}
-                    />
-                  </td>
-                  <td>
-                    <StyledTextarea
-                      placeholder="Description"
-                      value={li.description}
-                      onChange={(e) => dispatch({ type: 'UPDATE_LINE_ITEM', id: li.id, changes: { description: e.target.value } })}
-                    />
-                  </td>
-                  <td className="td-right">
-                    <StyledInput
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step={0.01}
-                      id={`li-${li.id}-unitPrice`}
-                      value={Number.isFinite(li.unitPrice) ? String(li.unitPrice) : ''}
-                      onChange={(e) =>
-                        dispatch({
-                          type: 'UPDATE_LINE_ITEM',
-                          id: li.id,
-                          changes: { unitPrice: parseFloat(e.target.value || '0') },
-                        })
-                      }
-                      error={itemErrors[li.id]?.unitPrice}
-                    />
-                  </td>
-                  <td className="td-right">
-                    <StyledInput
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      step={1}
-                      id={`li-${li.id}-quantity`}
-                      value={Number.isFinite(li.quantity) ? String(li.quantity) : ''}
-                      onChange={(e) =>
-                        dispatch({
-                          type: 'UPDATE_LINE_ITEM',
-                          id: li.id,
-                          changes: { quantity: parseInt(e.target.value || '0', 10) },
-                        })
-                      }
-                      error={itemErrors[li.id]?.quantity}
-                    />
-                  </td>
-                  <td className="td-right">
-                    <span className="td-strong">{formatCurrency(li.amount)}</span>
-                  </td>
-                  <td className="td-right">
-                    <button className="link-btn link-danger" onClick={() => handleRemoveRow(li.id)} disabled={state.lineItems.length <= 1}>
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </StyledTable>
+          <LineItemsTable
+            items={state.lineItems}
+            itemErrors={itemErrors}
+            catalog={itemCatalog}
+            loadingCatalog={loadingItems}
+            canEdit
+            onSelectItem={(lineId, itemId) => {
+              const selected = itemCatalog.find((i) => i.id === itemId);
+              dispatch({ type: 'SET_ITEM_SELECTION', id: lineId, item: selected });
+            }}
+            onChange={(lineId, changes) => dispatch({ type: 'UPDATE_LINE_ITEM', id: lineId, changes })}
+            onRemove={(lineId) => dispatch({ type: 'REMOVE_LINE_ITEM', id: lineId })}
+          />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
             <SecondaryButton onClick={handleAddRow}>Add Line Item</SecondaryButton>
             <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
