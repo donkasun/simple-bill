@@ -48,6 +48,7 @@ import { computeAmount } from '../utils/documentMath';
 
 import { todayIso } from '../utils/date';
 import { useDocumentForm } from '../hooks/useDocumentForm';
+import { validateDraft as validateDraftShared, validateFinalize as validateFinalizeShared } from '../utils/documentValidation';
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -156,33 +157,11 @@ const DocumentEdit: React.FC = () => {
   const [itemErrors, setItemErrors] = useState<Record<string, { name?: string; unitPrice?: string; quantity?: string }>>({});
 
   function validateDraft(s: DocumentFormState) {
-    const header: { documentType?: string; date?: string } = {};
-    const items: Record<string, { unitPrice?: string; quantity?: string }> = {};
-    if (!s.documentType) header.documentType = 'Document type is required';
-    if (!s.date?.trim()) header.date = 'Date is required';
-    for (const li of s.lineItems) {
-      const err: { unitPrice?: string; quantity?: string } = {};
-      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
-      if (!Number.isFinite(li.quantity) || li.quantity < 0) err.quantity = 'Quantity must be ≥ 0';
-      if (Object.keys(err).length > 0) items[li.id] = err;
-    }
-    return { header, items };
+    return validateDraftShared(s);
   }
 
   function validateFinalize(s: DocumentFormState) {
-    const header: { documentType?: string; date?: string; customerId?: string } = {};
-    const items: Record<string, { name?: string; unitPrice?: string; quantity?: string }> = {};
-    if (!s.documentType) header.documentType = 'Document type is required';
-    if (!s.date?.trim()) header.date = 'Date is required';
-    if (!s.customerId) header.customerId = 'Customer is required to finalize';
-    for (const li of s.lineItems) {
-      const err: { name?: string; unitPrice?: string; quantity?: string } = {};
-      if (!li.name?.trim()) err.name = 'Item name is required';
-      if (!Number.isFinite(li.unitPrice) || li.unitPrice < 0) err.unitPrice = 'Unit price must be ≥ 0';
-      if (!Number.isFinite(li.quantity) || li.quantity < 1) err.quantity = 'Quantity must be ≥ 1';
-      if (Object.keys(err).length > 0) items[li.id] = err;
-    }
-    return { header, items };
+    return validateFinalizeShared(s);
   }
 
   const finalizeDisabled = useMemo(() => {

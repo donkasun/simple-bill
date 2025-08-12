@@ -20,7 +20,8 @@ import type { Item } from '../types/item';
 import { buildDocumentPayload, selectCustomerDetails, getDocumentFilename, getDocNumberPlaceholder } from '../utils/documents';
 import { downloadBlob } from '../utils/download';
 
-import { useDocumentForm, type LineItemFieldErrors, type HeaderErrors, type ValidationResult, getDefaultInitialState, validateDraft, validateFinalize } from '../hooks/useDocumentForm';
+import { useDocumentForm, type LineItemFieldErrors, type HeaderErrors, type ValidationResult, getDefaultInitialState } from '../hooks/useDocumentForm';
+import { validateDraft, validateFinalize } from '../utils/documentValidation';
 
 // createEmptyLineItem not used directly here
 
