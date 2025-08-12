@@ -9,6 +9,7 @@ import {
   getDocs,
   onSnapshot,
   orderBy,
+  limit,
   query,
   serverTimestamp,
   setDoc,
@@ -25,6 +26,7 @@ export type UseFirestoreOptions<T extends BaseEntity, U> = {
   userId?: string;
   orderByField?: keyof T & string;
   orderDirection?: "asc" | "desc";
+  limitCount?: number;
   subscribe?: boolean;
   whereEqual?: Array<{ field: keyof T & string; value: unknown }>;
   select?: (doc: T) => U;
@@ -43,6 +45,7 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(
     userId,
     orderByField,
     orderDirection = "desc",
+    limitCount,
     subscribe = true,
     whereEqual,
     select,
@@ -70,10 +73,20 @@ export function useFirestore<T extends BaseEntity = BaseEntity, U = T>(
         constraints.push(where(w.field, "==", w.value));
     }
     if (orderByField) constraints.push(orderBy(orderByField, orderDirection));
+    if (typeof limitCount === "number" && Number.isFinite(limitCount)) {
+      constraints.push(limit(limitCount));
+    }
     return constraints.length
       ? query(collectionRef, ...constraints)
       : query(collectionRef);
-  }, [collectionRef, userId, whereEqual, orderByField, orderDirection]);
+  }, [
+    collectionRef,
+    userId,
+    whereEqual,
+    orderByField,
+    orderDirection,
+    limitCount,
+  ]);
 
   useEffect(() => {
     setLoading(true);

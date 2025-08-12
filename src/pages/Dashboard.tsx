@@ -27,6 +27,8 @@ const Dashboard: React.FC = () => {
     collectionName: "documents",
     userId: user?.uid,
     orderByField: "createdAt",
+    orderDirection: "desc",
+    limitCount: 5,
     select: (doc) => ({
       ...doc,
       typeLabel: doc.type === "invoice" ? "Invoice" : "Quotation",
@@ -107,7 +109,7 @@ const Dashboard: React.FC = () => {
                             : "status-draft"
                         }`}
                       >
-                        {d.status === "finalized" ? "Finalized" : "Draft"}
+                        {d.status === "finalized" ? "✅ Finalized" : "📝 Draft"}
                       </span>
                     </td>
                     <td className="td-right">
@@ -137,7 +139,21 @@ const Dashboard: React.FC = () => {
                       colSpan={7}
                       style={{ textAlign: "center", padding: "1rem" }}
                     >
-                      No documents yet.
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>No documents yet.</div>
+                        <PrimaryButton
+                          onClick={() => navigate("/documents/new")}
+                        >
+                          Create New Document
+                        </PrimaryButton>
+                      </div>
                     </td>
                   </tr>
                 )}
