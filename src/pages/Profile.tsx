@@ -15,9 +15,6 @@ const Profile: React.FC = () => {
         <div>
           <strong>Email:</strong> {user?.email ?? "—"}
         </div>
-        <div>
-          <strong>UID:</strong> {user?.uid ?? "—"}
-        </div>
       </div>
     </div>
   );

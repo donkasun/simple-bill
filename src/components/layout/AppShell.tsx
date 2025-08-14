@@ -72,6 +72,7 @@ const AppShell: React.FC = () => {
               <img src={Logo} alt="SimpleBill" className="brand-icon" />
               <span className="brand-title">SimpleBill</span>
             </div>
+            <div className="sidebar-sep" />
             <nav className="sidebar-nav" style={{ flex: 1 }}>
               <NavLink
                 to="/dashboard"
@@ -102,30 +103,12 @@ const AppShell: React.FC = () => {
                 Items
               </NavLink>
               <div className="sidebar-sep" />
-              <NavLink
-                to="/profile"
-                className={({ isActive }) =>
-                  `sidebar-link${isActive ? " active" : ""}`
-                }
-                onClick={handleCloseSidebar}
-              >
-                Profile
-              </NavLink>
-              <NavLink
-                to="/settings"
-                className={({ isActive }) =>
-                  `sidebar-link${isActive ? " active" : ""}`
-                }
-                onClick={handleCloseSidebar}
-              >
-                Settings
-              </NavLink>
             </nav>
 
             <div className="sidebar-user">
               <div className="user-menu" ref={menuRef}>
                 <button
-                  className="avatar-button"
+                  className="sidebar-user-button"
                   aria-haspopup="menu"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((v) => !v)}
@@ -151,19 +134,19 @@ const AppShell: React.FC = () => {
                       }}
                     />
                   </div>
+                  <div className="sidebar-user-text">
+                    <div className="sidebar-user-name">
+                      {user?.displayName ?? "User"}
+                    </div>
+                    <div className="sidebar-user-email">
+                      {user?.email ?? "User"}
+                    </div>
+                  </div>
                 </button>
                 <div
                   className={`menu-dropdown ${menuOpen ? "open" : ""}`}
                   role="menu"
                 >
-                  <div className="menu-header">
-                    <div className="menu-user">
-                      {user?.displayName ?? "User"}
-                    </div>
-                    {user?.email && (
-                      <div className="menu-email">{user.email}</div>
-                    )}
-                  </div>
                   <div className="menu-links">
                     <NavLink
                       to="/profile"
