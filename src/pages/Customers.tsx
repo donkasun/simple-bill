@@ -7,8 +7,10 @@ import CustomerModal, {
   type CustomerFormData,
 } from "@components/customers/CustomerModal";
 import type { Customer } from "../types/customer";
+import { usePageTitle } from "@components/layout/PageTitleContext";
 
 const Customers: React.FC = () => {
+  usePageTitle("Customers");
   const { user } = useAuth();
   type CustomerRow = Customer & { addressDisplay: string };
   const { items, loading, error, add, update, remove } = useFirestore<

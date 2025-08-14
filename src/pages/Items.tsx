@@ -5,8 +5,10 @@ import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import ItemModal, { type ItemFormData } from "@components/items/ItemModal";
 import type { Item } from "../types/item";
+import { usePageTitle } from "@components/layout/PageTitleContext";
 
 const Items: React.FC = () => {
+  usePageTitle("Items");
   const { user } = useAuth();
   type ItemRow = Item & { unitPriceLabel: string };
   const { items, loading, error, add, update, remove } = useFirestore<

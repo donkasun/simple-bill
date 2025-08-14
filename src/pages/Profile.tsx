@@ -1,7 +1,9 @@
 import React from "react";
 import { useAuth } from "@auth/useAuth";
+import { usePageTitle } from "@components/layout/PageTitleContext";
 
 const Profile: React.FC = () => {
+  usePageTitle("Profile");
   const { user } = useAuth();
   return (
     <div style={{ maxWidth: 640 }}>
@@ -12,9 +14,6 @@ const Profile: React.FC = () => {
         </div>
         <div>
           <strong>Email:</strong> {user?.email ?? "—"}
-        </div>
-        <div>
-          <strong>UID:</strong> {user?.uid ?? "—"}
         </div>
       </div>
     </div>
