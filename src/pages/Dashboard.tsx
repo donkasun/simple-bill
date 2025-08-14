@@ -5,12 +5,14 @@ import ErrorBanner from "@components/core/ErrorBanner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
+import { usePageTitle } from "@components/layout/PageTitleContext";
 import type { DocumentEntity } from "../types/document";
 import { formatCurrency } from "@utils/currency";
 import { downloadBlob } from "@utils/download";
 import { getDocumentFilename } from "@utils/documents";
 
 const Dashboard: React.FC = () => {
+  usePageTitle("Dashboard");
   const navigate = useNavigate();
   const { user } = useAuth();
   type DocumentRow = DocumentEntity & {
@@ -55,9 +57,6 @@ const Dashboard: React.FC = () => {
     <div style={{ padding: "1rem" }}>
       <div className="container-xl">
         <div className="page-header">
-          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
-            Dashboard
-          </h2>
           <div style={{ display: "flex", gap: 8 }}>
             <PrimaryButton onClick={() => navigate("/documents/new")}>
               Create New Document

@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
-import Logo from "@assets/logo.svg";
 import { useAuth } from "@auth/useAuth";
 import { getFallbackAvatar } from "@utils/fallbackAvatar";
 
-type HeaderProps = { title?: string };
+type HeaderProps = { title?: string; onToggleSidebar?: () => void };
 
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC<HeaderProps> = ({ title, onToggleSidebar }) => {
   const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -32,32 +31,21 @@ const Header: React.FC<HeaderProps> = () => {
     await signOut();
   };
 
-  const navClass = ({ isActive }: { isActive: boolean }) =>
-    `nav-link${isActive ? " active" : ""}`;
-
   return (
     <header className="top-header">
       <div className="top-header__inner">
-        <NavLink
-          to="/dashboard"
-          className="brand-group"
-          aria-label="Go to dashboard"
-        >
-          <img src={Logo} alt="SimpleBill logo" className="brand-icon" />
-          <h1 className="brand-title">SimpleBill</h1>
-        </NavLink>
-
-        <nav className="nav-links">
-          <NavLink to="/dashboard" className={navClass} end>
-            Dashboard
-          </NavLink>
-          <NavLink to="/customers" className={navClass}>
-            Customers
-          </NavLink>
-          <NavLink to="/items" className={navClass}>
-            Items
-          </NavLink>
-        </nav>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            className="hamburger-btn"
+            aria-label="Open sidebar"
+            onClick={onToggleSidebar}
+          >
+            <span aria-hidden>☰</span>
+          </button>
+          <h2 className="page-title" style={{ margin: 0 }}>
+            {title || ""}
+          </h2>
+        </div>
 
         <div className="header-actions">
           <div className="user-menu" ref={menuRef}>

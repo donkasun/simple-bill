@@ -51,8 +51,10 @@ import {
   validateDraft as validateDraftShared,
   validateFinalize as validateFinalizeShared,
 } from "@utils/documentValidation";
+import { usePageTitle } from "@components/layout/PageTitleContext";
 
 const DocumentEdit: React.FC = () => {
+  usePageTitle("Edit Document");
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
