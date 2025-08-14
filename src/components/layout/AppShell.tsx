@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import Logo from "../../assets/logo.svg";
 import { PageTitleContext } from "./PageTitleContext";
@@ -15,13 +9,10 @@ const AppShell: React.FC = () => {
   const [pageTitle, setPageTitle] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const { user, signOut } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const pageTitleCtx = useMemo(() => ({ setTitle: setPageTitle }), []);
   const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
   const handleSignOut = async () => {
-    setMenuOpen(false);
     await signOut();
   };
 
@@ -33,21 +24,7 @@ const AppShell: React.FC = () => {
     }
   }, [pageTitle]);
 
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, []);
+  // No profile dropdown menu in sidebar-user section anymore
 
   return (
     <PageTitleContext.Provider value={pageTitleCtx}>
@@ -105,73 +82,61 @@ const AppShell: React.FC = () => {
               <div className="sidebar-sep" />
             </nav>
 
+            <nav className="sidebar-nav">
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `sidebar-link${isActive ? " active" : ""}`
+                }
+                onClick={handleCloseSidebar}
+              >
+                Profile
+              </NavLink>
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  `sidebar-link${isActive ? " active" : ""}`
+                }
+                onClick={handleCloseSidebar}
+              >
+                Settings
+              </NavLink>
+              <div className="sidebar-sep" />
+              <button className="sidebar-link danger" onClick={handleSignOut}>
+                Sign out
+              </button>
+            </nav>
+
             <div className="sidebar-user">
-              <div className="user-menu" ref={menuRef}>
-                <button
-                  className="sidebar-user-button"
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  onClick={() => setMenuOpen((v) => !v)}
-                >
-                  <div className="avatar" title={user?.displayName ?? "User"}>
-                    <img
-                      src={
-                        user?.photoURL ||
-                        getFallbackAvatar({
-                          uid: user?.uid,
-                          email: user?.email,
-                          displayName: user?.displayName,
-                        })
-                      }
-                      alt="User avatar"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.src = getFallbackAvatar({
-                          uid: user?.uid,
-                          email: user?.email,
-                          displayName: user?.displayName,
-                        });
-                      }}
-                    />
+              <div className="sidebar-user-button" aria-label="User">
+                <div className="avatar" title={user?.displayName ?? "User"}>
+                  <img
+                    src={
+                      user?.photoURL ||
+                      getFallbackAvatar({
+                        uid: user?.uid,
+                        email: user?.email,
+                        displayName: user?.displayName,
+                      })
+                    }
+                    alt="User avatar"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.src = getFallbackAvatar({
+                        uid: user?.uid,
+                        email: user?.email,
+                        displayName: user?.displayName,
+                      });
+                    }}
+                  />
+                </div>
+                <div className="sidebar-user-text">
+                  <div className="sidebar-user-name">
+                    {user?.displayName ?? "User"}
                   </div>
-                  <div className="sidebar-user-text">
-                    <div className="sidebar-user-name">
-                      {user?.displayName ?? "User"}
-                    </div>
-                    <div className="sidebar-user-email">
-                      {user?.email ?? "User"}
-                    </div>
+                  <div className="sidebar-user-email">
+                    {user?.email ?? "User"}
                   </div>
-                </button>
-                <div
-                  className={`menu-dropdown ${menuOpen ? "open" : ""}`}
-                  role="menu"
-                >
-                  <div className="menu-links">
-                    <NavLink
-                      to="/profile"
-                      className="menu-link"
-                      role="menuitem"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Profile
-                    </NavLink>
-                    <NavLink
-                      to="/settings"
-                      className="menu-link"
-                      role="menuitem"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Settings
-                    </NavLink>
-                  </div>
-                  <button
-                    className="menu-item menu-item--center"
-                    role="menuitem"
-                    onClick={handleSignOut}
-                  >
-                    Sign out
-                  </button>
                 </div>
               </div>
             </div>

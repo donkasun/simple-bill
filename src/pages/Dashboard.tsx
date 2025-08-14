@@ -56,7 +56,16 @@ const Dashboard: React.FC = () => {
   return (
     <div style={{ padding: "1rem" }}>
       <div className="container-xl">
-        <div className="page-header">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "1rem",
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
+            Dashboard
+          </h2>
           <div style={{ display: "flex", gap: 8 }}>
             <PrimaryButton onClick={() => navigate("/documents/new")}>
               Create New Document
