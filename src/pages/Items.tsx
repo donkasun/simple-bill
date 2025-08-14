@@ -6,6 +6,7 @@ import { useFirestore } from "@hooks/useFirestore";
 import ItemModal, { type ItemFormData } from "@components/items/ItemModal";
 import type { Item } from "../types/item";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import { formatCurrency } from "@utils/currency";
 
 const Items: React.FC = () => {
   usePageTitle("Items");
@@ -18,7 +19,7 @@ const Items: React.FC = () => {
     collectionName: "items",
     userId: user?.uid,
     orderByField: "createdAt",
-    select: (it) => ({ ...it, unitPriceLabel: it.unitPrice.toFixed(2) }),
+    select: (it) => ({ ...it, unitPriceLabel: formatCurrency(it.unitPrice) }),
   });
 
   const [modalOpen, setModalOpen] = useState(false);
