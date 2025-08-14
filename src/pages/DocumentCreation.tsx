@@ -30,8 +30,10 @@ import {
   getDefaultInitialState,
 } from "@hooks/useDocumentForm";
 import { validateDraft, validateFinalize } from "@utils/documentValidation";
+import { usePageTitle } from "@components/layout/PageTitleContext";
 
 const DocumentCreation: React.FC = () => {
+  usePageTitle("Create Document");
   const navigate = useNavigate();
   const { user } = useAuth();
 
