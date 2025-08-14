@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { formatCurrency } from "./currency";
 
 export type PdfLineItem = {
   name: string;
@@ -19,7 +20,7 @@ export type PdfDocumentData = {
 };
 
 export async function generateDocumentPdf(
-  data: PdfDocumentData
+  data: PdfDocumentData,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   let page = pdfDoc.addPage([595.28, 841.89]);
@@ -35,7 +36,7 @@ export async function generateDocumentPdf(
     x: number,
     y: number,
     size = 12,
-    bold = false
+    bold = false,
   ) => {
     page.drawText(text, {
       x,
@@ -97,9 +98,9 @@ export async function generateDocumentPdf(
       cursorY = page.getSize().height - margin;
     }
     drawText(it.name || "-", colX.item, cursorY, 12);
-    drawText(it.unitPrice.toFixed(2), colX.unitPrice, cursorY, 12);
+    drawText(formatCurrency(it.unitPrice), colX.unitPrice, cursorY, 12);
     drawText(String(it.quantity), colX.qty, cursorY, 12);
-    drawText(it.amount.toFixed(2), colX.amount, cursorY, 12);
+    drawText(formatCurrency(it.amount), colX.amount, cursorY, 12);
     cursorY -= 14;
     if (it.description) {
       const desc =
@@ -113,10 +114,10 @@ export async function generateDocumentPdf(
 
   cursorY -= 12;
   drawText("Subtotal:", colX.qty, cursorY, 12, true);
-  drawText(data.subtotal.toFixed(2), colX.amount, cursorY, 12);
+  drawText(formatCurrency(data.subtotal), colX.amount, cursorY, 12);
   cursorY -= 16;
   drawText("Total:", colX.qty, cursorY, 14, true);
-  drawText(data.total.toFixed(2), colX.amount, cursorY, 14, true);
+  drawText(formatCurrency(data.total), colX.amount, cursorY, 14, true);
 
   return await pdfDoc.save();
 }
