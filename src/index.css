@@ -76,6 +76,12 @@ body {
   margin: 8px 8px;
 }
 
+.sidebar-user {
+  margin-top: auto;
+  padding: 0.75rem;
+  border-top: 1px solid var(--brand-border);
+}
+
 .main-area {
   display: flex;
   flex-direction: column;
@@ -129,7 +135,10 @@ body {
     display: none;
     border: none;
   }
-  .sidebar[data-open="true"] + .main-area .sidebar-overlay {
+  .main-area .sidebar-overlay {
+    display: none;
+  }
+  .sidebar[data-open="true"] ~ .main-area .sidebar-overlay {
     display: block;
   }
 }
