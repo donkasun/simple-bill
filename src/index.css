@@ -63,12 +63,22 @@ body {
   color: var(--brand-text-primary);
   text-decoration: none;
   font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
 }
 .sidebar-link:hover {
   background: var(--brand-background);
 }
 .sidebar-link.active {
   color: var(--brand-primary);
+}
+.sidebar-link.danger {
+  color: var(--brand-danger);
+}
+.sidebar-link.danger:hover {
+  background: transparent;
 }
 .sidebar-sep {
   height: 1px;
