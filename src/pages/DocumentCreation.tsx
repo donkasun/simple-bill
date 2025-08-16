@@ -234,6 +234,7 @@ const DocumentCreation: React.FC = () => {
         items: payload.items,
         subtotal: payload.subtotal,
         total: payload.total,
+        currency: payload.currency || "USD",
       });
       const filename = `${getDocumentFilename(
         payload.type,
@@ -388,6 +389,7 @@ const DocumentCreation: React.FC = () => {
             catalog={itemCatalog}
             loadingCatalog={loadingItems}
             canEdit
+            currency={state.currency}
             onSelectItem={selectItemById}
             onChange={changeLine}
             onRemove={removeLine}

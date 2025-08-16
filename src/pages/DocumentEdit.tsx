@@ -323,6 +323,7 @@ const DocumentEdit: React.FC = () => {
         items: base.items,
         subtotal: base.subtotal as number,
         total: base.total as number,
+        currency: base.currency || "USD",
       });
       const filename = `${getDocumentFilename(
         base.type as DocumentType,
@@ -510,6 +511,7 @@ const DocumentEdit: React.FC = () => {
                 catalog={itemCatalog}
                 loadingCatalog={loadingItems}
                 canEdit={canEdit}
+                currency={state.currency}
                 onSelectItem={(lineId, itemId) => {
                   const selected = findItemById(itemId);
                   dispatch({
