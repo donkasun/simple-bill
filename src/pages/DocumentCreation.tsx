@@ -31,11 +31,15 @@ import {
 } from "@hooks/useDocumentForm";
 import { validateDraft, validateFinalize } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import useUserProfile from "@hooks/useUserProfile";
+
+const currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"];
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile, loading: loadingProfile } = useUserProfile();
 
   const { items: customers, loading: loadingCustomers } =
     useFirestore<Customer>({
@@ -65,11 +69,21 @@ const DocumentCreation: React.FC = () => {
     subtotal,
     total,
   } = useDocumentForm({
-    initial: getDefaultInitialState(),
+    initial: getDefaultInitialState(profile?.currency),
     customers,
     itemCatalog,
     canEdit: true,
   });
+
+  useEffect(() => {
+    if (profile?.currency && state.currency !== profile.currency) {
+      dispatch({
+        type: "SET_FIELD",
+        field: "currency",
+        value: profile.currency,
+      });
+    }
+  }, [profile, state.currency, dispatch]);
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
@@ -291,6 +305,26 @@ const DocumentCreation: React.FC = () => {
               <option value="quotation">Quotation</option>
             </StyledDropdown>
 
+            <StyledDropdown
+              label="Currency"
+              id="doc-currency"
+              value={state.currency}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_FIELD",
+                  field: "currency",
+                  value: e.target.value,
+                })
+              }
+              disabled={loadingProfile}
+            >
+              {currencies.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </StyledDropdown>
+
             <StyledInput
               label="Document #"
               placeholder={getDocNumberPlaceholder(state.documentType)}
@@ -375,7 +409,7 @@ const DocumentCreation: React.FC = () => {
                   Subtotal
                 </div>
                 <div className="td-strong" style={{ textAlign: "right" }}>
-                  {formatCurrency(subtotal)}
+                  {formatCurrency(subtotal, state.currency)}
                 </div>
               </div>
               <div>
@@ -386,7 +420,7 @@ const DocumentCreation: React.FC = () => {
                   className="td-strong"
                   style={{ textAlign: "right", fontSize: 18 }}
                 >
-                  {formatCurrency(total)}
+                  {formatCurrency(total, state.currency)}
                 </div>
               </div>
             </div>

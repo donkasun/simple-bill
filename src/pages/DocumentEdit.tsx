@@ -52,12 +52,16 @@ import {
   validateFinalize as validateFinalizeShared,
 } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import useUserProfile from "@hooks/useUserProfile";
+
+const currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"];
 
 const DocumentEdit: React.FC = () => {
   usePageTitle("Edit Document");
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { profile, loading: loadingProfile } = useUserProfile();
 
   const { items: customers, loading: loadingCustomers } =
     useFirestore<Customer>({
@@ -87,6 +91,7 @@ const DocumentEdit: React.FC = () => {
       customerId: undefined,
       notes: "",
       lineItems: [createEmptyLineItem()],
+      currency: profile?.currency || "USD",
     },
     customers,
     itemCatalog,
@@ -136,6 +141,7 @@ const DocumentEdit: React.FC = () => {
             customerId: data.customerId,
             notes: data.notes,
             lineItems: items.length > 0 ? items : [createEmptyLineItem()],
+            currency: data.currency || profile?.currency || "USD",
           },
         });
       } catch (e: unknown) {
@@ -418,6 +424,26 @@ const DocumentEdit: React.FC = () => {
                   <option value="quotation">Quotation</option>
                 </StyledDropdown>
 
+                <StyledDropdown
+                  label="Currency"
+                  id="doc-currency"
+                  value={state.currency}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "currency",
+                      value: e.target.value,
+                    })
+                  }
+                  disabled={!canEdit || loadingProfile}
+                >
+                  {currencies.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </StyledDropdown>
+
                 <StyledInput
                   label="Document #"
                   placeholder={getDocNumberPlaceholder(state.documentType)}
@@ -519,7 +545,7 @@ const DocumentEdit: React.FC = () => {
                       Subtotal
                     </div>
                     <div className="td-strong" style={{ textAlign: "right" }}>
-                      {formatCurrency(subtotal)}
+                      {formatCurrency(subtotal, state.currency)}
                     </div>
                   </div>
                   <div>
@@ -530,7 +556,7 @@ const DocumentEdit: React.FC = () => {
                       className="td-strong"
                       style={{ textAlign: "right", fontSize: 18 }}
                     >
-                      {formatCurrency(total)}
+                      {formatCurrency(total, state.currency)}
                     </div>
                   </div>
                 </div>
