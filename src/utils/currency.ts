@@ -1,16 +1,20 @@
-export function formatCurrency(value: number, currency = 'USD', locale?: string): string {
+export function formatCurrency(
+  value: number,
+  currency: string,
+  locale?: string,
+): string {
   const safe = Number.isFinite(value) ? value : 0;
-  const resolvedLocale = locale || (typeof navigator !== 'undefined' ? navigator.language : 'en-US');
+  const resolvedLocale =
+    locale || (typeof navigator !== "undefined" ? navigator.language : "en-US");
   try {
     return new Intl.NumberFormat(resolvedLocale, {
-      style: 'currency',
+      style: "currency",
       currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(safe);
   } catch {
-    return `$${safe.toFixed(2)}`;
+    // Fallback for unsupported currencies
+    return `${currency} ${safe.toFixed(2)}`;
   }
 }
-
-

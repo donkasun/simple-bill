@@ -26,6 +26,7 @@ export type DocumentEntity = BaseEntity & {
   notes?: string;
   status: DocumentStatus;
   finalizedAt?: Timestamp;
+  currency?: string;
 };
 
 export type FormLineItem = DocumentLineItem & { id: string };
@@ -37,4 +38,5 @@ export type DocumentFormState = {
   customerId?: string;
   notes?: string;
   lineItems: FormLineItem[];
+  currency: string;
 };

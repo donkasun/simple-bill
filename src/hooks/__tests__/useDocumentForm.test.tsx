@@ -83,4 +83,22 @@ describe("useDocumentForm", () => {
     await waitFor(() => expect(api!.state.lineItems[0].name).toBe("Service"));
     await waitFor(() => expect(api!.state.lineItems[0].unitPrice).toBe(12));
   });
+
+  it("initializes with a default currency and allows update", async () => {
+    let api: ReturnType<typeof useDocumentForm> | null = null;
+    const Comp = () => {
+      api = useDocumentForm({ initial: getDefaultInitialState("EUR") });
+      return null;
+    };
+    render(<Comp />);
+
+    expect(api!.state.currency).toBe("EUR");
+
+    api!.dispatch({
+      type: "SET_FIELD",
+      field: "currency",
+      value: "JPY",
+    });
+    await waitFor(() => expect(api!.state.currency).toBe("JPY"));
+  });
 });

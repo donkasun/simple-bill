@@ -37,7 +37,7 @@ export function createEmptyLineItem(): FormLineItem {
   };
 }
 
-export function getDefaultInitialState(): DocumentFormState {
+export function getDefaultInitialState(currency = "USD"): DocumentFormState {
   return {
     documentType: "invoice",
     documentNumber: "",
@@ -45,6 +45,7 @@ export function getDefaultInitialState(): DocumentFormState {
     customerId: undefined,
     notes: "",
     lineItems: [createEmptyLineItem()],
+    currency,
   };
 }
 
@@ -54,6 +55,7 @@ export type FormAction =
   | { type: "SET_FIELD"; field: "date"; value: string }
   | { type: "SET_FIELD"; field: "customerId"; value: string | undefined }
   | { type: "SET_FIELD"; field: "notes"; value: string | undefined }
+  | { type: "SET_FIELD"; field: "currency"; value: string }
   | { type: "ADD_LINE_ITEM" }
   | { type: "REMOVE_LINE_ITEM"; id: string }
   | { type: "UPDATE_LINE_ITEM"; id: string; changes: Partial<FormLineItem> }

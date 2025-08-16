@@ -44,6 +44,7 @@ const Dashboard: React.FC = () => {
       items: doc.items,
       subtotal: doc.subtotal,
       total: doc.total,
+      currency: doc.currency || "USD",
     });
     const filename = `${getDocumentFilename(
       doc.type,
@@ -98,7 +99,7 @@ const Dashboard: React.FC = () => {
                     <td>{d.typeLabel}</td>
                     <td>{d.customerName}</td>
                     <td>{d.date}</td>
-                    <td>{formatCurrency(d.total)}</td>
+                    <td>{formatCurrency(d.total, d.currency || "USD")}</td>
                     <td>
                       <span
                         className={`status-badge ${
