@@ -126,8 +126,8 @@ const DocumentEdit: React.FC = () => {
         if (!mounted) return;
         setDocumentStatus(data.status);
         setCurrency(data.currency || "USD");
-        // Set edit mode based on document status - drafts start in edit mode, finalized in view mode
-        setIsEditMode(data.status === "draft");
+        // Always start in view mode, regardless of document status
+        setIsEditMode(false);
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
