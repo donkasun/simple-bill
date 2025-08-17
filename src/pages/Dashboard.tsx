@@ -121,12 +121,22 @@ const Dashboard: React.FC = () => {
                             Edit
                           </button>
                         ) : (
-                          <button
-                            className="link-btn"
-                            onClick={() => handleDownload(d)}
-                          >
-                            Download
-                          </button>
+                          <>
+                            <button
+                              className="link-btn"
+                              onClick={() =>
+                                navigate(`/documents/${d.id}/edit`)
+                              }
+                            >
+                              View
+                            </button>
+                            <button
+                              className="link-btn"
+                              onClick={() => handleDownload(d)}
+                            >
+                              Download
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
