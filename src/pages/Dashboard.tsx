@@ -134,11 +134,43 @@ const Dashboard: React.FC = () => {
                 ))}
                 {documents.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={7}
-                      style={{ textAlign: "center", padding: "1rem" }}
-                    >
-                      No documents yet.
+                    <td colSpan={7}>
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "3rem 1rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "1rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "1.125rem",
+                            color: "rgba(52,58,64,0.7)",
+                            marginBottom: "0.5rem",
+                          }}
+                        >
+                          No documents yet.
+                        </div>
+                        <p
+                          style={{
+                            fontSize: "0.875rem",
+                            color: "rgba(52,58,64,0.6)",
+                            margin: 0,
+                            maxWidth: "400px",
+                          }}
+                        >
+                          Create your first invoice or quotation to get started.
+                        </p>
+                        <PrimaryButton
+                          onClick={() => navigate("/documents/new")}
+                          style={{ marginTop: "0.5rem" }}
+                        >
+                          Create Your First Document
+                        </PrimaryButton>
+                      </div>
                     </td>
                   </tr>
                 )}
