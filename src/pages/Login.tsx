@@ -119,7 +119,7 @@ const Login: React.FC = () => {
               color: "#0d6efd",
               textDecoration: "underline",
             }}
-            href="#"
+            href="/terms"
           >
             Terms of Service
           </a>

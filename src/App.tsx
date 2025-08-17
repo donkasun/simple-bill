@@ -8,6 +8,7 @@ import { lazy, Suspense } from "react";
 import AppShell from "@components/layout/AppShell";
 import ProtectedRoute from "@components/core/ProtectedRoute";
 const Login = lazy(() => import("./pages/Login"));
+const Terms = lazy(() => import("./pages/Terms"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Items = lazy(() => import("./pages/Items"));
@@ -22,6 +23,7 @@ function App() {
       <Suspense fallback={<div style={{ padding: "1rem" }}>Loading…</div>}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/terms" element={<Terms />} />
           <Route
             path="/"
             element={
