@@ -31,11 +31,13 @@ import {
 } from "@hooks/useDocumentForm";
 import { validateDraft, validateFinalize } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import useUserProfile from "@hooks/useUserProfile";
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useUserProfile();
 
   const { items: customers, loading: loadingCustomers } =
     useFirestore<Customer>({
@@ -79,7 +81,7 @@ const DocumentCreation: React.FC = () => {
         value: customers[0].id,
       });
     }
-  }, [customers, state.customerId]);
+  }, [customers, state.customerId, dispatch]);
 
   const handleAddRow = () => addLine();
 
@@ -152,14 +154,17 @@ const DocumentCreation: React.FC = () => {
             state.documentType,
             state.date,
           );
-      const payload = buildDocumentPayload(
-        user.uid,
-        state,
-        "draft",
-        autoDocNumber,
-        selectCustomerDetails(customers, state.customerId),
-        { subtotal, total },
-      );
+      const payload = {
+        ...buildDocumentPayload(
+          user.uid,
+          state,
+          "draft",
+          autoDocNumber,
+          selectCustomerDetails(customers, state.customerId),
+          { subtotal, total },
+        ),
+        currency: profile?.currency || "USD",
+      };
       const id = await addDocument(payload);
       if (id) navigate("/dashboard");
     } catch (e: unknown) {
@@ -203,6 +208,7 @@ const DocumentCreation: React.FC = () => {
           selectCustomerDetails(customers, state.customerId),
           { subtotal, total },
         ),
+        currency: profile?.currency || "USD",
         finalizedAt:
           serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
       } as Omit<DocumentEntity, "id" | "createdAt" | "updatedAt"> & {
@@ -220,6 +226,7 @@ const DocumentCreation: React.FC = () => {
         items: payload.items,
         subtotal: payload.subtotal,
         total: payload.total,
+        currency: payload.currency || "USD",
       });
       const filename = `${getDocumentFilename(
         payload.type,
@@ -354,6 +361,7 @@ const DocumentCreation: React.FC = () => {
             catalog={itemCatalog}
             loadingCatalog={loadingItems}
             canEdit
+            currency={profile?.currency || "USD"}
             onSelectItem={selectItemById}
             onChange={changeLine}
             onRemove={removeLine}
@@ -375,7 +383,7 @@ const DocumentCreation: React.FC = () => {
                   Subtotal
                 </div>
                 <div className="td-strong" style={{ textAlign: "right" }}>
-                  {formatCurrency(subtotal)}
+                  {formatCurrency(subtotal, profile?.currency || "USD")}
                 </div>
               </div>
               <div>
@@ -386,7 +394,7 @@ const DocumentCreation: React.FC = () => {
                   className="td-strong"
                   style={{ textAlign: "right", fontSize: 18 }}
                 >
-                  {formatCurrency(total)}
+                  {formatCurrency(total, profile?.currency || "USD")}
                 </div>
               </div>
             </div>

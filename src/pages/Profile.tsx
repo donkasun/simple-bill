@@ -5,6 +5,7 @@ import { usePageTitle } from "@components/layout/PageTitleContext";
 const Profile: React.FC = () => {
   usePageTitle("Profile");
   const { user } = useAuth();
+
   return (
     <div style={{ padding: "1rem" }}>
       <div className="container-xl">

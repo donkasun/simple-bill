@@ -15,6 +15,7 @@ type LineItemsTableProps = {
   catalog: Item[];
   loadingCatalog?: boolean;
   canEdit?: boolean;
+  currency: string;
   onSelectItem: (lineId: string, itemId?: string) => void;
   onChange: (lineId: string, changes: Partial<FormLineItem>) => void;
   onRemove: (lineId: string) => void;
@@ -26,6 +27,7 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
   catalog,
   loadingCatalog = false,
   canEdit = true,
+  currency,
   onSelectItem,
   onChange,
   onRemove,
@@ -127,7 +129,9 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
               />
             </td>
             <td className="td-right">
-              <span className="td-strong">{formatCurrency(li.amount)}</span>
+              <span className="td-strong">
+                {formatCurrency(li.amount, currency)}
+              </span>
             </td>
             <td className="td-right">
               <button

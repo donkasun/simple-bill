@@ -7,10 +7,12 @@ import ItemModal, { type ItemFormData } from "@components/items/ItemModal";
 import type { Item } from "../types/item";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import { formatCurrency } from "@utils/currency";
+import useUserProfile from "@hooks/useUserProfile";
 
 const Items: React.FC = () => {
   usePageTitle("Items");
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   type ItemRow = Item & { unitPriceLabel: string };
   const { items, loading, error, add, update, remove } = useFirestore<
     Item,
@@ -19,7 +21,10 @@ const Items: React.FC = () => {
     collectionName: "items",
     userId: user?.uid,
     orderByField: "createdAt",
-    select: (it) => ({ ...it, unitPriceLabel: formatCurrency(it.unitPrice) }),
+    select: (it) => ({
+      ...it,
+      unitPriceLabel: formatCurrency(it.unitPrice, profile?.currency || "USD"),
+    }),
   });
 
   const [modalOpen, setModalOpen] = useState(false);
