@@ -54,7 +54,6 @@ import {
 import { usePageTitle } from "@components/layout/PageTitleContext";
 
 const DocumentEdit: React.FC = () => {
-  usePageTitle("Edit Document");
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -100,6 +99,10 @@ const DocumentEdit: React.FC = () => {
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const canEdit = documentStatus === "draft";
+  const pageTitle = canEdit ? "Edit Document" : "View Document";
+  usePageTitle(pageTitle);
 
   useEffect(() => {
     let mounted = true;
@@ -409,9 +412,7 @@ const DocumentEdit: React.FC = () => {
     }
   };
 
-  const canEdit = documentStatus === "draft";
-
-  const headerTitle = "Edit Document";
+  const headerTitle = canEdit ? "Edit Document" : "View Document";
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -443,14 +444,24 @@ const DocumentEdit: React.FC = () => {
                 </PrimaryButton>
               </>
             ) : (
-              state.documentType === "quotation" && (
-                <PrimaryButton
-                  onClick={handleGenerateInvoice}
-                  disabled={generatingInvoice || initializing}
+              <>
+                <SecondaryButton
+                  onClick={() => {
+                    setDocumentStatus("draft");
+                  }}
+                  disabled={initializing}
                 >
-                  {generatingInvoice ? "Generating…" : "Generate Invoice"}
-                </PrimaryButton>
-              )
+                  Edit Document
+                </SecondaryButton>
+                {state.documentType === "quotation" && (
+                  <PrimaryButton
+                    onClick={handleGenerateInvoice}
+                    disabled={generatingInvoice || initializing}
+                  >
+                    {generatingInvoice ? "Generating…" : "Generate Invoice"}
+                  </PrimaryButton>
+                )}
+              </>
             )}
           </div>
         </div>

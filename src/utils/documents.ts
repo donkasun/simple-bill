@@ -1,4 +1,8 @@
-import type { DocumentEntity, DocumentFormState } from "../types/document";
+import type {
+  DocumentEntity,
+  DocumentFormState,
+  DocumentLineItem,
+} from "../types/document";
 
 export function selectCustomerDetails(
   customers: Array<{

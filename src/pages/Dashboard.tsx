@@ -119,10 +119,10 @@ const Dashboard: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      {d.type === "quotation" && d.relatedCount > 0 && (
+                      {d.type === "quotation" && (d.relatedCount || 0) > 0 && (
                         <span className="muted" style={{ fontSize: 12 }}>
                           {d.relatedCount} invoice
-                          {d.relatedCount !== 1 ? "s" : ""} generated
+                          {(d.relatedCount || 0) !== 1 ? "s" : ""} generated
                         </span>
                       )}
                       {d.type === "invoice" && d.sourceInfo && (
@@ -133,30 +133,19 @@ const Dashboard: React.FC = () => {
                     </td>
                     <td className="td-right">
                       <div className="actions">
-                        {d.status === "draft" ? (
+                        <button
+                          className="link-btn"
+                          onClick={() => navigate(`/documents/${d.id}/edit`)}
+                        >
+                          {d.status === "draft" ? "Edit" : "View"}
+                        </button>
+                        {d.status === "finalized" && (
                           <button
                             className="link-btn"
-                            onClick={() => navigate(`/documents/${d.id}/edit`)}
+                            onClick={() => handleDownload(d)}
                           >
-                            Edit
+                            Download
                           </button>
-                        ) : (
-                          <>
-                            <button
-                              className="link-btn"
-                              onClick={() =>
-                                navigate(`/documents/${d.id}/edit`)
-                              }
-                            >
-                              View
-                            </button>
-                            <button
-                              className="link-btn"
-                              onClick={() => handleDownload(d)}
-                            >
-                              Download
-                            </button>
-                          </>
                         )}
                       </div>
                     </td>
