@@ -274,7 +274,7 @@ const DocumentEdit: React.FC = () => {
         { subtotal, total },
       );
       await setDocument(id, payload);
-      navigate("/dashboard");
+      // Stay in edit mode after saving - don't navigate away
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to save changes";
       setSaveError(message);
@@ -386,6 +386,10 @@ const DocumentEdit: React.FC = () => {
       };
 
       await setDocument(id, payload);
+
+      // Update local state to reflect the finalized status
+      setDocumentStatus("finalized");
+      setIsEditMode(false);
 
       const { generateDocumentPdf } = await import("../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
