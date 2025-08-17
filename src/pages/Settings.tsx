@@ -17,31 +17,87 @@ const Settings: React.FC = () => {
     <div style={{ padding: "1rem" }}>
       <div className="container-xl">
         <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Settings</h2>
-        <div style={{ marginTop: 12 }}>
-          {loading && <p>Loading settings...</p>}
-          {error && <p>{error}</p>}
-          {profile && (
-            <div style={{ marginTop: "1rem" }}>
-              <label
-                htmlFor="currency-select"
-                style={{ marginRight: "0.5rem" }}
+
+        {loading && <p>Loading settings...</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
+
+        {profile && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "2rem",
+              marginTop: "1rem",
+            }}
+          >
+            {/* First Column - Currency Settings */}
+            <div
+              style={{
+                padding: "1.5rem",
+                backgroundColor: "#f8f9fa",
+                borderRadius: "8px",
+                border: "1px solid #e9ecef",
+              }}
+            >
+              <h3
+                style={{
+                  margin: "0 0 1rem 0",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                }}
               >
-                <strong>Global Currency:</strong>
-              </label>
-              <StyledDropdown
-                id="currency-select"
-                value={profile.currency}
-                onChange={handleCurrencyChange}
-              >
-                {currencies.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </StyledDropdown>
+                Currency Settings
+              </h3>
+              <div>
+                <label
+                  htmlFor="currency-select"
+                  style={{
+                    display: "block",
+                    marginBottom: "0.5rem",
+                    fontWeight: "500",
+                  }}
+                >
+                  Global Currency:
+                </label>
+                <StyledDropdown
+                  id="currency-select"
+                  value={profile.currency}
+                  onChange={handleCurrencyChange}
+                  style={{ width: "100%" }}
+                >
+                  {currencies.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </StyledDropdown>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Second Column - Future Settings */}
+            <div
+              style={{
+                padding: "1.5rem",
+                backgroundColor: "#f8f9fa",
+                borderRadius: "8px",
+                border: "1px solid #e9ecef",
+              }}
+            >
+              <h3
+                style={{
+                  margin: "0 0 1rem 0",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                }}
+              >
+                Additional Settings
+              </h3>
+              <p style={{ color: "#6c757d", margin: 0 }}>
+                More settings will be available here in the future.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
