@@ -137,7 +137,7 @@ const Dashboard: React.FC = () => {
                           className="link-btn"
                           onClick={() => navigate(`/documents/${d.id}/edit`)}
                         >
-                          {d.status === "draft" ? "Edit" : "View"}
+                          View
                         </button>
                         {d.status === "finalized" && (
                           <button

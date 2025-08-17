@@ -81,6 +81,7 @@ const DocumentEdit: React.FC = () => {
   });
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
+  const [isEditMode, setIsEditMode] = useState(false);
   const [currency, setCurrency] = useState("USD");
 
   const { state, dispatch, subtotal, total } = useDocumentForm({
@@ -94,13 +95,13 @@ const DocumentEdit: React.FC = () => {
     },
     customers,
     itemCatalog,
-    canEdit: documentStatus === "draft",
+    canEdit: documentStatus === "draft" && isEditMode,
   });
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const canEdit = documentStatus === "draft";
+  const canEdit = documentStatus === "draft" && isEditMode;
   const pageTitle = canEdit ? "Edit Document" : "View Document";
   usePageTitle(pageTitle);
 
@@ -125,6 +126,8 @@ const DocumentEdit: React.FC = () => {
         if (!mounted) return;
         setDocumentStatus(data.status);
         setCurrency(data.currency || "USD");
+        // Set edit mode based on document status - drafts start in edit mode, finalized in view mode
+        setIsEditMode(data.status === "draft");
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -445,14 +448,14 @@ const DocumentEdit: React.FC = () => {
               </>
             ) : (
               <>
-                <SecondaryButton
-                  onClick={() => {
-                    setDocumentStatus("draft");
-                  }}
-                  disabled={initializing}
-                >
-                  Edit Document
-                </SecondaryButton>
+                {documentStatus === "draft" && (
+                  <SecondaryButton
+                    onClick={() => setIsEditMode(true)}
+                    disabled={initializing}
+                  >
+                    Edit Document
+                  </SecondaryButton>
+                )}
                 {state.documentType === "quotation" && (
                   <PrimaryButton
                     onClick={handleGenerateInvoice}
