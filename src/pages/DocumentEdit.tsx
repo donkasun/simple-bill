@@ -52,16 +52,12 @@ import {
   validateFinalize as validateFinalizeShared,
 } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
-import useUserProfile from "@hooks/useUserProfile";
-
-const currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"];
 
 const DocumentEdit: React.FC = () => {
   usePageTitle("Edit Document");
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { profile, loading: loadingProfile } = useUserProfile();
 
   const { items: customers, loading: loadingCustomers } =
     useFirestore<Customer>({
@@ -82,6 +78,7 @@ const DocumentEdit: React.FC = () => {
   });
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
+  const [currency, setCurrency] = useState("USD");
 
   const { state, dispatch, subtotal, total } = useDocumentForm({
     initial: {
@@ -91,7 +88,6 @@ const DocumentEdit: React.FC = () => {
       customerId: undefined,
       notes: "",
       lineItems: [createEmptyLineItem()],
-      currency: profile?.currency || "USD",
     },
     customers,
     itemCatalog,
@@ -121,6 +117,7 @@ const DocumentEdit: React.FC = () => {
         const data = snap.data() as PersistedDocumentEntity;
         if (!mounted) return;
         setDocumentStatus(data.status);
+        setCurrency(data.currency || "USD");
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -141,7 +138,6 @@ const DocumentEdit: React.FC = () => {
             customerId: data.customerId,
             notes: data.notes,
             lineItems: items.length > 0 ? items : [createEmptyLineItem()],
-            currency: data.currency || profile?.currency || "USD",
           },
         });
       } catch (e: unknown) {
@@ -425,26 +421,6 @@ const DocumentEdit: React.FC = () => {
                   <option value="quotation">Quotation</option>
                 </StyledDropdown>
 
-                <StyledDropdown
-                  label="Currency"
-                  id="doc-currency"
-                  value={state.currency}
-                  onChange={(e) =>
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "currency",
-                      value: e.target.value,
-                    })
-                  }
-                  disabled={!canEdit || loadingProfile}
-                >
-                  {currencies.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </StyledDropdown>
-
                 <StyledInput
                   label="Document #"
                   placeholder={getDocNumberPlaceholder(state.documentType)}
@@ -511,7 +487,7 @@ const DocumentEdit: React.FC = () => {
                 catalog={itemCatalog}
                 loadingCatalog={loadingItems}
                 canEdit={canEdit}
-                currency={state.currency}
+                currency={currency}
                 onSelectItem={(lineId, itemId) => {
                   const selected = findItemById(itemId);
                   dispatch({
@@ -547,7 +523,7 @@ const DocumentEdit: React.FC = () => {
                       Subtotal
                     </div>
                     <div className="td-strong" style={{ textAlign: "right" }}>
-                      {formatCurrency(subtotal, state.currency)}
+                      {formatCurrency(subtotal, currency)}
                     </div>
                   </div>
                   <div>
@@ -558,7 +534,7 @@ const DocumentEdit: React.FC = () => {
                       className="td-strong"
                       style={{ textAlign: "right", fontSize: 18 }}
                     >
-                      {formatCurrency(total, state.currency)}
+                      {formatCurrency(total, currency)}
                     </div>
                   </div>
                 </div>

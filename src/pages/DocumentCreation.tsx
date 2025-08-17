@@ -33,13 +33,11 @@ import { validateDraft, validateFinalize } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import useUserProfile from "@hooks/useUserProfile";
 
-const currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"];
-
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, loading: loadingProfile } = useUserProfile();
+  const { profile } = useUserProfile();
 
   const { items: customers, loading: loadingCustomers } =
     useFirestore<Customer>({
@@ -69,21 +67,11 @@ const DocumentCreation: React.FC = () => {
     subtotal,
     total,
   } = useDocumentForm({
-    initial: getDefaultInitialState(profile?.currency),
+    initial: getDefaultInitialState(),
     customers,
     itemCatalog,
     canEdit: true,
   });
-
-  useEffect(() => {
-    if (profile?.currency && state.currency !== profile.currency) {
-      dispatch({
-        type: "SET_FIELD",
-        field: "currency",
-        value: profile.currency,
-      });
-    }
-  }, [profile, state.currency, dispatch]);
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
@@ -93,7 +81,7 @@ const DocumentCreation: React.FC = () => {
         value: customers[0].id,
       });
     }
-  }, [customers, state.customerId]);
+  }, [customers, state.customerId, dispatch]);
 
   const handleAddRow = () => addLine();
 
@@ -166,14 +154,17 @@ const DocumentCreation: React.FC = () => {
             state.documentType,
             state.date,
           );
-      const payload = buildDocumentPayload(
-        user.uid,
-        state,
-        "draft",
-        autoDocNumber,
-        selectCustomerDetails(customers, state.customerId),
-        { subtotal, total },
-      );
+      const payload = {
+        ...buildDocumentPayload(
+          user.uid,
+          state,
+          "draft",
+          autoDocNumber,
+          selectCustomerDetails(customers, state.customerId),
+          { subtotal, total },
+        ),
+        currency: profile?.currency || "USD",
+      };
       const id = await addDocument(payload);
       if (id) navigate("/dashboard");
     } catch (e: unknown) {
@@ -217,6 +208,7 @@ const DocumentCreation: React.FC = () => {
           selectCustomerDetails(customers, state.customerId),
           { subtotal, total },
         ),
+        currency: profile?.currency || "USD",
         finalizedAt:
           serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
       } as Omit<DocumentEntity, "id" | "createdAt" | "updatedAt"> & {
@@ -306,26 +298,6 @@ const DocumentCreation: React.FC = () => {
               <option value="quotation">Quotation</option>
             </StyledDropdown>
 
-            <StyledDropdown
-              label="Currency"
-              id="doc-currency"
-              value={state.currency}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_FIELD",
-                  field: "currency",
-                  value: e.target.value,
-                })
-              }
-              disabled={loadingProfile}
-            >
-              {currencies.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </StyledDropdown>
-
             <StyledInput
               label="Document #"
               placeholder={getDocNumberPlaceholder(state.documentType)}
@@ -389,7 +361,7 @@ const DocumentCreation: React.FC = () => {
             catalog={itemCatalog}
             loadingCatalog={loadingItems}
             canEdit
-            currency={state.currency}
+            currency={profile?.currency || "USD"}
             onSelectItem={selectItemById}
             onChange={changeLine}
             onRemove={removeLine}
@@ -411,7 +383,7 @@ const DocumentCreation: React.FC = () => {
                   Subtotal
                 </div>
                 <div className="td-strong" style={{ textAlign: "right" }}>
-                  {formatCurrency(subtotal, state.currency)}
+                  {formatCurrency(subtotal, profile?.currency || "USD")}
                 </div>
               </div>
               <div>
@@ -422,7 +394,7 @@ const DocumentCreation: React.FC = () => {
                   className="td-strong"
                   style={{ textAlign: "right", fontSize: 18 }}
                 >
-                  {formatCurrency(total, state.currency)}
+                  {formatCurrency(total, profile?.currency || "USD")}
                 </div>
               </div>
             </div>

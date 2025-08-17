@@ -38,5 +38,4 @@ export type DocumentFormState = {
   customerId?: string;
   notes?: string;
   lineItems: FormLineItem[];
-  currency: string;
 };
