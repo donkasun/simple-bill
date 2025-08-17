@@ -71,12 +71,15 @@ const DocumentEdit: React.FC = () => {
     orderByField: "createdAt",
   });
 
-  const { set: setDocument, add: addDocument } =
-    useFirestore<PersistedDocumentEntity>({
-      collectionName: "documents",
-      userId: user?.uid,
-      subscribe: false,
-    });
+  const {
+    set: setDocument,
+    add: addDocument,
+    getById: getDocument,
+  } = useFirestore<PersistedDocumentEntity>({
+    collectionName: "documents",
+    userId: user?.uid,
+    subscribe: false,
+  });
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
   const [currency, setCurrency] = useState("USD");
@@ -153,7 +156,7 @@ const DocumentEdit: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, dispatch]);
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
@@ -163,7 +166,7 @@ const DocumentEdit: React.FC = () => {
         value: customers[0].id,
       });
     }
-  }, [customers, state.customerId]);
+  }, [customers, state.customerId, dispatch]);
 
   const findItemById = (itemId?: string) =>
     itemCatalog.find((i) => i.id === itemId);
@@ -276,7 +279,7 @@ const DocumentEdit: React.FC = () => {
 
   const handleGenerateInvoice = async () => {
     setGenerateError(null);
-    if (!user?.uid) return;
+    if (!user?.uid || !id) return;
 
     setGeneratingInvoice(true);
 
@@ -305,8 +308,28 @@ const DocumentEdit: React.FC = () => {
         { subtotal, total },
       );
 
+      // Add relationship tracking
+      const invoicePayload = {
+        ...payload,
+        sourceDocumentId: id,
+        sourceDocumentType: "quotation" as const,
+      };
+
       // The `addDocument` function is already available from the `useFirestore` hook.
-      const newInvoiceId = await addDocument(payload);
+      const newInvoiceId = await addDocument(invoicePayload);
+
+      // Update the source quotation to track the generated invoice
+      const currentDoc = await getDocument(id);
+      if (currentDoc) {
+        const updatedRelatedInvoices = [
+          ...(currentDoc.relatedInvoices || []),
+          newInvoiceId,
+        ];
+        await setDocument(id, {
+          ...currentDoc,
+          relatedInvoices: updatedRelatedInvoices,
+        });
+      }
 
       // Redirect to the new invoice's edit page.
       navigate(`/documents/${newInvoiceId}/edit`);
@@ -437,6 +460,11 @@ const DocumentEdit: React.FC = () => {
         {!canEdit && !initializing && !loadError && (
           <ErrorBanner variant="warning">
             This document has been finalized and cannot be edited.
+            {state.documentType === "quotation" && (
+              <div style={{ marginTop: 8 }}>
+                You can generate invoices from this finalized quotation.
+              </div>
+            )}
           </ErrorBanner>
         )}
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
