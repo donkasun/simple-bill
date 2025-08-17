@@ -90,10 +90,14 @@ const Terms: React.FC = () => {
                 2. Description of Service
               </h2>
               <p style={{ marginBottom: "1rem" }}>
-                SimpleBill is a web-based application that allows users to
-                create, manage, and download invoices and quotations. The
-                service includes document creation, customer management, and
-                item cataloging features.
+                SimpleBill is a comprehensive business management platform
+                designed to streamline financial document creation and customer
+                relationship management. The service provides professional
+                invoice and quotation generation, customer database management,
+                product catalog maintenance, and document lifecycle tracking.
+                Users can create, edit, finalize, and download business
+                documents in PDF format with automated numbering and calculation
+                features.
               </p>
             </section>
 
@@ -126,9 +130,14 @@ const Terms: React.FC = () => {
                 4. Data and Privacy
               </h2>
               <p style={{ marginBottom: "1rem" }}>
-                Your data is stored securely using Firebase services. We do not
-                share your personal information with third parties except as
-                required by law or as necessary to provide the service.
+                Your business data and personal information are stored securely
+                using industry-standard Firebase services with enterprise-grade
+                security measures. We implement appropriate technical and
+                organizational safeguards to protect your information. We do not
+                sell, rent, or share your personal or business data with third
+                parties except as required by applicable law, to comply with
+                legal obligations, or as necessary to provide and improve our
+                services. You retain full ownership and control of your data.
               </p>
             </section>
 
@@ -143,9 +152,15 @@ const Terms: React.FC = () => {
                 5. Acceptable Use
               </h2>
               <p style={{ marginBottom: "1rem" }}>
-                You agree to use SimpleBill only for lawful purposes and in
-                accordance with these Terms. You may not use the service to
-                create fraudulent documents or for any illegal activities.
+                You agree to use SimpleBill exclusively for legitimate business
+                purposes and in strict compliance with these Terms of Service
+                and all applicable laws and regulations. You are prohibited from
+                using the service to create fraudulent, misleading, or
+                counterfeit documents, engage in any illegal activities, or
+                violate the rights of third parties. You must not attempt to
+                gain unauthorized access to the service, interfere with its
+                operation, or use it in any manner that could damage, disable,
+                or impair the service or its infrastructure.
               </p>
             </section>
 
@@ -160,9 +175,14 @@ const Terms: React.FC = () => {
                 6. Limitation of Liability
               </h2>
               <p style={{ marginBottom: "1rem" }}>
-                SimpleBill is provided "as is" without warranties of any kind.
-                We are not liable for any damages arising from the use or
-                inability to use the service.
+                SimpleBill is provided "as is" and "as available" without any
+                warranties, express or implied, including but not limited to
+                warranties of merchantability, fitness for a particular purpose,
+                or non-infringement. To the maximum extent permitted by
+                applicable law, we shall not be liable for any direct, indirect,
+                incidental, special, consequential, or punitive damages arising
+                from your use of or inability to use the service, including but
+                not limited to loss of profits, data, or business opportunities.
               </p>
             </section>
 
@@ -194,8 +214,11 @@ const Terms: React.FC = () => {
                 8. Contact Information
               </h2>
               <p style={{ marginBottom: "1rem" }}>
-                If you have any questions about these Terms of Service, please
-                contact us through the application.
+                For questions, concerns, or support regarding these Terms of
+                Service or the SimpleBill platform, please contact our support
+                team through the application's built-in support features or
+                through the contact information provided within the service
+                interface.
               </p>
             </section>
           </div>
