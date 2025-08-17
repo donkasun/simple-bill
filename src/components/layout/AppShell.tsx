@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import Logo from "../../assets/logo.svg";
 import { PageTitleContext } from "./PageTitleContext";
 import { useAuth } from "@auth/useAuth";
@@ -9,6 +9,7 @@ const AppShell: React.FC = () => {
   const [pageTitle, setPageTitle] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const pageTitleCtx = useMemo(() => ({ setTitle: setPageTitle }), []);
   const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -45,7 +46,14 @@ const AppShell: React.FC = () => {
           }}
         >
           <div className="sidebar-inner">
-            <div className="sidebar-brand">
+            <div
+              className="sidebar-brand"
+              onClick={() => {
+                navigate("/dashboard");
+                handleCloseSidebar();
+              }}
+              style={{ cursor: "pointer" }}
+            >
               <img src={Logo} alt="SimpleBill" className="brand-icon" />
               <span className="brand-title">SimpleBill</span>
             </div>

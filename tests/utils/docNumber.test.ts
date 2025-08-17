@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildDocNumberPrefix } from "../docNumber";
+import { buildDocNumberPrefix } from "../../src/utils/docNumber";
 
 describe("docNumber", () => {
   it("buildDocNumberPrefix uses type and year", () => {
@@ -7,5 +7,3 @@ describe("docNumber", () => {
     expect(buildDocNumberPrefix("quotation", "2023-12-31")).toBe("QUO-2023-");
   });
 });
-
-

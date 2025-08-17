@@ -18,6 +18,8 @@ const Dashboard: React.FC = () => {
   type DocumentRow = DocumentEntity & {
     typeLabel: string;
     customerName: string;
+    relatedCount?: number; // Number of related invoices for quotations
+    sourceInfo?: string; // Source quotation info for invoices
   };
   const {
     items: documents,
@@ -31,6 +33,10 @@ const Dashboard: React.FC = () => {
       ...doc,
       typeLabel: doc.type === "invoice" ? "Invoice" : "Quotation",
       customerName: doc.customerDetails?.name ?? "—",
+      relatedCount: doc.relatedInvoices?.length || 0,
+      sourceInfo: doc.sourceDocumentId
+        ? `From ${doc.sourceDocumentType || "Document"}`
+        : undefined,
     }),
   });
 
@@ -87,6 +93,7 @@ const Dashboard: React.FC = () => {
                   <th scope="col">Date</th>
                   <th scope="col">Total</th>
                   <th scope="col">Status</th>
+                  <th scope="col">Relations</th>
                   <th scope="col" className="td-right">
                     Actions
                   </th>
@@ -111,16 +118,28 @@ const Dashboard: React.FC = () => {
                         {d.status === "finalized" ? "Finalized" : "Draft"}
                       </span>
                     </td>
+                    <td>
+                      {d.type === "quotation" && (d.relatedCount || 0) > 0 && (
+                        <span className="muted" style={{ fontSize: 12 }}>
+                          {d.relatedCount} invoice
+                          {(d.relatedCount || 0) !== 1 ? "s" : ""} generated
+                        </span>
+                      )}
+                      {d.type === "invoice" && d.sourceInfo && (
+                        <span className="muted" style={{ fontSize: 12 }}>
+                          {d.sourceInfo}
+                        </span>
+                      )}
+                    </td>
                     <td className="td-right">
                       <div className="actions">
-                        {d.status === "draft" ? (
-                          <button
-                            className="link-btn"
-                            onClick={() => navigate(`/documents/${d.id}/edit`)}
-                          >
-                            Edit
-                          </button>
-                        ) : (
+                        <button
+                          className="link-btn"
+                          onClick={() => navigate(`/documents/${d.id}/edit`)}
+                        >
+                          View
+                        </button>
+                        {d.status === "finalized" && (
                           <button
                             className="link-btn"
                             onClick={() => handleDownload(d)}
@@ -134,7 +153,7 @@ const Dashboard: React.FC = () => {
                 ))}
                 {documents.length === 0 && (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div
                         style={{
                           textAlign: "center",

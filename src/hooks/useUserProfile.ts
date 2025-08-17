@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../auth/useAuth";
@@ -10,7 +10,9 @@ const useUserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const userProfileRef = user ? doc(db, "user_profiles", user.uid) : null;
+  const userProfileRef = useMemo(() => {
+    return user ? doc(db, "user_profiles", user.uid) : null;
+  }, [user?.uid]);
 
   useEffect(() => {
     // Wait for authentication to complete
@@ -23,19 +25,11 @@ const useUserProfile = () => {
       return;
     }
 
-    console.log("Attempting to fetch user profile for:", user?.uid);
-    console.log("User authenticated:", !!user);
-    console.log("User email:", user?.email);
-    console.log("User UID:", user?.uid);
-
     getDoc(userProfileRef)
       .then((docSnap) => {
-        console.log("Document fetch successful");
         if (docSnap.exists()) {
-          console.log("Document exists, data:", docSnap.data());
           setProfile(docSnap.data() as UserProfile);
         } else {
-          console.log("Document doesn't exist, creating default profile");
           // Create a default profile if it doesn't exist
           const defaultProfile: UserProfile = {
             userId: user!.uid,
@@ -46,9 +40,7 @@ const useUserProfile = () => {
         }
       })
       .catch((err) => {
-        console.error("Firestore error details:", err);
-        console.error("Error code:", err.code);
-        console.error("Error message:", err.message);
+        console.error("Failed to fetch user profile:", err);
         setError("Failed to fetch user profile.");
       })
       .finally(() => {

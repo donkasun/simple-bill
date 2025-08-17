@@ -1,8 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { render, waitFor } from "@testing-library/react";
-import { useDocumentForm, getDefaultInitialState } from "../useDocumentForm";
-import type { Item } from "../../types/item";
-import type { Customer } from "../../types/customer";
+import React from "react";
+import {
+  useDocumentForm,
+  getDefaultInitialState,
+} from "../../src/hooks/useDocumentForm";
+import type { Item } from "../../src/types/item";
+import type { Customer } from "../../src/types/customer";
 
 describe("useDocumentForm", () => {
   it("updates fields and line items, computes amount", async () => {
