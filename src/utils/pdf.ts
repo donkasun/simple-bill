@@ -17,6 +17,7 @@ export type PdfDocumentData = {
   items: PdfLineItem[];
   subtotal: number;
   total: number;
+  currency: string;
 };
 
 export async function generateDocumentPdf(
@@ -98,9 +99,19 @@ export async function generateDocumentPdf(
       cursorY = page.getSize().height - margin;
     }
     drawText(it.name || "-", colX.item, cursorY, 12);
-    drawText(formatCurrency(it.unitPrice), colX.unitPrice, cursorY, 12);
+    drawText(
+      formatCurrency(it.unitPrice, data.currency),
+      colX.unitPrice,
+      cursorY,
+      12,
+    );
     drawText(String(it.quantity), colX.qty, cursorY, 12);
-    drawText(formatCurrency(it.amount), colX.amount, cursorY, 12);
+    drawText(
+      formatCurrency(it.amount, data.currency),
+      colX.amount,
+      cursorY,
+      12,
+    );
     cursorY -= 14;
     if (it.description) {
       const desc =
@@ -114,10 +125,21 @@ export async function generateDocumentPdf(
 
   cursorY -= 12;
   drawText("Subtotal:", colX.qty, cursorY, 12, true);
-  drawText(formatCurrency(data.subtotal), colX.amount, cursorY, 12);
+  drawText(
+    formatCurrency(data.subtotal, data.currency),
+    colX.amount,
+    cursorY,
+    12,
+  );
   cursorY -= 16;
   drawText("Total:", colX.qty, cursorY, 14, true);
-  drawText(formatCurrency(data.total), colX.amount, cursorY, 14, true);
+  drawText(
+    formatCurrency(data.total, data.currency),
+    colX.amount,
+    cursorY,
+    14,
+    true,
+  );
 
   return await pdfDoc.save();
 }

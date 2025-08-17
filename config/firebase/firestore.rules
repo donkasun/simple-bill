@@ -31,6 +31,13 @@ service cloud.firestore {
     }
 
     // Auto-increment document counters for per-user numbering (e.g., INV-YYYY-###)
+    match /user_profiles/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      // no delete
+    }
+
     match /docCounters/{docId} {
       // Allow signed-in users to read counter docs. Needed because transactions may read a
       // non-existent counter document before first write.

@@ -78,6 +78,7 @@ const DocumentEdit: React.FC = () => {
   });
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
+  const [currency, setCurrency] = useState("USD");
 
   const { state, dispatch, subtotal, total } = useDocumentForm({
     initial: {
@@ -116,6 +117,7 @@ const DocumentEdit: React.FC = () => {
         const data = snap.data() as PersistedDocumentEntity;
         if (!mounted) return;
         setDocumentStatus(data.status);
+        setCurrency(data.currency || "USD");
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -317,6 +319,7 @@ const DocumentEdit: React.FC = () => {
         items: base.items,
         subtotal: base.subtotal as number,
         total: base.total as number,
+        currency: base.currency || "USD",
       });
       const filename = `${getDocumentFilename(
         base.type as DocumentType,
@@ -484,6 +487,7 @@ const DocumentEdit: React.FC = () => {
                 catalog={itemCatalog}
                 loadingCatalog={loadingItems}
                 canEdit={canEdit}
+                currency={currency}
                 onSelectItem={(lineId, itemId) => {
                   const selected = findItemById(itemId);
                   dispatch({
@@ -519,7 +523,7 @@ const DocumentEdit: React.FC = () => {
                       Subtotal
                     </div>
                     <div className="td-strong" style={{ textAlign: "right" }}>
-                      {formatCurrency(subtotal)}
+                      {formatCurrency(subtotal, currency)}
                     </div>
                   </div>
                   <div>
@@ -530,7 +534,7 @@ const DocumentEdit: React.FC = () => {
                       className="td-strong"
                       style={{ textAlign: "right", fontSize: 18 }}
                     >
-                      {formatCurrency(total)}
+                      {formatCurrency(total, currency)}
                     </div>
                   </div>
                 </div>
