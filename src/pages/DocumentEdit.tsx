@@ -71,11 +71,12 @@ const DocumentEdit: React.FC = () => {
     orderByField: "createdAt",
   });
 
-  const { set: setDocument } = useFirestore<PersistedDocumentEntity>({
-    collectionName: "documents",
-    userId: user?.uid,
-    subscribe: false,
-  });
+  const { set: setDocument, add: addDocument } =
+    useFirestore<PersistedDocumentEntity>({
+      collectionName: "documents",
+      userId: user?.uid,
+      subscribe: false,
+    });
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
   const [currency, setCurrency] = useState("USD");
@@ -171,6 +172,8 @@ const DocumentEdit: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState<string | null>(null);
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [headerErrors, setHeaderErrors] = useState<{
     documentType?: string;
     date?: string;
@@ -271,6 +274,51 @@ const DocumentEdit: React.FC = () => {
     }
   };
 
+  const handleGenerateInvoice = async () => {
+    setGenerateError(null);
+    if (!user?.uid) return;
+
+    setGeneratingInvoice(true);
+
+    try {
+      const newDocNumber = await allocateNextDocumentNumber(
+        user.uid,
+        "invoice",
+        todayIso(),
+      );
+
+      // We need to create a new state object for the invoice.
+      // The main changes are the type, docNumber, and date.
+      const newInvoiceState: DocumentFormState = {
+        ...state,
+        documentType: "invoice",
+        documentNumber: newDocNumber,
+        date: todayIso(),
+      };
+
+      const payload = buildDocumentPayload(
+        user.uid,
+        newInvoiceState,
+        "draft", // Invoices are generated as drafts
+        newDocNumber,
+        selectCustomerDetails(customers, state.customerId),
+        { subtotal, total },
+      );
+
+      // The `addDocument` function is already available from the `useFirestore` hook.
+      const newInvoiceId = await addDocument(payload);
+
+      // Redirect to the new invoice's edit page.
+      navigate(`/documents/${newInvoiceId}/edit`);
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : "Failed to generate invoice";
+      setGenerateError(message);
+    } finally {
+      setGeneratingInvoice(false);
+    }
+  };
+
   const handleFinalizeAndDownload = async () => {
     setFinalizeError(null);
     if (!id || !user?.uid) return;
@@ -353,32 +401,34 @@ const DocumentEdit: React.FC = () => {
             <SecondaryButton onClick={() => navigate("/dashboard")}>
               Cancel
             </SecondaryButton>
-            <PrimaryButton
-              onClick={handleSaveChanges}
-              disabled={saving || finalizing || initializing || !canEdit}
-              aria-disabled={saving || finalizing || initializing || !canEdit}
-            >
-              {saving ? "Saving…" : "Save Changes"}
-            </PrimaryButton>
-            <PrimaryButton
-              onClick={handleFinalizeAndDownload}
-              disabled={
-                saving ||
-                finalizing ||
-                initializing ||
-                !canEdit ||
-                finalizeDisabled
-              }
-              aria-disabled={
-                saving ||
-                finalizing ||
-                initializing ||
-                !canEdit ||
-                finalizeDisabled
-              }
-            >
-              {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
-            </PrimaryButton>
+
+            {canEdit ? (
+              <>
+                <PrimaryButton
+                  onClick={handleSaveChanges}
+                  disabled={saving || finalizing || initializing}
+                >
+                  {saving ? "Saving…" : "Save Changes"}
+                </PrimaryButton>
+                <PrimaryButton
+                  onClick={handleFinalizeAndDownload}
+                  disabled={
+                    saving || finalizing || initializing || finalizeDisabled
+                  }
+                >
+                  {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
+                </PrimaryButton>
+              </>
+            ) : (
+              state.documentType === "quotation" && (
+                <PrimaryButton
+                  onClick={handleGenerateInvoice}
+                  disabled={generatingInvoice || initializing}
+                >
+                  {generatingInvoice ? "Generating…" : "Generate Invoice"}
+                </PrimaryButton>
+              )
+            )}
           </div>
         </div>
 
@@ -391,6 +441,7 @@ const DocumentEdit: React.FC = () => {
         )}
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
         {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
+        {generateError && <ErrorBanner>{generateError}</ErrorBanner>}
 
         {!initializing && !loadError && (
           <>
