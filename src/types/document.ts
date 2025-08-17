@@ -27,6 +27,14 @@ export type DocumentEntity = BaseEntity & {
   status: DocumentStatus;
   finalizedAt?: Timestamp;
   currency?: string;
+  // Relationship tracking
+  sourceDocumentId?: string; // ID of the quotation this invoice was generated from
+  sourceDocumentType?: DocumentType; // Type of the source document
+  relatedInvoices?: string[]; // Array of invoice IDs generated from this quotation
+  // Invoice splitting support
+  originalQuantity?: number; // Original quantity from source document (for partial invoicing)
+  invoicedQuantity?: number; // Quantity that has been invoiced so far
+  remainingQuantity?: number; // Remaining quantity to be invoiced
 };
 
 export type FormLineItem = DocumentLineItem & { id: string };

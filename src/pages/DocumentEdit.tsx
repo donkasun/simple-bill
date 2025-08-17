@@ -54,7 +54,6 @@ import {
 import { usePageTitle } from "@components/layout/PageTitleContext";
 
 const DocumentEdit: React.FC = () => {
-  usePageTitle("Edit Document");
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -71,13 +70,18 @@ const DocumentEdit: React.FC = () => {
     orderByField: "createdAt",
   });
 
-  const { set: setDocument } = useFirestore<PersistedDocumentEntity>({
+  const {
+    set: setDocument,
+    add: addDocument,
+    getById: getDocument,
+  } = useFirestore<PersistedDocumentEntity>({
     collectionName: "documents",
     userId: user?.uid,
     subscribe: false,
   });
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
+  const [isEditMode, setIsEditMode] = useState(false);
   const [currency, setCurrency] = useState("USD");
 
   const { state, dispatch, subtotal, total } = useDocumentForm({
@@ -91,11 +95,15 @@ const DocumentEdit: React.FC = () => {
     },
     customers,
     itemCatalog,
-    canEdit: documentStatus === "draft",
+    canEdit: documentStatus === "draft" && isEditMode,
   });
 
   const [initializing, setInitializing] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const canEdit = documentStatus === "draft" && isEditMode;
+  const pageTitle = canEdit ? "Edit Document" : "View Document";
+  usePageTitle(pageTitle);
 
   useEffect(() => {
     let mounted = true;
@@ -118,6 +126,8 @@ const DocumentEdit: React.FC = () => {
         if (!mounted) return;
         setDocumentStatus(data.status);
         setCurrency(data.currency || "USD");
+        // Always start in view mode, regardless of document status
+        setIsEditMode(false);
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -152,7 +162,7 @@ const DocumentEdit: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, dispatch]);
 
   useEffect(() => {
     if (!state.customerId && customers.length > 0) {
@@ -162,7 +172,7 @@ const DocumentEdit: React.FC = () => {
         value: customers[0].id,
       });
     }
-  }, [customers, state.customerId]);
+  }, [customers, state.customerId, dispatch]);
 
   const findItemById = (itemId?: string) =>
     itemCatalog.find((i) => i.id === itemId);
@@ -171,6 +181,8 @@ const DocumentEdit: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState<string | null>(null);
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [headerErrors, setHeaderErrors] = useState<{
     documentType?: string;
     date?: string;
@@ -262,12 +274,77 @@ const DocumentEdit: React.FC = () => {
         { subtotal, total },
       );
       await setDocument(id, payload);
-      navigate("/dashboard");
+      // Stay in edit mode after saving - don't navigate away
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to save changes";
       setSaveError(message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    setGenerateError(null);
+    if (!user?.uid || !id) return;
+
+    setGeneratingInvoice(true);
+
+    try {
+      const newDocNumber = await allocateNextDocumentNumber(
+        user.uid,
+        "invoice",
+        todayIso(),
+      );
+
+      // We need to create a new state object for the invoice.
+      // The main changes are the type, docNumber, and date.
+      const newInvoiceState: DocumentFormState = {
+        ...state,
+        documentType: "invoice",
+        documentNumber: newDocNumber,
+        date: todayIso(),
+      };
+
+      const payload = buildDocumentPayload(
+        user.uid,
+        newInvoiceState,
+        "draft", // Invoices are generated as drafts
+        newDocNumber,
+        selectCustomerDetails(customers, state.customerId),
+        { subtotal, total },
+      );
+
+      // Add relationship tracking
+      const invoicePayload = {
+        ...payload,
+        sourceDocumentId: id,
+        sourceDocumentType: "quotation" as const,
+      };
+
+      // The `addDocument` function is already available from the `useFirestore` hook.
+      const newInvoiceId = await addDocument(invoicePayload);
+
+      // Update the source quotation to track the generated invoice
+      const currentDoc = await getDocument(id);
+      if (currentDoc) {
+        const updatedRelatedInvoices = [
+          ...(currentDoc.relatedInvoices || []),
+          newInvoiceId,
+        ];
+        await setDocument(id, {
+          ...currentDoc,
+          relatedInvoices: updatedRelatedInvoices,
+        });
+      }
+
+      // Redirect to the new invoice's edit page.
+      navigate(`/documents/${newInvoiceId}/edit`);
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : "Failed to generate invoice";
+      setGenerateError(message);
+    } finally {
+      setGeneratingInvoice(false);
     }
   };
 
@@ -310,6 +387,10 @@ const DocumentEdit: React.FC = () => {
 
       await setDocument(id, payload);
 
+      // Update local state to reflect the finalized status
+      setDocumentStatus("finalized");
+      setIsEditMode(false);
+
       const { generateDocumentPdf } = await import("../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
         type: base.type as DocumentType,
@@ -338,9 +419,7 @@ const DocumentEdit: React.FC = () => {
     }
   };
 
-  const canEdit = documentStatus === "draft";
-
-  const headerTitle = "Edit Document";
+  const headerTitle = canEdit ? "Edit Document" : "View Document";
 
   return (
     <div style={{ padding: "1rem" }}>
@@ -353,32 +432,44 @@ const DocumentEdit: React.FC = () => {
             <SecondaryButton onClick={() => navigate("/dashboard")}>
               Cancel
             </SecondaryButton>
-            <PrimaryButton
-              onClick={handleSaveChanges}
-              disabled={saving || finalizing || initializing || !canEdit}
-              aria-disabled={saving || finalizing || initializing || !canEdit}
-            >
-              {saving ? "Saving…" : "Save Changes"}
-            </PrimaryButton>
-            <PrimaryButton
-              onClick={handleFinalizeAndDownload}
-              disabled={
-                saving ||
-                finalizing ||
-                initializing ||
-                !canEdit ||
-                finalizeDisabled
-              }
-              aria-disabled={
-                saving ||
-                finalizing ||
-                initializing ||
-                !canEdit ||
-                finalizeDisabled
-              }
-            >
-              {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
-            </PrimaryButton>
+
+            {canEdit ? (
+              <>
+                <PrimaryButton
+                  onClick={handleSaveChanges}
+                  disabled={saving || finalizing || initializing}
+                >
+                  {saving ? "Saving…" : "Save Changes"}
+                </PrimaryButton>
+                <PrimaryButton
+                  onClick={handleFinalizeAndDownload}
+                  disabled={
+                    saving || finalizing || initializing || finalizeDisabled
+                  }
+                >
+                  {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
+                </PrimaryButton>
+              </>
+            ) : (
+              <>
+                {documentStatus === "draft" && (
+                  <SecondaryButton
+                    onClick={() => setIsEditMode(true)}
+                    disabled={initializing}
+                  >
+                    Edit Document
+                  </SecondaryButton>
+                )}
+                {state.documentType === "quotation" && (
+                  <PrimaryButton
+                    onClick={handleGenerateInvoice}
+                    disabled={generatingInvoice || initializing}
+                  >
+                    {generatingInvoice ? "Generating…" : "Generate Invoice"}
+                  </PrimaryButton>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -387,10 +478,16 @@ const DocumentEdit: React.FC = () => {
         {!canEdit && !initializing && !loadError && (
           <ErrorBanner variant="warning">
             This document has been finalized and cannot be edited.
+            {state.documentType === "quotation" && (
+              <div style={{ marginTop: 8 }}>
+                You can generate invoices from this finalized quotation.
+              </div>
+            )}
           </ErrorBanner>
         )}
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
         {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
+        {generateError && <ErrorBanner>{generateError}</ErrorBanner>}
 
         {!initializing && !loadError && (
           <>
