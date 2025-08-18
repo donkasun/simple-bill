@@ -12,7 +12,7 @@ const useUserProfile = () => {
 
   const userProfileRef = useMemo(() => {
     return user ? doc(db, "user_profiles", user.uid) : null;
-  }, [user?.uid]);
+  }, [user]);
 
   useEffect(() => {
     // Wait for authentication to complete
