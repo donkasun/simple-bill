@@ -57,25 +57,21 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
     };
   }, [error]);
 
-  const enhancedChild = cloneElement(
-    children as React.ReactElement<React.HTMLAttributes<HTMLElement>>,
-    {
-      "aria-invalid": !!error,
-      "aria-describedby": error ? errorId : undefined,
-      required,
-      style: {
-        position: "relative",
-        zIndex: 1,
-        width: "calc(100% - 28px)",
-        padding: "10px 12px",
-        border: "none",
-        outline: "none",
-        background: "transparent",
-        ...((children as React.ReactElement<React.HTMLAttributes<HTMLElement>>)
-          .props?.style || {}),
-      },
-    } as React.ReactElement<React.HTMLAttributes<HTMLElement>>,
-  );
+  const enhancedChild = cloneElement(children, {
+    "aria-invalid": !!error,
+    "aria-describedby": error ? errorId : undefined,
+    required,
+    style: {
+      position: "relative",
+      zIndex: 1,
+      width: "calc(100% - 28px)",
+      padding: "10px 12px",
+      border: "none",
+      outline: "none",
+      background: "transparent",
+      ...(children.props?.style || {}),
+    },
+  } as React.HTMLAttributes<HTMLElement>);
 
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
