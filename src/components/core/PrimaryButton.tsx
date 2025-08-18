@@ -1,11 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
-import rough from 'roughjs/bundled/rough.esm.js';
+import React, { useEffect, useRef, useState } from "react";
+import rough from "roughjs/bundled/rough.esm.js";
+import { roughButtonPrimary, roughButtonPrimaryHover } from "@utils/roughjs";
 
 type PrimaryButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children?: React.ReactNode;
 };
 
-const PrimaryButton: React.FC<PrimaryButtonProps> = ({ children, className, style, ...props }) => {
+const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+  children,
+  className,
+  style,
+  ...props
+}) => {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hovered, setHovered] = useState(false);
@@ -24,28 +30,23 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({ children, className, styl
       canvas.height = Math.max(1, Math.round(h * dpr));
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
       const rc = rough.canvas(canvas);
       const padding = 2;
-      rc.rectangle(padding, padding, w - padding * 2, h - padding * 2, {
-        roughness: hovered ? 2.5 : 1.5,
-        fill: getComputedStyle(document.documentElement).getPropertyValue('--brand-primary') || '#0d6efd',
-        fillStyle: 'solid',
-        stroke: 'rgba(0,0,0,0.25)',
-        strokeWidth: 1,
-      });
+      const options = hovered ? roughButtonPrimaryHover : roughButtonPrimary;
+      rc.rectangle(padding, padding, w - padding * 2, h - padding * 2, options);
     };
 
     draw();
     const ro = new ResizeObserver(draw);
     ro.observe(btn);
-    window.addEventListener('resize', draw);
+    window.addEventListener("resize", draw);
     return () => {
       ro.disconnect();
-      window.removeEventListener('resize', draw);
+      window.removeEventListener("resize", draw);
     };
   }, [hovered]);
 
@@ -53,31 +54,45 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({ children, className, styl
     <button
       {...props}
       ref={buttonRef}
-      className={`btn-primary ${className ?? ''}`.trim()}
+      className={`btn-primary ${className ?? ""}`.trim()}
       style={{
-        position: 'relative',
-        border: 'none',
-        background: 'transparent',
-        padding: '8px 12px',
+        position: "relative",
+        border: "none",
+        background: "transparent",
+        padding: "8px 12px",
         borderRadius: 8,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         ...style,
       }}
-      onMouseEnter={(e) => { setHovered(true); props.onMouseEnter?.(e); }}
-      onMouseLeave={(e) => { setHovered(false); props.onMouseLeave?.(e); }}
+      onMouseEnter={(e) => {
+        setHovered(true);
+        props.onMouseEnter?.(e);
+      }}
+      onMouseLeave={(e) => {
+        setHovered(false);
+        props.onMouseLeave?.(e);
+      }}
     >
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, borderRadius: 8, pointerEvents: 'none' }} />
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 8,
+          pointerEvents: "none",
+        }}
+      />
       <span
         style={{
-          position: 'relative',
+          position: "relative",
           zIndex: 1,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 'inherit',
-          width: '100%',
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "inherit",
+          width: "100%",
           fontWeight: 600,
         }}
       >

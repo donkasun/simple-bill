@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "@auth/useAuth";
 import { getFallbackAvatar } from "@utils/fallbackAvatar";
+import rough from "roughjs/bundled/rough.esm.js";
+import { roughHeaderDivider } from "@utils/roughjs";
 
 type HeaderProps = { title?: string; onToggleSidebar?: () => void };
 
@@ -31,8 +33,35 @@ const Header: React.FC<HeaderProps> = ({ title, onToggleSidebar }) => {
     await signOut();
   };
 
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (headerRef.current) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "2");
+      svg.style.position = "absolute";
+      svg.style.bottom = "0";
+      svg.style.left = "0";
+      svg.style.pointerEvents = "none";
+
+      const line = rough.svg(svg, roughHeaderDivider);
+      const divider = line.line(0, 1, headerRef.current.offsetWidth, 1);
+      svg.appendChild(divider);
+
+      const currentHeader = headerRef.current;
+      currentHeader.appendChild(svg);
+
+      return () => {
+        if (currentHeader && svg.parentNode) {
+          currentHeader.removeChild(svg);
+        }
+      };
+    }
+  }, []);
+
   return (
-    <header className="top-header">
+    <header className="top-header" ref={headerRef}>
       <div className="top-header__inner">
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button

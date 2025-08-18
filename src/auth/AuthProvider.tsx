@@ -1,7 +1,13 @@
 import { createContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { auth } from "../firebase/config";
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, type User } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut,
+  type User,
+} from "firebase/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -22,7 +28,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await signInWithPopup(auth, provider);
     } catch (error) {
       const err = error as { code?: string } | unknown;
-      if (typeof err === "object" && err && "code" in err && (err as { code?: string }).code === "auth/popup-closed-by-user") {
+      if (
+        typeof err === "object" &&
+        err &&
+        "code" in err &&
+        (err as { code?: string }).code === "auth/popup-closed-by-user"
+      ) {
         return;
       }
       console.error("Error signing in with Google:", error);
@@ -46,9 +57,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const value = { user, loading, signInWithGoogle, signOut: signOutUser };
-  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuthContext = () => AuthContext;
-
-
+export { AuthContext };

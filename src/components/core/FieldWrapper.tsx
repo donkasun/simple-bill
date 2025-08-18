@@ -1,18 +1,28 @@
 import React, { useEffect, useMemo, useRef, cloneElement } from "react";
 import rough from "roughjs/bundled/rough.esm.js";
+import { roughInput } from "@utils/roughjs";
 
 type FieldWrapperProps = {
   label?: string;
   required?: boolean;
   error?: string;
   style?: React.CSSProperties;
-  children: React.ReactElement<any>;
+  children: React.ReactElement<React.HTMLAttributes<HTMLElement>>;
 };
 
-const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, required, error, style, children }) => {
+const FieldWrapper: React.FC<FieldWrapperProps> = ({
+  label,
+  required,
+  error,
+  style,
+  children,
+}) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const errorId = useMemo(() => `field-error-${Math.random().toString(36).slice(2)}`, []);
+  const errorId = useMemo(
+    () => `field-error-${Math.random().toString(36).slice(2)}`,
+    [],
+  );
 
   useEffect(() => {
     const wrapper = wrapperRef.current;
@@ -32,11 +42,10 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, required, error, sty
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
       const rc = rough.canvas(canvas);
-      rc.rectangle(0.5, 0.5, w - 1, h - 1, {
-        roughness: 1,
-        stroke: error ? "rgba(220, 20, 60, 0.85)" : "rgba(0,0,0,0.25)",
-        strokeWidth: 1,
-      });
+      const options = error
+        ? { ...roughInput, stroke: "rgba(220, 20, 60, 0.85)" }
+        : roughInput;
+      rc.rectangle(0.5, 0.5, w - 1, h - 1, options);
     };
     draw();
     const ro = new ResizeObserver(draw);
@@ -48,7 +57,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, required, error, sty
     };
   }, [error]);
 
-  const enhancedChild = cloneElement(children as React.ReactElement<any>, {
+  const enhancedChild = cloneElement(children, {
     "aria-invalid": !!error,
     "aria-describedby": error ? errorId : undefined,
     required,
@@ -60,9 +69,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, required, error, sty
       border: "none",
       outline: "none",
       background: "transparent",
-      ...((children as any).props?.style || {}),
+      ...(children.props?.style || {}),
     },
-  } as any);
+  } as React.HTMLAttributes<HTMLElement>);
 
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -77,11 +86,18 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, required, error, sty
         </span>
       )}
       <div ref={wrapperRef} style={{ position: "relative", ...style }}>
-        <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
+        <canvas
+          ref={canvasRef}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        />
         {enhancedChild}
       </div>
       {error && (
-        <div id={errorId} role="alert" style={{ color: "crimson", fontSize: 13, marginTop: 6 }}>
+        <div
+          id={errorId}
+          role="alert"
+          style={{ color: "crimson", fontSize: 13, marginTop: 6 }}
+        >
           {error}
         </div>
       )}
@@ -90,5 +106,3 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, required, error, sty
 };
 
 export default FieldWrapper;
-
-
