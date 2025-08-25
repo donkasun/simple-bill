@@ -23,11 +23,12 @@ const StyledInput: React.FC<StyledInputProps> = ({
 }) => {
   return (
     <FieldWrapper label={label} required={required} error={error} style={style}>
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", width: "100%" }}>
         <input
           id={id}
           {...props}
           style={{
+            width: "100%",
             ...(showDropdownIcon && { paddingRight: "40px" }),
             ...(props.style || {}),
           }}
@@ -39,7 +40,7 @@ const StyledInput: React.FC<StyledInputProps> = ({
             disabled={disabled}
             style={{
               position: "absolute",
-              right: "20px",
+              right: "12px",
               top: "50%",
               background: "none",
               border: "none",
