@@ -1,5 +1,6 @@
 import React from "react";
 import FieldWrapper from "./FieldWrapper";
+import downArrowIcon from "../assets/down-arrow.png";
 
 type StyledInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -53,7 +54,7 @@ const StyledInput: React.FC<StyledInputProps> = ({
               color: "#666",
               fontSize: "10px",
               transition: "transform 0.2s ease",
-              transform: `translateY(-50%) rotate(${isDropdownToggled ? 180 : 0}deg)`,
+              transform: `translateY(-50%)`,
               zIndex: 10,
               display: "flex",
               alignItems: "center",
@@ -63,7 +64,16 @@ const StyledInput: React.FC<StyledInputProps> = ({
             }}
             aria-label="Toggle dropdown"
           >
-            ▼
+            <img
+              src={downArrowIcon}
+              alt="Dropdown arrow"
+              style={{
+                width: "100%",
+                height: "100%",
+                transition: "transform 0.2s ease",
+                transform: `rotate(${isDropdownToggled ? 180 : 0}deg)`,
+              }}
+            />
           </button>
         )}
       </div>
