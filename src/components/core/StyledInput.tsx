@@ -45,7 +45,7 @@ const StyledInput: React.FC<StyledInputProps> = ({
             disabled={disabled}
             style={{
               position: "absolute",
-              right: "0px",
+              right: "12px",
               top: "50%",
               background: "none",
               border: "none",
@@ -68,8 +68,8 @@ const StyledInput: React.FC<StyledInputProps> = ({
               src={downArrowIcon}
               alt="Dropdown arrow"
               style={{
-                width: "100%",
-                height: "100%",
+                width: "90%",
+                height: "90%",
                 transition: "transform 0.2s ease",
                 transform: `rotate(${isDropdownToggled ? 180 : 0}deg)`,
               }}
