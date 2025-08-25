@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import StyledInput from "./StyledInput";
 
 export type AutocompleteOption = {
@@ -52,6 +53,11 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [inputValue, setInputValue] = useState(value);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -140,6 +146,10 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       isOpen: shouldShowDropdown,
     });
 
+    if (shouldShowDropdown) {
+      calculateDropdownPosition();
+    }
+
     setIsOpen(shouldShowDropdown);
     setHighlightedIndex(-1);
   };
@@ -168,9 +178,22 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   // Filter and limit options
   const filteredOptions = options.slice(0, maxResults);
 
+  // Calculate dropdown position
+  const calculateDropdownPosition = useCallback(() => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
   // Handle dropdown toggle
   const handleToggleDropdown = () => {
     onToggleDropdown?.();
+    calculateDropdownPosition();
     setIsOpen(!isOpen);
     setHighlightedIndex(-1);
   };
@@ -218,58 +241,60 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         </button>
       </div>
 
-      {isOpen && (
-        <div
-          ref={dropdownRef}
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            backgroundColor: "white",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            zIndex: 9999,
-            maxHeight: "200px",
-            overflowY: "auto",
-          }}
-          onClick={(e) => {
-            console.log("Dropdown clicked:", e);
-            e.stopPropagation();
-          }}
-        >
-          {loading ? (
-            <div style={{ padding: "8px 12px", color: "#666" }}>
-              Searching...
-            </div>
-          ) : filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => (
-              <div
-                key={option.id}
-                style={{
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  backgroundColor:
-                    index === highlightedIndex ? "#f0f0f0" : "transparent",
-                  borderBottom:
-                    index < filteredOptions.length - 1
-                      ? "1px solid #eee"
-                      : "none",
-                }}
-                onClick={() => handleSelect(option)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-              >
-                {highlightText(option.label, inputValue)}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "fixed",
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+              backgroundColor: "white",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              zIndex: 9999,
+              maxHeight: "200px",
+              overflowY: "auto",
+            }}
+            onClick={(e) => {
+              console.log("Dropdown clicked:", e);
+              e.stopPropagation();
+            }}
+          >
+            {loading ? (
+              <div style={{ padding: "8px 12px", color: "#666" }}>
+                Searching...
               </div>
-            ))
-          ) : (
-            <div style={{ padding: "8px 12px", color: "#666" }}>
-              No customers found
-            </div>
-          )}
-        </div>
-      )}
+            ) : filteredOptions.length > 0 ? (
+              filteredOptions.map((option, index) => (
+                <div
+                  key={option.id}
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    backgroundColor:
+                      index === highlightedIndex ? "#f0f0f0" : "transparent",
+                    borderBottom:
+                      index < filteredOptions.length - 1
+                        ? "1px solid #eee"
+                        : "none",
+                  }}
+                  onClick={() => handleSelect(option)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  {highlightText(option.label, inputValue)}
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: "8px 12px", color: "#666" }}>
+                No customers found
+              </div>
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
