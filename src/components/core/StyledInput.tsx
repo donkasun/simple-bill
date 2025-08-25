@@ -1,6 +1,6 @@
 import React from "react";
 import FieldWrapper from "./FieldWrapper";
-import downArrowIcon from "../assets/down-arrow.png";
+import downArrowIcon from "../../assets/down-arrow.png";
 
 type StyledInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
