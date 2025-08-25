@@ -23,7 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 .env
-temp_docs/*
-
-# Local notes
-/temp_docs/
