@@ -132,6 +132,14 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     const shouldShowDropdown =
       newValue.length >= minSearchLength && options.length > 0;
 
+    console.log("Input change:", {
+      newValue,
+      minSearchLength,
+      optionsLength: options.length,
+      shouldShowDropdown,
+      isOpen: shouldShowDropdown,
+    });
+
     setIsOpen(shouldShowDropdown);
     setHighlightedIndex(-1);
   };
@@ -168,7 +176,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   };
 
   return (
-    <div ref={containerRef} style={{ position: "relative", zIndex: 9998 }}>
+    <div ref={containerRef} style={{ position: "relative" }}>
       <div style={{ position: "relative" }}>
         <StyledInput
           label={label}
@@ -225,6 +233,10 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
             zIndex: 9999,
             maxHeight: "200px",
             overflowY: "auto",
+          }}
+          onClick={(e) => {
+            console.log("Dropdown clicked:", e);
+            e.stopPropagation();
           }}
         >
           {loading ? (
