@@ -5,6 +5,7 @@ import StyledTextarea from "@components/core/StyledTextarea";
 import LineItemsTable from "@components/documents/LineItemsTable";
 import PrimaryButton from "@components/core/PrimaryButton";
 import SecondaryButton from "@components/core/SecondaryButton";
+import CustomerAutocomplete from "@components/customers/CustomerAutocomplete";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { useNavigate } from "react-router-dom";
@@ -83,7 +84,34 @@ const DocumentCreation: React.FC = () => {
     }
   }, [customers, state.customerId, dispatch]);
 
+  // Update customer search value when customerId changes
+  useEffect(() => {
+    if (state.customerId) {
+      const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      if (selectedCustomer) {
+        setCustomerSearchValue(selectedCustomer.name);
+      }
+    } else {
+      setCustomerSearchValue("");
+    }
+  }, [state.customerId, customers]);
+
   const handleAddRow = () => addLine();
+
+  // Handle customer search input change
+  const handleCustomerSearchChange = (value: string) => {
+    setCustomerSearchValue(value);
+  };
+
+  // Handle customer selection from autocomplete
+  const handleCustomerSelect = (customer: Customer) => {
+    dispatch({
+      type: "SET_FIELD",
+      field: "customerId",
+      value: customer.id,
+    });
+    setCustomerSearchValue(customer.name);
+  };
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -93,6 +121,7 @@ const DocumentCreation: React.FC = () => {
   const [itemErrors, setItemErrors] = useState<
     Record<string, LineItemFieldErrors>
   >({});
+  const [customerSearchValue, setCustomerSearchValue] = useState("");
 
   const finalizeDisabled = useMemo(() => {
     const res = validateFinalize(state);
@@ -327,30 +356,17 @@ const DocumentCreation: React.FC = () => {
               error={headerErrors.date}
             />
 
-            <StyledDropdown
+            <CustomerAutocomplete
               label="Bill To"
-              id="doc-customerId"
-              value={state.customerId ?? ""}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_FIELD",
-                  field: "customerId",
-                  value: e.target.value || undefined,
-                })
-              }
+              name="customerId"
+              value={customerSearchValue}
+              onChange={handleCustomerSearchChange}
+              onSelect={handleCustomerSelect}
+              placeholder="Search customers..."
+              required
               disabled={loadingCustomers}
-              required={false}
               error={headerErrors.customerId}
-            >
-              <option value="" disabled>
-                {loadingCustomers ? "Loading customers…" : "Select a customer"}
-              </option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </StyledDropdown>
+            />
           </div>
         </div>
 

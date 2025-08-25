@@ -6,6 +6,7 @@ import LineItemsTable from "@components/documents/LineItemsTable";
 import PrimaryButton from "@components/core/PrimaryButton";
 import SecondaryButton from "@components/core/SecondaryButton";
 import ErrorBanner from "@components/core/ErrorBanner";
+import CustomerAutocomplete from "@components/customers/CustomerAutocomplete";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { useNavigate, useParams } from "react-router-dom";
@@ -83,6 +84,7 @@ const DocumentEdit: React.FC = () => {
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
   const [isEditMode, setIsEditMode] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [customerSearchValue, setCustomerSearchValue] = useState("");
 
   const { state, dispatch, subtotal, total } = useDocumentForm({
     initial: {
@@ -104,6 +106,21 @@ const DocumentEdit: React.FC = () => {
   const canEdit = documentStatus === "draft" && isEditMode;
   const pageTitle = canEdit ? "Edit Document" : "View Document";
   usePageTitle(pageTitle);
+
+  // Handle customer search input change
+  const handleCustomerSearchChange = (value: string) => {
+    setCustomerSearchValue(value);
+  };
+
+  // Handle customer selection from autocomplete
+  const handleCustomerSelect = (customer: Customer) => {
+    dispatch({
+      type: "SET_FIELD",
+      field: "customerId",
+      value: customer.id,
+    });
+    setCustomerSearchValue(customer.name);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -173,6 +190,18 @@ const DocumentEdit: React.FC = () => {
       });
     }
   }, [customers, state.customerId, dispatch]);
+
+  // Update customer search value when customerId changes
+  useEffect(() => {
+    if (state.customerId) {
+      const selectedCustomer = customers.find((c) => c.id === state.customerId);
+      if (selectedCustomer) {
+        setCustomerSearchValue(selectedCustomer.name);
+      }
+    } else {
+      setCustomerSearchValue("");
+    }
+  }, [state.customerId, customers]);
 
   const findItemById = (itemId?: string) =>
     itemCatalog.find((i) => i.id === itemId);
@@ -549,31 +578,17 @@ const DocumentEdit: React.FC = () => {
                   error={headerErrors.date}
                 />
 
-                <StyledDropdown
+                <CustomerAutocomplete
                   label="Bill To"
-                  id="doc-customerId"
-                  value={state.customerId ?? ""}
-                  onChange={(e) =>
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "customerId",
-                      value: e.target.value || undefined,
-                    })
-                  }
+                  name="customerId"
+                  value={customerSearchValue}
+                  onChange={handleCustomerSearchChange}
+                  onSelect={handleCustomerSelect}
+                  placeholder="Search customers..."
+                  required
                   disabled={loadingCustomers || !canEdit}
                   error={headerErrors.customerId}
-                >
-                  <option value="" disabled>
-                    {loadingCustomers
-                      ? "Loading customers…"
-                      : "Select a customer"}
-                  </option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </StyledDropdown>
+                />
               </div>
             </div>
 
