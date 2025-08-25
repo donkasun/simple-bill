@@ -1,12 +1,5 @@
 import { useState, useCallback } from "react";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  limit,
-  orderBy,
-} from "firebase/firestore";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { Customer } from "../types/customer";
 import type { AutocompleteOption } from "../components/core/AutocompleteInput";
@@ -62,11 +55,11 @@ export function useCustomerSearch({
         try {
           const customersRef = collection(db, "customers");
 
+          // Use a simpler query that doesn't require a composite index
           const q = query(
             customersRef,
             where("userId", "==", userId),
-            orderBy("name"),
-            limit(50),
+            limit(100), // Get more results since we can't order by name
           );
 
           const querySnapshot = await getDocs(q);
@@ -149,12 +142,7 @@ export function useCustomerSearch({
 
     try {
       const customersRef = collection(db, "customers");
-      const q = query(
-        customersRef,
-        where("userId", "==", userId),
-        orderBy("name"),
-        limit(20),
-      );
+      const q = query(customersRef, where("userId", "==", userId), limit(50));
 
       const querySnapshot = await getDocs(q);
       const customers: Customer[] = [];
