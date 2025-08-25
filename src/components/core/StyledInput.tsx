@@ -29,7 +29,9 @@ const StyledInput: React.FC<StyledInputProps> = ({
           {...props}
           style={{
             width: "100%",
-            ...(showDropdownIcon && { paddingRight: "40px" }),
+            border: "none",
+            outline: "none",
+            ...(showDropdownIcon && { paddingRight: "48px" }),
             ...(props.style || {}),
           }}
         />
@@ -40,7 +42,7 @@ const StyledInput: React.FC<StyledInputProps> = ({
             disabled={disabled}
             style={{
               position: "absolute",
-              right: "12px",
+              right: "16px",
               top: "50%",
               background: "none",
               border: "none",
