@@ -21,16 +21,19 @@ const StyledInput: React.FC<StyledInputProps> = ({
   disabled,
   ...props
 }) => {
+  const inputWidth = "calc(100% - 24px)";
   return (
     <FieldWrapper label={label} required={required} error={error} style={style}>
-      <div style={{ position: "relative", width: "100%" }}>
+      <div style={{ position: "relative", width: inputWidth }}>
         <input
           id={id}
           {...props}
           style={{
             border: "none",
             outline: "none",
-            ...(showDropdownIcon && { paddingRight: "48px" }),
+            width: "100%",
+            paddingRight: "0px",
+            backgroundColor: "transparent",
             ...(props.style || {}),
           }}
         />
@@ -41,7 +44,7 @@ const StyledInput: React.FC<StyledInputProps> = ({
             disabled={disabled}
             style={{
               position: "absolute",
-              right: "16px",
+              right: "0px",
               top: "50%",
               background: "none",
               border: "none",
