@@ -216,6 +216,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
           required={required}
           disabled={disabled}
           error={error}
+          style={{ paddingRight: "32px" }}
         />
         <button
           type="button"
@@ -223,17 +224,22 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
           disabled={disabled}
           style={{
             position: "absolute",
-            right: "12px",
+            right: "8px",
             top: "50%",
             background: "none",
             border: "none",
             cursor: "pointer",
-            padding: "4px",
+            padding: "2px",
             color: "#666",
-            fontSize: "12px",
+            fontSize: "10px",
             transition: "transform 0.2s ease",
             transform: `translateY(-50%) rotate(${isOpen ? 180 : 0}deg)`,
             zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "16px",
+            height: "16px",
           }}
           aria-label="Toggle dropdown"
         >
