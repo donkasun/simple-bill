@@ -6,7 +6,7 @@ export type AutocompleteOption = {
   label: string;
   value: string;
   customer?: {
-    id: string;
+    id?: string;
     name: string;
     email?: string | null;
     address?: string | null;
@@ -20,6 +20,7 @@ export type AutocompleteInputProps = {
   value: string;
   onChange: (value: string) => void;
   onSelect?: (option: AutocompleteOption) => void;
+  onToggleDropdown?: () => void;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -37,6 +38,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   value,
   onChange,
   onSelect,
+  onToggleDropdown,
   placeholder,
   required = false,
   disabled = false,
@@ -129,6 +131,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     // Show dropdown if we have enough characters and options
     const shouldShowDropdown =
       newValue.length >= minSearchLength && options.length > 0;
+
     setIsOpen(shouldShowDropdown);
     setHighlightedIndex(-1);
   };
@@ -157,24 +160,54 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   // Filter and limit options
   const filteredOptions = options.slice(0, maxResults);
 
+  // Handle dropdown toggle
+  const handleToggleDropdown = () => {
+    onToggleDropdown?.();
+    setIsOpen(!isOpen);
+    setHighlightedIndex(-1);
+  };
+
   return (
     <div ref={containerRef} style={{ position: "relative" }}>
-      <StyledInput
-        label={label}
-        name={name}
-        value={inputValue}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        onFocus={() => {
-          if (inputValue.length >= minSearchLength && options.length > 0) {
-            setIsOpen(true);
-          }
-        }}
-        placeholder={placeholder}
-        required={required}
-        disabled={disabled}
-        error={error}
-      />
+      <div style={{ position: "relative" }}>
+        <StyledInput
+          label={label}
+          name={name}
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (inputValue.length >= minSearchLength && options.length > 0) {
+              setIsOpen(true);
+            }
+          }}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          error={error}
+        />
+        <button
+          type="button"
+          onClick={handleToggleDropdown}
+          disabled={disabled || options.length === 0}
+          style={{
+            position: "absolute",
+            right: "8px",
+            top: "50%",
+            background: "none",
+            border: "none",
+            cursor: options.length > 0 ? "pointer" : "default",
+            padding: "4px",
+            color: options.length > 0 ? "#666" : "#ccc",
+            fontSize: "12px",
+            transition: "transform 0.2s ease",
+            transform: `translateY(-50%) rotate(${isOpen ? 180 : 0}deg)`,
+          }}
+          aria-label="Toggle dropdown"
+        >
+          ▼
+        </button>
+      </div>
 
       {isOpen && (
         <div

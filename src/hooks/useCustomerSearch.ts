@@ -21,6 +21,7 @@ export type UseCustomerSearchOptions = {
 
 export type UseCustomerSearchReturn = {
   search: (searchTerm: string) => void;
+  loadAllCustomers: () => void;
   options: AutocompleteOption[];
   loading: boolean;
   error: string | null;
@@ -46,6 +47,12 @@ export function useCustomerSearch({
         return;
       }
 
+      if (!userId) {
+        setOptions([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -59,7 +66,7 @@ export function useCustomerSearch({
           customersRef,
           where("userId", "==", userId),
           orderBy("name"),
-          limit(20), // Get more results to filter client-side
+          limit(50), // Get more results to filter client-side
         );
 
         const querySnapshot = await getDocs(q);
@@ -99,14 +106,14 @@ export function useCustomerSearch({
           .slice(0, maxResults);
 
         // Convert to AutocompleteOption format
-        const autocompleteOptions: AutocompleteOption[] = filteredCustomers.map(
-          (customer) => ({
-            id: customer.id,
+        const autocompleteOptions: AutocompleteOption[] = filteredCustomers
+          .filter((customer) => customer.id) // Only include customers with an id
+          .map((customer) => ({
+            id: customer.id!,
             label: customer.name,
             value: customer.name,
             customer: customer, // Include full customer data for selection
-          }),
-        );
+          }));
 
         setOptions(autocompleteOptions);
       } catch (err) {
@@ -130,9 +137,53 @@ export function useCustomerSearch({
     [debouncedSearch],
   );
 
+  // Load all customers
+  const loadAllCustomers = useCallback(async () => {
+    if (!userId) {
+      setOptions([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const customersRef = collection(db, "customers");
+      const q = query(
+        customersRef,
+        where("userId", "==", userId),
+        orderBy("name"),
+        limit(20),
+      );
+
+      const querySnapshot = await getDocs(q);
+      const customers: Customer[] = [];
+
+      querySnapshot.forEach((doc) => {
+        customers.push({ id: doc.id, ...doc.data() } as Customer);
+      });
+
+      const autocompleteOptions: AutocompleteOption[] = customers
+        .filter((customer) => customer.id) // Only include customers with an id
+        .map((customer) => ({
+          id: customer.id!,
+          label: customer.name,
+          value: customer.name,
+          customer: customer,
+        }));
+
+      setOptions(autocompleteOptions);
+    } catch (err) {
+      console.error("Error loading customers:", err);
+      setError(err instanceof Error ? err.message : "Failed to load customers");
+      setOptions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
   // Clear search
   const clearSearch = useCallback(() => {
-    setSearchTerm("");
     setOptions([]);
     setError(null);
     setLoading(false);
@@ -148,6 +199,7 @@ export function useCustomerSearch({
 
   return {
     search,
+    loadAllCustomers,
     options,
     loading,
     error,

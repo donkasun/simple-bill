@@ -31,7 +31,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
 }) => {
   const { user } = useAuth();
 
-  const { search, options, loading } = useCustomerSearch({
+  const { search, options, loading, loadAllCustomers } = useCustomerSearch({
     userId: user?.uid || "",
     debounceMs: 300,
     maxResults: 5,
@@ -49,6 +49,10 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     }
   };
 
+  const handleToggleDropdown = () => {
+    loadAllCustomers();
+  };
+
   return (
     <AutocompleteInput
       label={label}
@@ -56,6 +60,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
       value={value}
       onChange={handleChange}
       onSelect={handleSelect}
+      onToggleDropdown={handleToggleDropdown}
       placeholder={placeholder}
       required={required}
       disabled={disabled}
