@@ -33,8 +33,6 @@ export function useCustomerSearch({
   // Search function with debouncing
   const search = useCallback(
     (term: string) => {
-      console.log("Search called with term:", term);
-
       if (!term || term.length < minSearchLength) {
         setOptions([]);
         setLoading(false);
@@ -69,8 +67,6 @@ export function useCustomerSearch({
             customers.push({ id: doc.id, ...doc.data() } as Customer);
           });
 
-          console.log("Found customers:", customers.length);
-
           // Filter and sort results client-side
           const filteredCustomers = customers
             .filter((customer) =>
@@ -100,8 +96,6 @@ export function useCustomerSearch({
             })
             .slice(0, maxResults);
 
-          console.log("Filtered customers:", filteredCustomers.length);
-
           // Convert to AutocompleteOption format
           const autocompleteOptions: AutocompleteOption[] = filteredCustomers
             .filter((customer) => customer.id)
@@ -112,7 +106,6 @@ export function useCustomerSearch({
               customer: customer,
             }));
 
-          console.log("Setting options:", autocompleteOptions);
           setOptions(autocompleteOptions);
         } catch (err) {
           console.error("Error searching customers:", err);

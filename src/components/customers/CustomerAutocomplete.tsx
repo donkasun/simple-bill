@@ -39,7 +39,6 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   });
 
   const handleChange = (newValue: string) => {
-    console.log("Customer search input changed:", newValue);
     onChange(newValue);
     search(newValue);
   };
@@ -51,7 +50,6 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   };
 
   const handleToggleDropdown = () => {
-    console.log("Toggle dropdown clicked, loading all customers");
     loadAllCustomers();
   };
 
