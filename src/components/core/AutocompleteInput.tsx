@@ -189,19 +189,20 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         <button
           type="button"
           onClick={handleToggleDropdown}
-          disabled={disabled || options.length === 0}
+          disabled={disabled}
           style={{
             position: "absolute",
-            right: "8px",
+            right: "12px",
             top: "50%",
             background: "none",
             border: "none",
-            cursor: options.length > 0 ? "pointer" : "default",
+            cursor: "pointer",
             padding: "4px",
-            color: options.length > 0 ? "#666" : "#ccc",
+            color: "#666",
             fontSize: "12px",
             transition: "transform 0.2s ease",
             transform: `translateY(-50%) rotate(${isOpen ? 180 : 0}deg)`,
+            zIndex: 10,
           }}
           aria-label="Toggle dropdown"
         >

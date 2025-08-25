@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   collection,
   query,
@@ -10,7 +10,6 @@ import {
 import { db } from "../firebase/config";
 import type { Customer } from "../types/customer";
 import type { AutocompleteOption } from "../components/core/AutocompleteInput";
-import { debounce } from "../utils/search";
 
 export type UseCustomerSearchOptions = {
   userId: string;
@@ -38,9 +37,11 @@ export function useCustomerSearch({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce(async (term: string) => {
+  // Search function with debouncing
+  const search = useCallback(
+    (term: string) => {
+      console.log("Search called with term:", term);
+
       if (!term || term.length < minSearchLength) {
         setOptions([]);
         setLoading(false);
@@ -56,85 +57,84 @@ export function useCustomerSearch({
       setLoading(true);
       setError(null);
 
-      try {
-        const customersRef = collection(db, "customers");
+      // Use setTimeout for debouncing
+      const timeoutId = setTimeout(async () => {
+        try {
+          const customersRef = collection(db, "customers");
 
-        // Create query for case-insensitive search
-        // Note: Firestore doesn't support case-insensitive queries directly
-        // We'll use a range query and filter client-side for better performance
-        const q = query(
-          customersRef,
-          where("userId", "==", userId),
-          orderBy("name"),
-          limit(50), // Get more results to filter client-side
-        );
+          const q = query(
+            customersRef,
+            where("userId", "==", userId),
+            orderBy("name"),
+            limit(50),
+          );
 
-        const querySnapshot = await getDocs(q);
-        const customers: Customer[] = [];
+          const querySnapshot = await getDocs(q);
+          const customers: Customer[] = [];
 
-        querySnapshot.forEach((doc) => {
-          customers.push({ id: doc.id, ...doc.data() } as Customer);
-        });
+          querySnapshot.forEach((doc) => {
+            customers.push({ id: doc.id, ...doc.data() } as Customer);
+          });
 
-        // Filter and sort results client-side for better search experience
-        const filteredCustomers = customers
-          .filter((customer) =>
-            customer.name.toLowerCase().includes(term.toLowerCase()),
-          )
-          .sort((a, b) => {
-            // Prioritize exact matches
-            const aExact = a.name.toLowerCase() === term.toLowerCase();
-            const bExact = b.name.toLowerCase() === term.toLowerCase();
+          console.log("Found customers:", customers.length);
 
-            if (aExact && !bExact) return -1;
-            if (!aExact && bExact) return 1;
+          // Filter and sort results client-side
+          const filteredCustomers = customers
+            .filter((customer) =>
+              customer.name.toLowerCase().includes(term.toLowerCase()),
+            )
+            .sort((a, b) => {
+              // Prioritize exact matches
+              const aExact = a.name.toLowerCase() === term.toLowerCase();
+              const bExact = b.name.toLowerCase() === term.toLowerCase();
 
-            // Then prioritize starts with matches
-            const aStartsWith = a.name
-              .toLowerCase()
-              .startsWith(term.toLowerCase());
-            const bStartsWith = b.name
-              .toLowerCase()
-              .startsWith(term.toLowerCase());
+              if (aExact && !bExact) return -1;
+              if (!aExact && bExact) return 1;
 
-            if (aStartsWith && !bStartsWith) return -1;
-            if (!aStartsWith && bStartsWith) return 1;
+              // Then prioritize starts with matches
+              const aStartsWith = a.name
+                .toLowerCase()
+                .startsWith(term.toLowerCase());
+              const bStartsWith = b.name
+                .toLowerCase()
+                .startsWith(term.toLowerCase());
 
-            // Finally sort alphabetically
-            return a.name.localeCompare(b.name);
-          })
-          .slice(0, maxResults);
+              if (aStartsWith && !bStartsWith) return -1;
+              if (!aStartsWith && bStartsWith) return 1;
 
-        // Convert to AutocompleteOption format
-        const autocompleteOptions: AutocompleteOption[] = filteredCustomers
-          .filter((customer) => customer.id) // Only include customers with an id
-          .map((customer) => ({
-            id: customer.id!,
-            label: customer.name,
-            value: customer.name,
-            customer: customer, // Include full customer data for selection
-          }));
+              // Finally sort alphabetically
+              return a.name.localeCompare(b.name);
+            })
+            .slice(0, maxResults);
 
-        setOptions(autocompleteOptions);
-      } catch (err) {
-        console.error("Error searching customers:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to search customers",
-        );
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, debounceMs),
-    [userId, maxResults, minSearchLength, debounceMs],
-  );
+          console.log("Filtered customers:", filteredCustomers.length);
 
-  // Search function
-  const search = useCallback(
-    (term: string) => {
-      debouncedSearch(term);
+          // Convert to AutocompleteOption format
+          const autocompleteOptions: AutocompleteOption[] = filteredCustomers
+            .filter((customer) => customer.id)
+            .map((customer) => ({
+              id: customer.id!,
+              label: customer.name,
+              value: customer.name,
+              customer: customer,
+            }));
+
+          console.log("Setting options:", autocompleteOptions);
+          setOptions(autocompleteOptions);
+        } catch (err) {
+          console.error("Error searching customers:", err);
+          setError(
+            err instanceof Error ? err.message : "Failed to search customers",
+          );
+          setOptions([]);
+        } finally {
+          setLoading(false);
+        }
+      }, debounceMs);
+
+      return () => clearTimeout(timeoutId);
     },
-    [debouncedSearch],
+    [userId, maxResults, minSearchLength, debounceMs],
   );
 
   // Load all customers
@@ -188,14 +188,6 @@ export function useCustomerSearch({
     setError(null);
     setLoading(false);
   }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Clear any pending debounced calls
-      debouncedSearch.cancel?.();
-    };
-  }, [debouncedSearch]);
 
   return {
     search,
