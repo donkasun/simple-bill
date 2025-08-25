@@ -200,52 +200,25 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
 
   return (
     <div ref={containerRef} style={{ position: "relative" }}>
-      <div style={{ position: "relative" }}>
-        <StyledInput
-          label={label}
-          name={name}
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (inputValue.length >= minSearchLength && options.length > 0) {
-              setIsOpen(true);
-            }
-          }}
-          placeholder={placeholder}
-          required={required}
-          disabled={disabled}
-          error={error}
-          style={{ paddingRight: "32px" }}
-        />
-        <button
-          type="button"
-          onClick={handleToggleDropdown}
-          disabled={disabled}
-          style={{
-            position: "absolute",
-            right: "8px",
-            top: "50%",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "2px",
-            color: "#666",
-            fontSize: "10px",
-            transition: "transform 0.2s ease",
-            transform: `translateY(-50%) rotate(${isOpen ? 180 : 0}deg)`,
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "16px",
-            height: "16px",
-          }}
-          aria-label="Toggle dropdown"
-        >
-          ▼
-        </button>
-      </div>
+      <StyledInput
+        label={label}
+        name={name}
+        value={inputValue}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onFocus={() => {
+          if (inputValue.length >= minSearchLength && options.length > 0) {
+            setIsOpen(true);
+          }
+        }}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        error={error}
+        showDropdownIcon={true}
+        isDropdownToggled={isOpen}
+        onDropdownToggle={handleToggleDropdown}
+      />
 
       {isOpen &&
         createPortal(
