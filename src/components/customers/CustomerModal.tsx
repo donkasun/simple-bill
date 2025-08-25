@@ -2,6 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import StyledInput from "../core/StyledInput";
 import StyledTextarea from "../core/StyledTextarea";
 import PrimaryButton from "../core/PrimaryButton";
+import AutocompleteInput, {
+  type AutocompleteOption,
+} from "../core/AutocompleteInput";
+import { useCustomerSearch } from "../../hooks/useCustomerSearch";
+import { useAuth } from "../../auth/useAuth";
 
 export type CustomerFormData = {
   name: string;
@@ -66,6 +71,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   onSubmit,
   onCancel,
 }) => {
+  const { user } = useAuth();
   const initialState: CustomerFormData = useMemo(
     () => ({
       name: "",
@@ -78,6 +84,18 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   );
   const [form, setForm] = useState<CustomerFormData>(initialState);
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+
+  // Customer search hook
+  const {
+    search,
+    options,
+    loading: searchLoading,
+  } = useCustomerSearch({
+    userId: user?.uid || "",
+    debounceMs: 300,
+    maxResults: 5,
+    minSearchLength: 2,
+  });
 
   useEffect(() => {
     setForm(initialState);
@@ -111,6 +129,25 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle name input change with autocomplete
+  const handleNameChange = (value: string) => {
+    setForm((prev) => ({ ...prev, name: value }));
+    search(value);
+  };
+
+  // Handle customer selection from autocomplete
+  const handleCustomerSelect = (option: AutocompleteOption) => {
+    if (option.customer) {
+      setForm((prev) => ({
+        ...prev,
+        name: option.customer.name,
+        email: option.customer.email || "",
+        address: option.customer.address || "",
+        showEmail: option.customer.showEmail ?? true,
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -128,13 +165,19 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
         <div style={headerStyle}>{title ?? "Customer"}</div>
         <form onSubmit={handleSubmit}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <StyledInput
+            <AutocompleteInput
               label="Name"
               name="name"
               value={form.name}
-              onChange={handleChange}
+              onChange={handleNameChange}
+              onSelect={handleCustomerSelect}
               placeholder="Jane Doe / Acme Corp"
               required
+              options={options}
+              loading={searchLoading}
+              error={errors.name}
+              minSearchLength={2}
+              maxResults={5}
             />
             {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
 
