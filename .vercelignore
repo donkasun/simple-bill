@@ -8,6 +8,3 @@ coverage
 # ignore docs and temp files
 *.md
 !README.md
-
-temp_docs
-**/temp_docs
