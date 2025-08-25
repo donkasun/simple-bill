@@ -168,7 +168,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   };
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
+    <div ref={containerRef} style={{ position: "relative", zIndex: 9998 }}>
       <div style={{ position: "relative" }}>
         <StyledInput
           label={label}
@@ -222,7 +222,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
             border: "1px solid #ccc",
             borderRadius: "4px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            zIndex: 1000,
+            zIndex: 9999,
             maxHeight: "200px",
             overflowY: "auto",
           }}
