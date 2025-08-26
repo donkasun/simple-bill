@@ -1,13 +1,9 @@
 import React from "react";
 import FieldWrapper from "./FieldWrapper";
-import downArrowIcon from "../../assets/down-arrow.png";
 
 type StyledInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   error?: string;
-  showDropdownIcon?: boolean;
-  isDropdownToggled?: boolean;
-  onDropdownToggle?: () => void;
 };
 
 const StyledInput: React.FC<StyledInputProps> = ({
@@ -16,67 +12,21 @@ const StyledInput: React.FC<StyledInputProps> = ({
   error,
   required,
   id,
-  showDropdownIcon = false,
-  isDropdownToggled = false,
-  onDropdownToggle,
-  disabled,
   ...props
 }) => {
-  const inputWidth = "calc(100% - 24px)";
   return (
     <FieldWrapper label={label} required={required} error={error} style={style}>
-      <div style={{ position: "relative", width: inputWidth }}>
-        <input
-          id={id}
-          {...props}
-          style={{
-            border: "none",
-            outline: "none",
-            width: "100%",
-            paddingRight: "0px",
-            backgroundColor: "transparent",
-            ...(style || {}),
-          }}
-        />
-        {showDropdownIcon && (
-          <button
-            type="button"
-            onClick={onDropdownToggle}
-            disabled={disabled}
-            style={{
-              position: "absolute",
-              right: "12px",
-              top: "50%",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "2px",
-              color: "#666",
-              fontSize: "10px",
-              transition: "transform 0.2s ease",
-              transform: `translateY(-50%)`,
-              zIndex: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "16px",
-              height: "16px",
-            }}
-            aria-label="Toggle dropdown"
-          >
-            <img
-              src={downArrowIcon}
-              alt="Dropdown arrow"
-              style={{
-                width: "90%",
-                height: "90%",
-                transition: "transform 0.2s ease",
-                transform: `rotate(${isDropdownToggled ? 180 : 0}deg)`,
-              }}
-            />
-          </button>
-        )}
-      </div>
+      <input
+        id={id}
+        {...props}
+        style={{
+          border: "none",
+          outline: "none",
+          width: "100%",
+          backgroundColor: "transparent",
+          ...(style || {}),
+        }}
+      />
     </FieldWrapper>
   );
 };
