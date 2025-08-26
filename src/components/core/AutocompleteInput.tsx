@@ -6,13 +6,7 @@ export type AutocompleteOption = {
   id: string;
   label: string;
   value: string;
-  customer?: {
-    id?: string;
-    name: string;
-    email?: string | null;
-    address?: string | null;
-    showEmail?: boolean;
-  };
+  data?: Record<string, unknown>; // Generic data object for any additional information
 };
 
 export type AutocompleteInputProps = {
@@ -85,11 +79,20 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   // Handle option selection
   const handleSelect = useCallback(
     (option: AutocompleteOption) => {
-      setInputValue(option.label);
-      onChange(option.label);
+      const selectedValue = option.label;
+      setInputValue(selectedValue);
+      onChange(selectedValue); // Call onChange to update parent state
       setIsOpen(false);
       setHighlightedIndex(-1);
       onSelect?.(option);
+
+      // Force focus back to input after selection
+      if (containerRef.current) {
+        const input = containerRef.current.querySelector("input");
+        if (input) {
+          input.focus();
+        }
+      }
     },
     [onChange, onSelect],
   );
@@ -137,14 +140,6 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     // Show dropdown if we have enough characters and options
     const shouldShowDropdown =
       newValue.length >= minSearchLength && options.length > 0;
-
-    console.log("Input change:", {
-      newValue,
-      minSearchLength,
-      optionsLength: options.length,
-      shouldShowDropdown,
-      isOpen: shouldShowDropdown,
-    });
 
     if (shouldShowDropdown) {
       calculateDropdownPosition();

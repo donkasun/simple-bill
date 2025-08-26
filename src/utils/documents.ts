@@ -8,14 +8,18 @@ export function selectCustomerDetails(
   customers: Array<{
     id?: string;
     name: string;
-    email?: string;
-    address?: string;
+    email?: string | null;
+    address?: string | null;
   }>,
   customerId?: string,
 ): DocumentEntity["customerDetails"] {
   const selected = customers.find((c) => c.id === customerId);
   return selected
-    ? { name: selected.name, email: selected.email, address: selected.address }
+    ? {
+        name: selected.name,
+        email: selected.email || undefined,
+        address: selected.address || undefined,
+      }
     : undefined;
 }
 

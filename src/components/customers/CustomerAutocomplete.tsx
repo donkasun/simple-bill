@@ -44,8 +44,10 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   };
 
   const handleSelect = (option: AutocompleteOption) => {
-    if (option.customer) {
-      onSelect?.(option.customer);
+    if (option.data) {
+      const customer = option.data as Customer;
+      onChange(customer.name); // Update the input value
+      onSelect?.(customer);
     }
   };
 

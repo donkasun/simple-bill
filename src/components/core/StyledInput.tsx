@@ -35,7 +35,7 @@ const StyledInput: React.FC<StyledInputProps> = ({
             width: "100%",
             paddingRight: "0px",
             backgroundColor: "transparent",
-            ...(props.style || {}),
+            ...(style || {}),
           }}
         />
         {showDropdownIcon && (

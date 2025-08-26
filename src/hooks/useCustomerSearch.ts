@@ -103,7 +103,7 @@ export function useCustomerSearch({
               id: customer.id!,
               label: customer.name,
               value: customer.name,
-              customer: customer,
+              data: customer,
             }));
 
           setOptions(autocompleteOptions);
@@ -150,7 +150,7 @@ export function useCustomerSearch({
           id: customer.id!,
           label: customer.name,
           value: customer.name,
-          customer: customer,
+          data: customer,
         }));
 
       setOptions(autocompleteOptions);

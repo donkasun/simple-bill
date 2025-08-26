@@ -7,6 +7,7 @@ import AutocompleteInput, {
 } from "../core/AutocompleteInput";
 import { useCustomerSearch } from "../../hooks/useCustomerSearch";
 import { useAuth } from "../../auth/useAuth";
+import type { Customer } from "../../types/customer";
 
 export type CustomerFormData = {
   name: string;
@@ -137,14 +138,15 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
   // Handle customer selection from autocomplete
   const handleCustomerSelect = (option: AutocompleteOption) => {
-    if (option.customer) {
-      setForm((prev) => ({
-        ...prev,
-        name: option.customer.name,
-        email: option.customer.email || "",
-        address: option.customer.address || "",
-        showEmail: option.customer.showEmail ?? true,
-      }));
+    if (option.data) {
+      const customer = option.data as Customer;
+      const updatedForm = {
+        name: customer.name,
+        email: customer.email || "",
+        address: customer.address || "",
+        showEmail: customer.showEmail ?? true,
+      };
+      setForm((prev) => ({ ...prev, ...updatedForm }));
     }
   };
 
