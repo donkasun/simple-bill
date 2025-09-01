@@ -24,13 +24,13 @@ const ThemeToggle: React.FC = () => {
   return (
     <button
       onClick={handleToggle}
-      className="theme-toggle"
+      className="theme-toggle sidebar-link"
       aria-label={`Switch to ${getNextTheme()} theme`}
       title={`Current: ${theme} theme`}
       style={{
         background: "transparent",
-        border: "1px solid var(--brand-border)",
-        borderRadius: "6px",
+        border: "none",
+        borderRadius: "8px",
         width: "32px",
         height: "32px",
         cursor: "pointer",
@@ -38,6 +38,9 @@ const ThemeToggle: React.FC = () => {
         placeItems: "center",
         fontSize: "1rem",
         transition: "all 0.2s ease",
+        padding: "0",
+        margin: "0",
+        color: "var(--brand-text-primary)",
       }}
     >
       {getThemeIcon()}

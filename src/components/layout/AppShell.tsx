@@ -92,6 +92,9 @@ const AppShell: React.FC = () => {
             </nav>
 
             <nav className="sidebar-nav">
+              <div className="sidebar-theme-toggle">
+                <ThemeToggle />
+              </div>
               <NavLink
                 to="/profile"
                 className={({ isActive }) =>
@@ -147,9 +150,6 @@ const AppShell: React.FC = () => {
                     {user?.email ?? "User"}
                   </div>
                 </div>
-              </div>
-              <div className="sidebar-user-actions">
-                <ThemeToggle />
               </div>
             </div>
           </div>

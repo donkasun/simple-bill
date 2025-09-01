@@ -114,12 +114,11 @@ body {
   margin: 8px 8px;
 }
 
-.sidebar-user-actions {
+.sidebar-theme-toggle {
   display: flex;
-  justify-content: center;
-  padding-top: 0.75rem;
-  margin-top: 0.75rem;
-  border-top: 1px solid var(--brand-border);
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 4px;
 }
 
 .sidebar-user {
@@ -613,6 +612,5 @@ textarea {
 /* Theme toggle styles */
 .theme-toggle:hover {
   background: var(--brand-background) !important;
-  border-color: var(--brand-primary) !important;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
