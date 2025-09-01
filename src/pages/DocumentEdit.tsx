@@ -617,22 +617,19 @@ const DocumentEdit: React.FC = () => {
                   Add Line Item
                 </SecondaryButton>
                 <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-                  <div>
+                  <div style={{ textAlign: "right" }}>
                     <div className="muted" style={{ fontSize: 12 }}>
                       Subtotal
                     </div>
-                    <div className="td-strong" style={{ textAlign: "right" }}>
+                    <div className="td-strong">
                       {formatCurrency(subtotal, currency)}
                     </div>
                   </div>
-                  <div>
+                  <div style={{ textAlign: "right" }}>
                     <div className="muted" style={{ fontSize: 12 }}>
                       Total
                     </div>
-                    <div
-                      className="td-strong"
-                      style={{ textAlign: "right", fontSize: 18 }}
-                    >
+                    <div className="td-strong" style={{ fontSize: 18 }}>
                       {formatCurrency(total, currency)}
                     </div>
                   </div>
@@ -640,7 +637,7 @@ const DocumentEdit: React.FC = () => {
               </div>
             </div>
 
-            <div className="card" style={{ padding: 16, marginTop: 16 }}>
+            <div style={{ marginTop: 16 }}>
               <StyledTextarea
                 label="Notes"
                 placeholder="Additional notes for the customer"

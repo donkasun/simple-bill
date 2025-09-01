@@ -109,6 +109,7 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 }
                 disabled={!canEdit}
                 error={itemErrors[li.id]?.unitPrice}
+                style={{ textAlign: "right" }}
               />
             </td>
             <td className="td-right">
@@ -126,6 +127,7 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 }
                 disabled={!canEdit}
                 error={itemErrors[li.id]?.quantity}
+                style={{ textAlign: "right" }}
               />
             </td>
             <td className="td-right">

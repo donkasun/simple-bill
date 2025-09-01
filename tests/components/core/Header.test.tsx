@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import Header from "../../../src/components/core/Header";
 import { useAuth } from "@auth/useAuth";
@@ -8,26 +8,6 @@ import { useAuth } from "@auth/useAuth";
 // Mock the auth hook
 vi.mock("@auth/useAuth");
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
-
-// Mock Rough.js
-vi.mock("roughjs/bundled/rough.esm.js", () => ({
-  default: {
-    svg: vi.fn(() => ({
-      line: vi.fn(() =>
-        document.createElementNS("http://www.w3.org/2000/svg", "line"),
-      ),
-    })),
-  },
-}));
-
-// Mock the roughjs utility
-vi.mock("@utils/roughjs", () => ({
-  roughHeaderDivider: {
-    roughness: 0.8,
-    stroke: "var(--brand-border)",
-    strokeWidth: 1,
-  },
-}));
 
 // Mock the fallback avatar utility
 vi.mock("@utils/fallbackAvatar", () => ({
@@ -51,13 +31,6 @@ describe("Header", () => {
       signIn: vi.fn(),
       loading: false,
     });
-
-    // Mock ResizeObserver
-    global.ResizeObserver = vi.fn().mockImplementation(() => ({
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
-    }));
   });
 
   const renderHeader = (props = {}) => {
@@ -123,6 +96,36 @@ describe("Header", () => {
       renderHeader();
       expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeTruthy();
     });
+
+    it("should toggle menu when user button is clicked", () => {
+      renderHeader();
+      const menuButton = screen.getByRole("button", { name: /user/i });
+
+      // Menu should be closed initially
+      expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+      // Click to open menu
+      fireEvent.click(menuButton);
+      expect(menuButton).toHaveAttribute("aria-expanded", "true");
+
+      // Click to close menu
+      fireEvent.click(menuButton);
+      expect(menuButton).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("should call signOut when sign out button is clicked", () => {
+      renderHeader();
+      const menuButton = screen.getByRole("button", { name: /user/i });
+
+      // Open menu
+      fireEvent.click(menuButton);
+
+      // Click sign out
+      const signOutButton = screen.getByRole("menuitem", { name: "Sign out" });
+      fireEvent.click(signOutButton);
+
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("Sidebar Toggle", () => {
@@ -133,39 +136,23 @@ describe("Header", () => {
       const hamburgerButton = screen.getByRole("button", {
         name: "Open sidebar",
       });
-      hamburgerButton.click();
+      fireEvent.click(hamburgerButton);
 
       expect(mockToggleSidebar).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe("Rough.js Divider", () => {
-    it("should create SVG element for rough divider", () => {
-      const createElementNS = vi.spyOn(document, "createElementNS");
+  describe("Styling", () => {
+    it("should have correct header styles", () => {
       renderHeader();
-
-      expect(createElementNS).toHaveBeenCalledWith(
-        "http://www.w3.org/2000/svg",
-        "svg",
-      );
+      const header = screen.getByRole("banner");
+      expect(header).toHaveClass("top-header");
     });
 
-    it("should set correct SVG attributes", () => {
-      const createElementNS = vi.spyOn(document, "createElementNS");
-      const mockSvg = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg",
-      );
-      createElementNS.mockReturnValue(mockSvg);
-
-      renderHeader();
-
-      expect(mockSvg.getAttribute("width")).toBe("100%");
-      expect(mockSvg.getAttribute("height")).toBe("2");
-      expect(mockSvg.style.position).toBe("absolute");
-      expect(mockSvg.style.bottom).toBe("0");
-      expect(mockSvg.style.left).toBe("0");
-      expect(mockSvg.style.pointerEvents).toBe("none");
+    it("should have correct page title styles", () => {
+      renderHeader({ title: "Test Page" });
+      const title = screen.getByText("Test Page");
+      expect(title).toHaveClass("page-title");
     });
   });
 

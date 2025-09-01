@@ -1,6 +1,4 @@
-import React, { useEffect, useMemo, useRef, cloneElement } from "react";
-import rough from "roughjs/bundled/rough.esm.js";
-import { roughInput } from "@utils/roughjs";
+import React, { useMemo, cloneElement } from "react";
 
 type FieldWrapperProps = {
   label?: string;
@@ -17,91 +15,56 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
   style,
   children,
 }) => {
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const errorId = useMemo(
     () => `field-error-${Math.random().toString(36).slice(2)}`,
     [],
   );
-
-  useEffect(() => {
-    const wrapper = wrapperRef.current;
-    const canvas = canvasRef.current;
-    if (!wrapper || !canvas) return;
-    const draw = () => {
-      const rect = wrapper.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const w = Math.max(1, Math.round(rect.width));
-      const h = Math.max(1, Math.round(rect.height));
-      canvas.width = Math.max(1, Math.round(w * dpr));
-      canvas.height = Math.max(1, Math.round(h * dpr));
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, w, h);
-      const rc = rough.canvas(canvas);
-      const options = error
-        ? { ...roughInput, stroke: "rgba(220, 20, 60, 0.85)" }
-        : roughInput;
-      rc.rectangle(0.5, 0.5, w - 1, h - 1, options);
-    };
-    draw();
-    const ro = new ResizeObserver(draw);
-    ro.observe(wrapper);
-    window.addEventListener("resize", draw);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", draw);
-    };
-  }, [error]);
 
   const enhancedChild = cloneElement(children, {
     "aria-invalid": !!error,
     "aria-describedby": error ? errorId : undefined,
     required,
     style: {
-      position: "relative",
-      zIndex: 1,
-      width: "calc(100% - 15px)",
-      padding: "10px 12px",
-      border: "none",
+      width: "100%",
+      padding: "12px 16px",
+      border: error
+        ? "1px solid var(--brand-danger)"
+        : "1px solid var(--brand-border)",
+      borderRadius: "8px",
       outline: "none",
-      background: "transparent",
+      background: "var(--white)",
+      fontSize: "1rem",
+      transition: "border-color 0.2s ease, box-shadow 0.2s ease",
       ...(children.props?.style || {}),
     },
   } as React.HTMLAttributes<HTMLElement>);
 
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", gap: "8px", ...style }}
+    >
       {label && (
-        <span style={{ fontSize: 14 }}>
+        <label
+          style={{ fontWeight: "600", color: "var(--brand-text-primary)" }}
+        >
           {label}
-          {required ? (
-            <span aria-hidden="true" style={{ color: "crimson" }}>
-              &nbsp;*
-            </span>
-          ) : null}
-        </span>
+          {required && <span style={{ color: "var(--brand-danger)" }}> *</span>}
+        </label>
       )}
-      <div ref={wrapperRef} style={{ position: "relative", ...style }}>
-        <canvas
-          ref={canvasRef}
-          style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
-        />
-        {enhancedChild}
-      </div>
+      {enhancedChild}
       {error && (
         <div
           id={errorId}
-          role="alert"
-          style={{ color: "crimson", fontSize: 13, marginTop: 6 }}
+          style={{
+            color: "var(--brand-danger)",
+            fontSize: "0.875rem",
+            fontWeight: "500",
+          }}
         >
           {error}
         </div>
       )}
-    </label>
+    </div>
   );
 };
 

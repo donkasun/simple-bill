@@ -1,47 +1,9 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import PrimaryButton from "../../../src/components/core/PrimaryButton";
 
-// Mock Rough.js
-vi.mock("roughjs/bundled/rough.esm.js", () => ({
-  default: {
-    canvas: vi.fn(() => ({
-      rectangle: vi.fn(),
-    })),
-  },
-}));
-
-// Mock the roughjs utility
-vi.mock("../../../src/utils/roughjs", () => ({
-  roughButtonPrimary: {
-    roughness: 1.5,
-    stroke: "var(--action-blue)",
-    fill: "var(--action-blue)",
-    fillStyle: "solid",
-  },
-  roughButtonPrimaryHover: {
-    roughness: 2.5,
-    stroke: "var(--action-blue)",
-    fill: "var(--action-blue)",
-    fillStyle: "solid",
-  },
-}));
-
 describe("PrimaryButton", () => {
-  beforeEach(() => {
-    // Mock ResizeObserver
-    global.ResizeObserver = vi.fn().mockImplementation(() => ({
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
-    }));
-  });
-
-  afterEach(() => {
-    cleanup();
-  });
-
   const renderPrimaryButton = (props = {}) => {
     return render(<PrimaryButton {...props}>Test Button</PrimaryButton>);
   };
@@ -55,13 +17,14 @@ describe("PrimaryButton", () => {
     it("should render button with custom className", () => {
       renderPrimaryButton({ className: "custom-class" });
       const button = screen.getByRole("button");
-      expect(button).toBeTruthy();
+      expect(button).toHaveClass("custom-class");
+      expect(button).toHaveClass("btn-primary");
     });
 
     it("should render button with custom style", () => {
       renderPrimaryButton({ style: { backgroundColor: "red" } });
       const button = screen.getByRole("button");
-      expect(button).toBeTruthy();
+      expect(button).toHaveStyle({ backgroundColor: "red" });
     });
   });
 
@@ -92,7 +55,7 @@ describe("PrimaryButton", () => {
     it("should handle type prop", () => {
       renderPrimaryButton({ type: "submit" });
       const button = screen.getByRole("button");
-      expect(button).toBeTruthy();
+      expect(button).toHaveAttribute("type", "submit");
     });
 
     it("should handle aria-label prop", () => {
@@ -124,6 +87,27 @@ describe("PrimaryButton", () => {
     });
   });
 
+  describe("Styling", () => {
+    it("should have correct default styles", () => {
+      renderPrimaryButton();
+      const button = screen.getByRole("button");
+
+      expect(button).toHaveStyle({
+        padding: "10px 20px",
+        border: "none",
+        borderRadius: "8px",
+        fontSize: "1rem",
+        fontWeight: "600",
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "8px",
+        minHeight: "44px",
+      });
+    });
+  });
+
   describe("Accessibility", () => {
     it("should have button role", () => {
       renderPrimaryButton();
@@ -134,7 +118,7 @@ describe("PrimaryButton", () => {
       renderPrimaryButton();
       const button = screen.getByRole("button");
       button.focus();
-      expect(button).toBeTruthy();
+      expect(button).toHaveFocus();
     });
 
     it("should handle keyboard events", () => {
@@ -145,18 +129,6 @@ describe("PrimaryButton", () => {
       fireEvent.keyDown(button, { key: "Enter" });
 
       expect(mockOnKeyDown).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe("Rough.js Integration", () => {
-    it("should use roughButtonPrimary options for default state", () => {
-      renderPrimaryButton();
-      expect(true).toBe(true);
-    });
-
-    it("should use roughButtonPrimaryHover options for hover state", () => {
-      renderPrimaryButton();
-      expect(true).toBe(true);
     });
   });
 
