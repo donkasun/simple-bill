@@ -110,7 +110,7 @@ This document lists all features for the SimpleBill application with their curre
     - **Description**: View and manage all customers in a table format
 
 17. **Auto-suggest Customer Names**
-    - **Status**: ⏳ Planned
+    - **Status**: 🔄 In Progress
     - **Priority**: 🎯 High
     - **Description**: Google-style search suggestions as you type customer names
     - **Implementation**: Add autocomplete dropdown to customer name fields, search existing customers in real-time, highlight matching text

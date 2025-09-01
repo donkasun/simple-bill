@@ -330,7 +330,7 @@ const DocumentCreation: React.FC = () => {
             <StyledDropdown
               label="Bill To"
               id="doc-customerId"
-              value={state.customerId ?? ""}
+              value={state.customerId || ""}
               onChange={(e) =>
                 dispatch({
                   type: "SET_FIELD",
@@ -338,16 +338,16 @@ const DocumentCreation: React.FC = () => {
                   value: e.target.value || undefined,
                 })
               }
+              required
               disabled={loadingCustomers}
-              required={false}
               error={headerErrors.customerId}
             >
-              <option value="" disabled>
-                {loadingCustomers ? "Loading customers…" : "Select a customer"}
+              <option value="">
+                {loadingCustomers ? "Loading customers..." : "Select customer"}
               </option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
                 </option>
               ))}
             </StyledDropdown>

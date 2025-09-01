@@ -6,6 +6,7 @@ import LineItemsTable from "@components/documents/LineItemsTable";
 import PrimaryButton from "@components/core/PrimaryButton";
 import SecondaryButton from "@components/core/SecondaryButton";
 import ErrorBanner from "@components/core/ErrorBanner";
+
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { useNavigate, useParams } from "react-router-dom";
@@ -552,7 +553,7 @@ const DocumentEdit: React.FC = () => {
                 <StyledDropdown
                   label="Bill To"
                   id="doc-customerId"
-                  value={state.customerId ?? ""}
+                  value={state.customerId || ""}
                   onChange={(e) =>
                     dispatch({
                       type: "SET_FIELD",
@@ -560,17 +561,18 @@ const DocumentEdit: React.FC = () => {
                       value: e.target.value || undefined,
                     })
                   }
+                  required
                   disabled={loadingCustomers || !canEdit}
                   error={headerErrors.customerId}
                 >
-                  <option value="" disabled>
+                  <option value="">
                     {loadingCustomers
-                      ? "Loading customers…"
-                      : "Select a customer"}
+                      ? "Loading customers..."
+                      : "Select customer"}
                   </option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
                     </option>
                   ))}
                 </StyledDropdown>
