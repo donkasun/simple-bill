@@ -1,51 +1,9 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import FieldWrapper from "../../../src/components/core/FieldWrapper";
-import { roughInput } from "../../../src/utils/roughjs";
-
-// Mock Rough.js
-vi.mock("roughjs/bundled/rough.esm.js", () => ({
-  default: {
-    canvas: vi.fn(() => ({
-      rectangle: vi.fn(),
-    })),
-  },
-}));
-
-// Mock the roughjs utility
-vi.mock("@utils/roughjs", () => ({
-  roughInput: {
-    roughness: 1,
-    stroke: "var(--sketch-black)",
-  },
-}));
 
 describe("FieldWrapper", () => {
-  beforeEach(() => {
-    // Mock ResizeObserver
-    global.ResizeObserver = vi.fn().mockImplementation(() => ({
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
-    }));
-
-    // Mock canvas context
-    const mockContext = {
-      scale: vi.fn(),
-      clearRect: vi.fn(),
-    };
-    const mockCanvas = {
-      getContext: vi.fn(() => mockContext),
-      width: 0,
-      height: 0,
-      style: {},
-    };
-    vi.spyOn(document, "createElement").mockReturnValue(
-      mockCanvas as HTMLCanvasElement,
-    );
-  });
-
   const renderFieldWrapper = (props = {}) => {
     return render(
       <FieldWrapper {...props}>
@@ -74,24 +32,17 @@ describe("FieldWrapper", () => {
       renderFieldWrapper({ label: "Test Label", required: false });
       expect(screen.queryByText("*")).toBeFalsy();
     });
-
-    it("should render canvas element", () => {
-      renderFieldWrapper();
-      const canvas = document.querySelector("canvas");
-      expect(canvas).toBeTruthy();
-    });
   });
 
   describe("Error Handling", () => {
     it("should render error message when error is provided", () => {
       renderFieldWrapper({ error: "This field is required" });
       expect(screen.getByText("This field is required")).toBeTruthy();
-      expect(screen.getByRole("alert")).toBeTruthy();
     });
 
     it("should not render error message when no error", () => {
       renderFieldWrapper();
-      expect(screen.queryByRole("alert")).toBeFalsy();
+      expect(screen.queryByText("This field is required")).toBeFalsy();
     });
 
     it("should set aria-invalid when error is present", () => {
@@ -128,7 +79,7 @@ describe("FieldWrapper", () => {
 
     it("should enhance input with custom style", () => {
       renderFieldWrapper({ style: { width: "200px" } });
-      const wrapper = document.querySelector("label");
+      const wrapper = document.querySelector("div");
       expect(wrapper).toHaveStyle({ width: "200px" });
     });
 
@@ -144,36 +95,44 @@ describe("FieldWrapper", () => {
     it("should have correct label styles", () => {
       renderFieldWrapper({ label: "Test Label" });
       const label = screen.getByText("Test Label");
-      expect(label).toHaveStyle({ fontSize: "14px" });
+      expect(label).toHaveStyle({ fontWeight: "600" });
     });
 
     it("should have correct error styles", () => {
       renderFieldWrapper({ error: "Error message" });
-      const error = screen.getByRole("alert");
+      const error = screen.getByText("Error message");
       expect(error).toHaveStyle({
-        color: "crimson",
-        fontSize: "13px",
-        marginTop: "6px",
+        color: "var(--brand-danger)",
+        fontSize: "0.875rem",
+        fontWeight: "500",
       });
     });
 
     it("should have correct required indicator styles", () => {
       renderFieldWrapper({ label: "Test Label", required: true });
       const indicator = screen.getByText("*");
-      expect(indicator).toHaveStyle({ color: "crimson" });
+      expect(indicator).toHaveStyle({ color: "var(--brand-danger)" });
     });
 
     it("should have correct input styles", () => {
       renderFieldWrapper();
       const input = screen.getByPlaceholderText("Enter text");
       expect(input).toHaveStyle({
-        position: "relative",
-        zIndex: "1",
-        width: "calc(100% - 15px)",
-        padding: "10px 12px",
-        border: "none",
+        width: "100%",
+        padding: "12px 16px",
+        border: "1px solid var(--brand-border)",
+        borderRadius: "8px",
         outline: "none",
-        background: "transparent",
+        background: "var(--white)",
+        fontSize: "1rem",
+      });
+    });
+
+    it("should have error border when error is present", () => {
+      renderFieldWrapper({ error: "Error message" });
+      const input = screen.getByPlaceholderText("Enter text");
+      expect(input).toHaveStyle({
+        border: "1px solid var(--brand-danger)",
       });
     });
   });
@@ -222,7 +181,7 @@ describe("FieldWrapper", () => {
     it("should have proper error association", () => {
       renderFieldWrapper({ error: "Error message" });
       const input = screen.getByPlaceholderText("Enter text");
-      const error = screen.getByRole("alert");
+      const error = screen.getByText("Error message");
       expect(input).toHaveAttribute("aria-describedby");
       expect(error).toHaveAttribute("id");
     });
@@ -241,7 +200,7 @@ describe("FieldWrapper", () => {
 
     it("should handle missing error", () => {
       renderFieldWrapper();
-      expect(screen.queryByRole("alert")).toBeFalsy();
+      expect(screen.queryByText("Error message")).toBeFalsy();
     });
 
     it("should handle complex children", () => {
@@ -255,15 +214,6 @@ describe("FieldWrapper", () => {
       );
       expect(screen.getByPlaceholderText("Input 1")).toBeTruthy();
       expect(screen.getByPlaceholderText("Input 2")).toBeTruthy();
-    });
-  });
-
-  describe("Rough.js Integration", () => {
-    it("should use roughInput options", () => {
-      renderFieldWrapper();
-
-      // The component should use the imported options
-      expect(roughInput).toBeDefined();
     });
   });
 });

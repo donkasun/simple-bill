@@ -1,50 +1,11 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import StyledTable from "../../../src/components/core/StyledTable";
-import { roughTable } from "../../../src/utils/roughjs";
-
-// Mock Rough.js
-vi.mock("roughjs/bundled/rough.esm.js", () => ({
-  default: {
-    canvas: vi.fn(() => ({
-      rectangle: vi.fn(),
-    })),
-  },
-}));
-
-// Mock the roughjs utility
-vi.mock("@utils/roughjs", () => ({
-  roughTable: {
-    roughness: 0.5,
-    stroke: "var(--sketch-black)",
-    strokeWidth: 1,
-  },
-}));
 
 describe("StyledTable", () => {
-  beforeEach(() => {
-    // Mock ResizeObserver
-    global.ResizeObserver = vi.fn().mockImplementation(() => ({
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
-    }));
-
-    // Mock canvas context
-    const mockContext = {
-      scale: vi.fn(),
-      clearRect: vi.fn(),
-    };
-    const mockCanvas = {
-      getContext: vi.fn(() => mockContext),
-      width: 0,
-      height: 0,
-      style: {},
-    };
-    vi.spyOn(document, "createElement").mockReturnValue(
-      mockCanvas as HTMLCanvasElement,
-    );
+  afterEach(() => {
+    cleanup();
   });
 
   const renderStyledTable = (props = {}) => {
@@ -85,12 +46,6 @@ describe("StyledTable", () => {
       renderStyledTable({ style: { width: "100%" } });
       const wrapper = document.querySelector(".table-wrapper");
       expect(wrapper).toHaveStyle({ width: "100%" });
-    });
-
-    it("should render canvas element", () => {
-      renderStyledTable();
-      const canvas = document.querySelector("canvas");
-      expect(canvas).toBeTruthy();
     });
 
     it("should render wrapper div", () => {
@@ -138,6 +93,10 @@ describe("StyledTable", () => {
 
       expect(wrapper).toHaveStyle({
         position: "relative",
+        background: "var(--white)",
+        border: "1px solid var(--brand-border)",
+        borderRadius: "12px",
+        overflow: "hidden",
       });
     });
 
@@ -150,17 +109,6 @@ describe("StyledTable", () => {
         zIndex: "1",
         width: "100%",
         borderCollapse: "collapse",
-      });
-    });
-
-    it("should have correct canvas styles", () => {
-      renderStyledTable();
-      const canvas = document.querySelector("canvas");
-
-      expect(canvas).toHaveStyle({
-        position: "absolute",
-        inset: "0",
-        pointerEvents: "none",
       });
     });
   });
@@ -182,15 +130,6 @@ describe("StyledTable", () => {
       renderStyledTable({ summary: "Test table summary" });
       const table = screen.getByRole("table");
       expect(table).toHaveAttribute("summary", "Test table summary");
-    });
-  });
-
-  describe("Rough.js Integration", () => {
-    it("should use roughTable options", () => {
-      renderStyledTable();
-
-      // The component should use the imported options
-      expect(roughTable).toBeDefined();
     });
   });
 
