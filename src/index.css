@@ -189,6 +189,13 @@ body {
   }
 }
 
+/* Hide sidebar overlay on desktop */
+@media (min-width: 1024px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
 h1,
 h2,
 h3,
