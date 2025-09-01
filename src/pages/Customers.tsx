@@ -78,7 +78,7 @@ const Customers: React.FC = () => {
             marginBottom: "1rem",
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
+          <h2 className="page-title" style={{ margin: 0 }}>
             Customers
           </h2>
           <div style={{ display: "flex", gap: 8 }}>
