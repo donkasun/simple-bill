@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { useAuth } from "@auth/useAuth";
-import PrimaryButton from "../components/core/PrimaryButton";
 import { useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
@@ -22,102 +21,143 @@ const Login: React.FC = () => {
         height: "100dvh",
         overflow: "hidden",
         padding: "1rem",
-        backgroundColor: "#FDFBF6",
-        color: "#343a40",
+        backgroundColor: "#f5f5f5",
+        color: "#333",
       }}
     >
       <div style={{ width: "100%", maxWidth: 384 }}>
         <div
           style={{
             background: "#fff",
-            padding: "2rem",
+            padding: "2.5rem",
             borderRadius: "12px",
-            border: "1px solid rgba(52,58,64,0.2)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            border: "1px solid rgba(0,0,0,0.1)",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
           }}
         >
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-            <svg
+            {/* Circular light blue background with white document icon */}
+            <div
               style={{
-                width: 48,
-                height: 48,
-                margin: "0 auto 1rem",
-                color: "#0d6efd",
-                display: "block",
+                width: "64px",
+                height: "64px",
+                borderRadius: "50%",
+                backgroundColor: "#e3f2fd",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 1.5rem",
               }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
             >
-              <path
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-              ></path>
-            </svg>
+              <svg
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  color: "#1976d2",
+                }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                ></path>
+              </svg>
+            </div>
             <h1
-              className="brand"
               style={{
                 fontSize: "2rem",
                 lineHeight: "2.25rem",
                 fontWeight: 700,
+                color: "#333",
+                margin: "0 0 0.5rem 0",
               }}
             >
               SimpleBill
             </h1>
             <p
               style={{
-                marginTop: "0.5rem",
+                margin: "0",
                 fontSize: "1rem",
-                color: "rgba(52,58,64,0.7)",
+                color: "#666",
+                lineHeight: "1.5",
               }}
             >
               Sign in to manage your invoices and quotations.
             </p>
           </div>
-          <PrimaryButton
+
+          {/* Black Google sign-in button */}
+          <button
             onClick={signInWithGoogle}
-            className="btn-primary"
             style={{
               width: "100%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "0.75rem",
-              padding: "0.75rem 1rem",
+              padding: "0.875rem 1rem",
               borderRadius: "8px",
               fontWeight: 600,
+              fontSize: "1rem",
+              backgroundColor: "#000",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+              transition: "background-color 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#333";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#000";
             }}
           >
             <svg
-              style={{ width: 20, height: 20 }}
-              fill="currentColor"
-              height="16"
-              viewBox="0 0 16 16"
-              width="16"
+              style={{ width: "20px", height: "20px" }}
+              viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z"></path>
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
             </svg>
             <span>Sign in with Google</span>
-          </PrimaryButton>
+          </button>
         </div>
+
         <p
           style={{
             textAlign: "center",
             marginTop: "1.5rem",
-            fontSize: "0.75rem",
-            color: "rgba(52,58,64,0.7)",
+            fontSize: "0.875rem",
+            color: "#666",
+            lineHeight: "1.4",
           }}
         >
           By signing in, you agree to our{" "}
           <a
             style={{
               fontWeight: 500,
-              color: "#0d6efd",
-              textDecoration: "underline",
+              color: "#1976d2",
+              textDecoration: "none",
             }}
             href="/terms"
           >
