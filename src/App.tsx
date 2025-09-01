@@ -7,7 +7,7 @@ import {
 import { lazy, Suspense } from "react";
 import AppShell from "@components/layout/AppShell";
 import ProtectedRoute from "@components/core/ProtectedRoute";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider } from "./contexts";
 const Login = lazy(() => import("./pages/Login"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
