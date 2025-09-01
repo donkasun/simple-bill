@@ -1,8 +1,7 @@
-import React, { createContext, useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import type { Theme, ThemeContextType } from "../types/theme";
 import useUserProfile from "../hooks/useUserProfile";
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+import { ThemeContext } from "./ThemeContext";
 
 interface ThemeProviderProps {
   children: React.ReactNode;

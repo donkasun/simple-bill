@@ -4,6 +4,7 @@ import Logo from "../../assets/logo.svg";
 import { PageTitleContext } from "./PageTitleContext";
 import { useAuth } from "@auth/useAuth";
 import { getFallbackAvatar } from "@utils/fallbackAvatar";
+import ThemeToggle from "../core/ThemeToggle";
 
 const AppShell: React.FC = () => {
   const [pageTitle, setPageTitle] = useState<string>("");
@@ -114,6 +115,11 @@ const AppShell: React.FC = () => {
                 Sign out
               </button>
             </nav>
+
+            <div className="sidebar-theme-toggle">
+              <div className="sidebar-theme-label">Theme</div>
+              <ThemeToggle />
+            </div>
 
             <div className="sidebar-user">
               <div className="sidebar-user-button" aria-label="User">
