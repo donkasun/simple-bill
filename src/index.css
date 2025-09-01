@@ -164,10 +164,43 @@ h3,
 .btn-primary {
   background-color: var(--brand-primary);
   color: white;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .btn-primary:hover {
   background-color: var(--brand-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(25, 121, 230, 0.3);
+}
+
+.btn-secondary {
+  background-color: var(--white);
+  color: var(--brand-text-primary);
+  border: 1px solid var(--brand-border);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.btn-secondary:hover {
+  background-color: var(--brand-background);
+  border-color: var(--brand-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.btn-secondary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(25, 121, 230, 0.3);
 }
 
 /* Header */
@@ -178,6 +211,7 @@ h3,
   padding: 1rem 0;
   background: var(--white);
   position: relative;
+  border-bottom: 1px solid var(--brand-border);
 }
 .top-header__inner {
   display: flex;
@@ -456,6 +490,15 @@ h3,
   display: inline-flex;
   align-items: center;
   gap: 20px;
+}
+
+/* Form input focus styles */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--brand-primary) !important;
+  box-shadow: 0 0 0 3px rgba(25, 121, 230, 0.1) !important;
+  outline: none;
 }
 
 .status-badge {
