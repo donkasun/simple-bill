@@ -114,13 +114,6 @@ body {
   margin: 8px 8px;
 }
 
-.sidebar-theme-toggle {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  margin-bottom: 4px;
-}
-
 .sidebar-user {
   margin-top: auto;
   padding: 0.75rem;

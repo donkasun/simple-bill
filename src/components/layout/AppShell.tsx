@@ -92,9 +92,7 @@ const AppShell: React.FC = () => {
             </nav>
 
             <nav className="sidebar-nav">
-              <div className="sidebar-theme-toggle">
-                <ThemeToggle />
-              </div>
+              <ThemeToggle />
               <NavLink
                 to="/profile"
                 className={({ isActive }) =>
