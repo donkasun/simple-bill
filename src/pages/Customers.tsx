@@ -20,7 +20,7 @@ const Customers: React.FC = () => {
     collectionName: "customers",
     userId: user?.uid,
     orderByField: "createdAt",
-    select: (c) => ({ ...c, addressDisplay: c.address ?? "-" }),
+    select: (c) => ({ ...c, addressDisplay: c.address || "-" }),
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -46,14 +46,14 @@ const Customers: React.FC = () => {
         await update(editingCustomer.id, {
           name: data.name,
           email: data.email,
-          address: data.address ?? "",
+          address: data.address,
           showEmail: data.showEmail ?? true,
         });
       } else {
         await add({
           name: data.name,
           email: data.email,
-          address: data.address ?? "",
+          address: data.address,
           userId: user?.uid || "",
           showEmail: data.showEmail ?? true,
         });
@@ -109,7 +109,7 @@ const Customers: React.FC = () => {
               {items.map((c) => (
                 <tr key={c.id}>
                   <td>{c.name}</td>
-                  <td>{c.email}</td>
+                  <td>{c.email || "-"}</td>
                   <td>
                     <div style={{ whiteSpace: "pre-wrap" }}>
                       {c.addressDisplay}

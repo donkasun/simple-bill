@@ -169,7 +169,7 @@ describe("FieldWrapper", () => {
       expect(input).toHaveStyle({
         position: "relative",
         zIndex: "1",
-        width: "calc(100% - 28px)",
+        width: "calc(100% - 15px)",
         padding: "10px 12px",
         border: "none",
         outline: "none",

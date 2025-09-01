@@ -5,8 +5,8 @@ import PrimaryButton from "../core/PrimaryButton";
 
 export type CustomerFormData = {
   name: string;
-  email?: string;
-  address?: string;
+  email?: string | null;
+  address?: string | null;
   showEmail?: boolean;
 };
 
@@ -67,8 +67,14 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   onCancel,
 }) => {
   const initialState: CustomerFormData = useMemo(
-    () => ({ name: "", email: "", address: "", showEmail: true, ...(initial ?? {}) }),
-    [initial]
+    () => ({
+      name: "",
+      email: "",
+      address: "",
+      showEmail: true,
+      ...(initial ?? {}),
+    }),
+    [initial],
   );
   const [form, setForm] = useState<CustomerFormData>(initialState);
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
@@ -85,18 +91,19 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     if (!form.name?.trim()) next.name = "Name is required";
     if (form.email && form.email.trim().length > 0) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(form.email.trim())) next.email = "Enter a valid email or leave it empty";
+      if (!emailRegex.test(form.email.trim()))
+        next.email = "Enter a valid email or leave it empty";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ): void => {
     const { name } = e.target as HTMLInputElement | HTMLTextAreaElement;
     const target = e.target as HTMLInputElement;
-    if (target && target.type === 'checkbox') {
+    if (target && target.type === "checkbox") {
       setForm((prev) => ({ ...prev, [name]: !!target.checked }));
       return;
     }
@@ -109,8 +116,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     if (!validate()) return;
     await onSubmit({
       name: form.name.trim(),
-      email: form.email?.trim() || undefined,
-      address: form.address?.trim(),
+      email: form.email?.trim() || null,
+      address: form.address?.trim() || null,
       showEmail: form.showEmail ?? true,
     });
   };
@@ -128,6 +135,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               onChange={handleChange}
               placeholder="Jane Doe / Acme Corp"
               required
+              error={errors.name}
             />
             {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
 
@@ -150,7 +158,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               rows={4}
             />
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input
                 type="checkbox"
                 name="showEmail"
@@ -176,5 +184,3 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 };
 
 export default CustomerModal;
-
-
