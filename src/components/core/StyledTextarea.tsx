@@ -14,22 +14,23 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
   id,
   ...props
 }) => {
-  const inputWidth = "calc(100% - 24px)";
   return (
     <FieldWrapper label={label} required={required} error={error} style={style}>
-      <div style={{ position: "relative", width: inputWidth }}>
-        <textarea
-          id={id}
-          {...props}
-          style={{
-            border: "none",
-            outline: "none",
-            width: "100%",
-            paddingRight: "0px",
-            backgroundColor: "transparent",
-          }}
-        />
-      </div>
+      <textarea
+        id={id}
+        {...props}
+        style={{
+          border: "none",
+          outline: "none",
+          width: "100%",
+          backgroundColor: "transparent",
+          resize: "vertical",
+          minHeight: "80px",
+          fontFamily: "inherit",
+          fontSize: "inherit",
+          lineHeight: "1.5",
+        }}
+      />
     </FieldWrapper>
   );
 };

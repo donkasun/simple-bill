@@ -452,6 +452,7 @@ h3,
   text-align: left;
   padding: 12px 24px;
   background: #f9fafb;
+  font-weight: 600;
 }
 .table tbody td {
   padding: 14px 16px;
@@ -499,6 +500,27 @@ select:focus {
   border-color: var(--brand-primary) !important;
   box-shadow: 0 0 0 3px rgba(25, 121, 230, 0.1) !important;
   outline: none;
+}
+
+/* Table form input alignment */
+.table input[type="number"] {
+  text-align: right;
+}
+
+.table td {
+  vertical-align: top;
+}
+
+/* Consistent textarea styling */
+textarea {
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* Ensure consistent padding for form elements */
+.FieldWrapper textarea,
+.FieldWrapper input {
+  box-sizing: border-box;
 }
 
 .status-badge {
