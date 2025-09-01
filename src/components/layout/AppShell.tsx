@@ -116,11 +116,6 @@ const AppShell: React.FC = () => {
               </button>
             </nav>
 
-            <div className="sidebar-theme-toggle">
-              <div className="sidebar-theme-label">Theme</div>
-              <ThemeToggle />
-            </div>
-
             <div className="sidebar-user">
               <div className="sidebar-user-button" aria-label="User">
                 <div className="avatar" title={user?.displayName ?? "User"}>
@@ -152,6 +147,9 @@ const AppShell: React.FC = () => {
                     {user?.email ?? "User"}
                   </div>
                 </div>
+              </div>
+              <div className="sidebar-user-actions">
+                <ThemeToggle />
               </div>
             </div>
           </div>

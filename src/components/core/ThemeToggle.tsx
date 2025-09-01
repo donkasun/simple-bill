@@ -30,13 +30,13 @@ const ThemeToggle: React.FC = () => {
       style={{
         background: "transparent",
         border: "1px solid var(--brand-border)",
-        borderRadius: "8px",
-        width: "var(--round-button-size)",
-        height: "var(--round-button-size)",
+        borderRadius: "6px",
+        width: "32px",
+        height: "32px",
         cursor: "pointer",
         display: "grid",
         placeItems: "center",
-        fontSize: "1.2rem",
+        fontSize: "1rem",
         transition: "all 0.2s ease",
       }}
     >
