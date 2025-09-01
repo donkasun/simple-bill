@@ -372,6 +372,15 @@ h3,
   text-overflow: ellipsis;
   overflow: hidden;
 }
+
+.sidebar-user-email {
+  color: var(--brand-text-secondary);
+  font-size: 0.8rem;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
 .avatar-button {
   border: none;
   background: transparent;
