@@ -22,7 +22,9 @@ const Settings: React.FC = () => {
   return (
     <div style={{ padding: "1rem" }}>
       <div className="container-xl">
-        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Settings</h2>
+        <h2 className="page-title" style={{ margin: 0 }}>
+          Settings
+        </h2>
 
         {loading && <p>Loading settings...</p>}
         {error && <p style={{ color: "red" }}>{error}</p>}
