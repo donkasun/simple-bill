@@ -4,6 +4,7 @@ import Logo from "../../assets/logo.svg";
 import { PageTitleContext } from "./PageTitleContext";
 import { useAuth } from "@auth/useAuth";
 import { getFallbackAvatar } from "@utils/fallbackAvatar";
+import ThemeToggle from "../core/ThemeToggle";
 
 const AppShell: React.FC = () => {
   const [pageTitle, setPageTitle] = useState<string>("");
@@ -91,6 +92,9 @@ const AppShell: React.FC = () => {
             </nav>
 
             <nav className="sidebar-nav">
+              <div className="sidebar-theme-toggle">
+                <ThemeToggle />
+              </div>
               <NavLink
                 to="/profile"
                 className={({ isActive }) =>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "@auth/useAuth";
 import { getFallbackAvatar } from "@utils/fallbackAvatar";
+import ThemeToggle from "./ThemeToggle";
 
 type HeaderProps = { title?: string; onToggleSidebar?: () => void };
 
@@ -48,6 +49,7 @@ const Header: React.FC<HeaderProps> = ({ title, onToggleSidebar }) => {
         </div>
 
         <div className="header-actions">
+          <ThemeToggle />
           <div className="user-menu" ref={menuRef}>
             <button
               className="avatar-button"
