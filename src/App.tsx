@@ -10,7 +10,7 @@ import ProtectedRoute from "@components/core/ProtectedRoute";
 import { ThemeProvider } from "./contexts";
 const Login = lazy(() => import("./pages/Login"));
 const Terms = lazy(() => import("./pages/Terms"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Dashboard = lazy(() => import("./pages/dashboard"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Items = lazy(() => import("./pages/Items"));
 const DocumentCreation = lazy(() => import("./pages/DocumentCreation"));
