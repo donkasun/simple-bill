@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import type { Theme, ThemeContextType } from "../types/theme";
-import useUserProfile from "../hooks/useUserProfile";
 import { ThemeContext } from "./ThemeContext";
 
 interface ThemeProviderProps {
@@ -10,7 +9,6 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
-  const { profile, updateUserProfile } = useUserProfile();
 
   // Get system preference
   const getSystemTheme = (): "light" | "dark" => {
@@ -31,13 +29,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Initialize theme from localStorage, database, or default to system
+  // Initialize theme from localStorage or default to system
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as Theme;
-    const dbTheme = profile?.theme as Theme;
 
-    // Priority: localStorage > database > system
-    const initialTheme = savedTheme || dbTheme || "system";
+    // Priority: localStorage > system
+    const initialTheme = savedTheme || "system";
 
     if (["light", "dark", "system"].includes(initialTheme)) {
       setTheme(initialTheme);
@@ -45,7 +42,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     } else {
       updateResolvedTheme("system");
     }
-  }, [profile?.theme, updateResolvedTheme]);
+  }, [updateResolvedTheme]);
 
   // Listen for system theme changes
   useEffect(() => {
@@ -68,11 +65,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setTheme(newTheme);
     updateResolvedTheme(newTheme);
     localStorage.setItem("theme", newTheme);
-
-    // Also save to database
-    if (profile) {
-      updateUserProfile({ theme: newTheme });
-    }
   };
 
   const value: ThemeContextType = {
