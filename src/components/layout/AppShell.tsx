@@ -101,6 +101,21 @@ const AppShell: React.FC = () => {
               {navLink("/settings", "settings", "Settings")}
             </nav>
 
+            {/* Panel collapse/expand toggle */}
+            <div className="sidebar-panel-toggle">
+              <button
+                className="sidebar-panel-toggle-btn"
+                onClick={toggleCollapse}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={collapsed ? "Expand sidebar" : undefined}
+              >
+                <span className="material-symbols-outlined">chevron_left</span>
+                <span className="sidebar-panel-toggle-label">
+                  Collapse sidebar
+                </span>
+              </button>
+            </div>
+
             {/* Sign out */}
             <div className="sidebar-signout">
               <button
@@ -156,17 +171,14 @@ const AppShell: React.FC = () => {
           {/* Sticky top header */}
           <header className="top-header">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* Desktop: sidebar collapse toggle */}
+              {/* Mobile-only hamburger */}
               <button
-                className="sidebar-collapse-btn"
-                onClick={toggleCollapse}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="hamburger-btn"
+                aria-label="Open menu"
+                onClick={() => setIsSidebarOpen((o) => !o)}
               >
-                <span className="material-symbols-outlined">
-                  {collapsed ? "menu_open" : "menu"}
-                </span>
+                <span className="material-symbols-outlined">menu</span>
               </button>
-              {/* Mobile hamburger (CSS shows/hides based on breakpoint — same btn, separate class) */}
               <h2 className="top-header-title">{pageTitle || "Overview"}</h2>
             </div>
             <div className="top-header-actions">
