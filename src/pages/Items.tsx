@@ -11,7 +11,7 @@ import { formatCurrency } from "@utils/currency";
 import useUserProfile from "@hooks/useUserProfile";
 
 const Items: React.FC = () => {
-  usePageTitle("Items");
+  usePageTitle("Products & services");
   const { user } = useAuth();
   const { profile } = useUserProfile();
   type ItemRow = Item & { unitPriceLabel: string };
@@ -108,7 +108,7 @@ const Items: React.FC = () => {
           }}
         >
           <h2 className="page-title" style={{ margin: 0 }}>
-            Items
+            Products & services
           </h2>
           <div style={{ display: "flex", gap: 8 }}>
             <PrimaryButton onClick={handleAddClick}>Add New Item</PrimaryButton>

@@ -120,9 +120,7 @@ for a non-technical user:
 
 ## Roadmap
 
-- Items CRUD
-- Document creation (invoice/quotation), totals, and PDF export
-- Dashboard recent documents
+- This project is built in milestones. The canonical milestone tracker lives in `docs/project_plan.md`.
 
 ## Contributing
 

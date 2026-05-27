@@ -7,6 +7,7 @@ import {
 import { lazy, Suspense } from "react";
 import AppShell from "@components/layout/AppShell";
 import ProtectedRoute from "@components/core/ProtectedRoute";
+import ErrorBoundary from "@components/core/ErrorBoundary";
 import { ThemeProvider } from "./contexts";
 const Login = lazy(() => import("./pages/Login"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -22,31 +23,33 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <Suspense fallback={<div style={{ padding: "1rem" }}>Loading…</div>}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="items" element={<Items />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="documents">
-                <Route path="new" element={<DocumentCreation />} />
-                <Route path=":id/edit" element={<DocumentEdit />} />
+        <ErrorBoundary>
+          <Suspense fallback={<div style={{ padding: "1rem" }}>Loading…</div>}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="items" element={<Items />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="documents">
+                  <Route path="new" element={<DocumentCreation />} />
+                  <Route path=":id/edit" element={<DocumentEdit />} />
+                </Route>
               </Route>
-            </Route>
-          </Routes>
-        </Suspense>
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </Router>
     </ThemeProvider>
   );

@@ -18,7 +18,7 @@ type DocumentRow = DocumentEntity & {
 };
 
 const Dashboard: React.FC = () => {
-  usePageTitle("Overview");
+  usePageTitle("Home");
   const navigate = useNavigate();
   const { user } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);

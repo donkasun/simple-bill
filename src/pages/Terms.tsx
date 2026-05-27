@@ -82,8 +82,8 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                By accessing and using SimpleBill, you accept and agree to be
-                bound by the terms and provision of this agreement.
+                By using SimpleBill, you agree to these Terms. If you do not
+                agree, do not use the app.
               </p>
             </section>
 
@@ -105,14 +105,9 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                SimpleBill is a comprehensive business management platform
-                designed to streamline financial document creation and customer
-                relationship management. The service provides professional
-                invoice and quotation generation, customer database management,
-                product catalog maintenance, and document lifecycle tracking.
-                Users can create, edit, finalize, and download business
-                documents in PDF format with automated numbering and calculation
-                features.
+                SimpleBill is a small invoicing tool for creating customers,
+                items, invoices, and quotations. You can generate PDFs for your
+                records and for sharing with customers.
               </p>
             </section>
 
@@ -126,7 +121,7 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-primary)",
                 }}
               >
-                3. User Accounts
+                3. Accounts and access
               </h2>
               <p
                 style={{
@@ -134,10 +129,10 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                You are responsible for maintaining the confidentiality of your
-                account and for all activities that occur under your account.
-                You agree to notify us immediately of any unauthorized use of
-                your account.
+                You are responsible for safeguarding access to your device and
+                Google account. If you think someone has accessed your data
+                without permission, stop using the app and review your account
+                security settings.
               </p>
             </section>
 
@@ -151,7 +146,7 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-primary)",
                 }}
               >
-                4. Data and Privacy
+                4. Data and privacy
               </h2>
               <p
                 style={{
@@ -159,14 +154,20 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                Your business data and personal information are stored securely
-                using industry-standard Firebase services with enterprise-grade
-                security measures. We implement appropriate technical and
-                organizational safeguards to protect your information. We do not
-                sell, rent, or share your personal or business data with third
-                parties except as required by applicable law, to comply with
-                legal obligations, or as necessary to provide and improve our
-                services. You retain full ownership and control of your data.
+                SimpleBill stores your data in Firebase/Firestore under your
+                account. You control what you enter (customer details, item
+                descriptions, document notes). We do not intentionally sell your
+                data.
+              </p>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
+                This app is provided as-is and may change over time. Avoid
+                storing sensitive information you would not want exposed (for
+                example, passwords, payment card numbers, or government IDs).
               </p>
             </section>
 
@@ -180,7 +181,7 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-primary)",
                 }}
               >
-                5. Acceptable Use
+                5. Acceptable use
               </h2>
               <p
                 style={{
@@ -188,15 +189,10 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                You agree to use SimpleBill exclusively for legitimate business
-                purposes and in strict compliance with these Terms of Service
-                and all applicable laws and regulations. You are prohibited from
-                using the service to create fraudulent, misleading, or
-                counterfeit documents, engage in any illegal activities, or
-                violate the rights of third parties. You must not attempt to
-                gain unauthorized access to the service, interfere with its
-                operation, or use it in any manner that could damage, disable,
-                or impair the service or its infrastructure.
+                Do not use SimpleBill for unlawful activities or to create
+                misleading or fraudulent documents. Do not attempt to interfere
+                with the service or gain unauthorized access to other users’
+                data.
               </p>
             </section>
 
@@ -210,7 +206,7 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-primary)",
                 }}
               >
-                6. Limitation of Liability
+                6. No warranties and limitation of liability
               </h2>
               <p
                 style={{
@@ -218,14 +214,11 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                SimpleBill is provided "as is" and "as available" without any
-                warranties, express or implied, including but not limited to
-                warranties of merchantability, fitness for a particular purpose,
-                or non-infringement. To the maximum extent permitted by
-                applicable law, we shall not be liable for any direct, indirect,
-                incidental, special, consequential, or punitive damages arising
-                from your use of or inability to use the service, including but
-                not limited to loss of profits, data, or business opportunities.
+                SimpleBill is provided “as is” without warranties of any kind.
+                To the maximum extent permitted by law, we are not liable for
+                any indirect, incidental, special, consequential, or punitive
+                damages, or any loss of data, profits, revenue, or business,
+                arising from your use of SimpleBill.
               </p>
             </section>
 
@@ -239,7 +232,7 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-primary)",
                 }}
               >
-                7. Changes to Terms
+                7. Changes
               </h2>
               <p
                 style={{
@@ -247,9 +240,8 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                We reserve the right to modify these terms at any time.
-                Continued use of the service after changes constitutes
-                acceptance of the new terms.
+                We may update these Terms from time to time. Continued use of
+                SimpleBill after changes means you accept the updated Terms.
               </p>
             </section>
 
@@ -263,7 +255,7 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-primary)",
                 }}
               >
-                8. Contact Information
+                8. Contact
               </h2>
               <p
                 style={{
@@ -271,11 +263,7 @@ const Terms: React.FC = () => {
                   color: "var(--brand-text-secondary)",
                 }}
               >
-                For questions, concerns, or support regarding these Terms of
-                Service or the SimpleBill platform, please contact our support
-                team through the application's built-in support features or
-                through the contact information provided within the service
-                interface.
+                For questions about these Terms, contact the repository owner.
               </p>
             </section>
           </div>

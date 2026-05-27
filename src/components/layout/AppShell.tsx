@@ -1,9 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { PageTitleContext } from "./PageTitleContext";
 import { useAuth } from "@auth/useAuth";
 import { getFallbackAvatar } from "@utils/fallbackAvatar";
-import ThemeToggle from "../core/ThemeToggle";
 import ConfirmDialog from "../core/ConfirmDialog";
 
 // Persist sidebar collapsed state across refreshes
@@ -16,6 +21,8 @@ const AppShell: React.FC = () => {
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -32,7 +39,10 @@ const AppShell: React.FC = () => {
     });
   }, []);
 
-  const handleSignOutClick = () => setShowSignOutConfirm(true);
+  const handleSignOutClick = () => {
+    setUserMenuOpen(false);
+    setShowSignOutConfirm(true);
+  };
 
   const handleConfirmSignOut = useCallback(async () => {
     setShowSignOutConfirm(false);
@@ -47,17 +57,41 @@ const AppShell: React.FC = () => {
     }
   }, [pageTitle]);
 
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!userMenuRef.current) return;
+      if (!userMenuRef.current.contains(e.target as Node))
+        setUserMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setUserMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [userMenuOpen]);
+
   const navLink = (to: string, icon: string, label: string, end = false) => (
     <NavLink
       to={to}
       end={end}
       className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
       title={collapsed ? label : undefined}
+      onClick={() => setIsSidebarOpen(false)}
     >
       <span className="material-symbols-outlined">{icon}</span>
       <span className="sidebar-link-label">{label}</span>
     </NavLink>
   );
+
+  const goNewInvoice = () => {
+    navigate("/documents/new");
+    setIsSidebarOpen(false);
+  };
 
   const avatarSrc =
     user?.photoURL ||
@@ -76,7 +110,10 @@ const AppShell: React.FC = () => {
             {/* Brand */}
             <div
               className="sidebar-brand"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => {
+                navigate("/dashboard");
+                setIsSidebarOpen(false);
+              }}
               style={{ cursor: "pointer" }}
             >
               <div className="brand-logo-box">
@@ -93,48 +130,56 @@ const AppShell: React.FC = () => {
               </div>
             </div>
 
+            {/* Primary action */}
+            <div className="sidebar-cta-wrap">
+              <button
+                type="button"
+                className="sidebar-cta-btn btn-primary"
+                onClick={goNewInvoice}
+                title="New invoice"
+              >
+                <span className="material-symbols-outlined filled" aria-hidden>
+                  add
+                </span>
+                <span className="sidebar-cta-label">New invoice</span>
+              </button>
+              <p className="sidebar-cta-hint">Takes about a minute</p>
+            </div>
+
             {/* Main nav */}
             <nav className="sidebar-nav">
-              {navLink("/dashboard", "dashboard", "Dashboard", true)}
+              {navLink("/dashboard", "home", "Home", true)}
               {navLink("/customers", "group", "Customers")}
-              {navLink("/items", "inventory_2", "Items")}
+              {navLink("/items", "inventory_2", "Products & services")}
               {navLink("/settings", "settings", "Settings")}
             </nav>
 
-            {/* Panel collapse/expand toggle */}
+            {/* Collapse (icon + short label on desktop; icon-only when collapsed) */}
             <div className="sidebar-panel-toggle">
               <button
+                type="button"
                 className="sidebar-panel-toggle-btn"
                 onClick={toggleCollapse}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                title={collapsed ? "Expand sidebar" : undefined}
+                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
                 <span className="material-symbols-outlined">chevron_left</span>
-                <span className="sidebar-panel-toggle-label">
-                  Collapse sidebar
-                </span>
               </button>
             </div>
 
-            {/* Sign out */}
-            <div className="sidebar-signout">
+            {/* User menu */}
+            <div className="sidebar-user" ref={userMenuRef}>
               <button
-                className="sidebar-link danger"
-                onClick={handleSignOutClick}
-                title={collapsed ? "Sign out" : undefined}
+                type="button"
+                className="sidebar-user-trigger"
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                onClick={() => setUserMenuOpen((o) => !o)}
               >
-                <span className="material-symbols-outlined">logout</span>
-                <span className="sidebar-signout-label">Sign out</span>
-              </button>
-            </div>
-
-            {/* User strip */}
-            <div className="sidebar-user">
-              <div className="sidebar-user-button">
                 <div className="avatar">
                   <img
                     src={avatarSrc}
-                    alt="User avatar"
+                    alt=""
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.src = getFallbackAvatar({
@@ -151,59 +196,61 @@ const AppShell: React.FC = () => {
                   </div>
                   <div className="sidebar-user-email">{user?.email ?? ""}</div>
                 </div>
-                <div className="theme-toggle-wrap">
-                  <ThemeToggle />
+                <span
+                  className="material-symbols-outlined sidebar-user-chevron"
+                  aria-hidden
+                >
+                  expand_more
+                </span>
+              </button>
+
+              {userMenuOpen && (
+                <div className="sidebar-user-dropdown" role="menu">
+                  <NavLink
+                    to="/profile"
+                    className="sidebar-user-dropdown-link"
+                    role="menuitem"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      setIsSidebarOpen(false);
+                    }}
+                  >
+                    Profile
+                  </NavLink>
+                  <button
+                    type="button"
+                    className="sidebar-user-dropdown-danger"
+                    role="menuitem"
+                    onClick={handleSignOutClick}
+                  >
+                    Sign out
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </aside>
 
         {/* ── Main area ── */}
         <div className="main-area">
-          {/* Tap-to-close overlay (mobile) */}
+          <div className="main-mobile-bar">
+            <button
+              type="button"
+              className="hamburger-btn"
+              aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isSidebarOpen}
+              onClick={() => setIsSidebarOpen((o) => !o)}
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+          </div>
+
           <button
+            type="button"
             className={`sidebar-overlay${isSidebarOpen ? " visible" : ""}`}
             aria-label="Close menu"
             onClick={() => setIsSidebarOpen(false)}
           />
-
-          {/* Sticky top header */}
-          <header className="top-header">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* Mobile-only hamburger */}
-              <button
-                className="hamburger-btn"
-                aria-label="Open menu"
-                onClick={() => setIsSidebarOpen((o) => !o)}
-              >
-                <span className="material-symbols-outlined">menu</span>
-              </button>
-              <h2 className="top-header-title">{pageTitle || "Overview"}</h2>
-            </div>
-            <div className="top-header-actions">
-              <button className="icon-btn" aria-label="Help">
-                <span className="material-symbols-outlined">help</span>
-              </button>
-              <button className="icon-btn" aria-label="Notifications">
-                <span className="material-symbols-outlined">notifications</span>
-              </button>
-              <div className="header-avatar">
-                <img
-                  src={avatarSrc}
-                  alt="User"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    e.currentTarget.src = getFallbackAvatar({
-                      uid: user?.uid,
-                      email: user?.email,
-                      displayName: user?.displayName,
-                    });
-                  }}
-                />
-              </div>
-            </div>
-          </header>
 
           <main className="main-content">
             <Outlet />

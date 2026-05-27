@@ -385,10 +385,10 @@ describe("Dashboard", () => {
   });
 
   describe("Page Title", () => {
-    it("should set page title to Overview", () => {
+    it("should set page title to Home", () => {
       renderDashboard();
 
-      expect(mockUsePageTitle).toHaveBeenCalledWith("Overview");
+      expect(mockUsePageTitle).toHaveBeenCalledWith("Home");
     });
   });
 });

@@ -107,6 +107,13 @@ async function run() {
     await page.getByText(/billing for payment/i).waitFor({ timeout: 10_000 });
     await page.getByText(/Drafts stay editable/i).waitFor({ timeout: 10_000 });
 
+    // M7: Terms page renders
+    await page.goto(`${BASE_URL}/terms`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Terms of Service" }).waitFor({
+      timeout: 15_000,
+    });
+    await page.getByText(/By using SimpleBill/i).waitFor({ timeout: 15_000 });
+
     // M6: Stepper — only when Firestore reports zero docs and profile not dismissed
     const guide = page.getByLabel("First invoice guide");
     try {
@@ -144,7 +151,7 @@ async function run() {
       timeout: 10_000,
     });
 
-    console.log("Playwright Milestone 6 + smoke: OK");
+    console.log("Playwright Milestone 6 + Milestone 7 checks: OK");
   } finally {
     await browser.close();
     shutdown();
