@@ -141,31 +141,35 @@ describe("Dashboard", () => {
   });
 
   describe("Click Behavior Routing", () => {
-    it("should navigate to edit page when clicking 'View' on draft document", async () => {
+    it("should navigate to edit page when clicking 'Continue editing' on draft document", async () => {
       renderDashboard();
 
       // Find the first document (draft quotation)
-      const viewButtons = screen.getAllByText("View");
-      const firstViewButton = viewButtons[0];
+      const editButtons = screen.getAllByRole("button", {
+        name: "Continue editing",
+      });
+      const firstEditButton = editButtons[0];
 
-      fireEvent.click(firstViewButton);
+      fireEvent.click(firstEditButton);
 
       expect(mockNavigate).toHaveBeenCalledWith("/documents/doc1/edit");
     });
 
-    it("should navigate to edit page when clicking 'View' on finalized document", async () => {
+    it("should navigate to edit page when clicking 'Mark as paid' on finalized document", async () => {
       renderDashboard();
 
       // Find the second document (finalized invoice)
-      const viewButtons = screen.getAllByText("View");
-      const secondViewButton = viewButtons[1];
+      const markPaidButtons = screen.getAllByRole("button", {
+        name: "Mark as paid",
+      });
+      const firstMarkPaidButton = markPaidButtons[0];
 
-      fireEvent.click(secondViewButton);
+      fireEvent.click(firstMarkPaidButton);
 
       expect(mockNavigate).toHaveBeenCalledWith("/documents/doc2/edit");
     });
 
-    it("should trigger download when clicking 'Download' on finalized document", async () => {
+    it("should trigger download when clicking 'Download PDF' on finalized document", async () => {
       const { downloadBlob } = await import("@utils/download");
       const { generateDocumentPdf } = await import("@utils/pdf");
 
@@ -173,7 +177,7 @@ describe("Dashboard", () => {
 
       // Find the download button on the finalized invoice
       const downloadButtons = screen.getAllByRole("button", {
-        name: "Download",
+        name: /download pdf/i,
       });
       const downloadButton = downloadButtons[0];
 
@@ -199,21 +203,23 @@ describe("Dashboard", () => {
 
       // Check that there's at least one download button (for the finalized document)
       const downloadButtons = screen.getAllByRole("button", {
-        name: "Download",
+        name: /download pdf/i,
       });
       expect(downloadButtons.length).toBeGreaterThan(0);
     });
 
-    it("should show both View and Download buttons for finalized documents", () => {
+    it("should show both Mark as paid and Download PDF buttons for finalized documents", () => {
       renderDashboard();
 
-      // Check that we have View buttons (3 documents)
-      const viewButtons = screen.getAllByRole("button", { name: "View" });
-      expect(viewButtons.length).toBeGreaterThan(0);
+      // Check that we have Mark as paid buttons
+      const markPaidButtons = screen.getAllByRole("button", {
+        name: "Mark as paid",
+      });
+      expect(markPaidButtons.length).toBeGreaterThan(0);
 
-      // Check that we have Download buttons (1 finalized document)
+      // Check that we have Download buttons
       const downloadButtons = screen.getAllByRole("button", {
-        name: "Download",
+        name: /download pdf/i,
       });
       expect(downloadButtons.length).toBeGreaterThan(0);
     });
@@ -233,13 +239,15 @@ describe("Dashboard", () => {
 
       renderDashboard();
 
-      expect(screen.getByText("No documents yet.")).toBeTruthy();
+      expect(
+        screen.getByText("You haven't made any invoices yet"),
+      ).toBeTruthy();
       expect(
         screen.getByText(
-          "Create your first invoice or quotation to get started.",
+          "Let's create your first one! It only takes a minute to get started.",
         ),
       ).toBeTruthy();
-      expect(screen.getByText("Create Your First Document")).toBeTruthy();
+      expect(screen.getByText("Create First Invoice")).toBeTruthy();
     });
 
     it("should navigate to document creation when clicking CTA button in empty state", () => {
@@ -256,18 +264,18 @@ describe("Dashboard", () => {
       renderDashboard();
 
       const ctaButtons = screen.getAllByRole("button", {
-        name: "Create Your First Document",
+        name: "Create First Invoice",
       });
       fireEvent.click(ctaButtons[0]);
 
       expect(mockNavigate).toHaveBeenCalledWith("/documents/new");
     });
 
-    it("should navigate to document creation when clicking 'Create New Document' button", () => {
+    it("should navigate to document creation when clicking 'New invoice' button", () => {
       renderDashboard();
 
       const createButtons = screen.getAllByRole("button", {
-        name: "Create New Document",
+        name: /new invoice/i,
       });
       fireEvent.click(createButtons[0]);
 
@@ -293,8 +301,8 @@ describe("Dashboard", () => {
     it("should display document information correctly", () => {
       renderDashboard();
 
-      expect(screen.getAllByText("QUO-2024-001")[0]).toBeTruthy();
-      expect(screen.getAllByText("INV-2024-001")[0]).toBeTruthy();
+      expect(screen.getAllByText(/QUO-2024-001/)[0]).toBeTruthy();
+      expect(screen.getAllByText(/INV-2024-001/)[0]).toBeTruthy();
       expect(screen.getAllByText("Acme Corp")[0]).toBeTruthy();
       expect(screen.getAllByText("Beta Inc")[0]).toBeTruthy();
       expect(screen.getAllByText("Draft")[0]).toBeTruthy();
@@ -348,10 +356,10 @@ describe("Dashboard", () => {
   });
 
   describe("Page Title", () => {
-    it("should set page title to Dashboard", () => {
+    it("should set page title to Overview", () => {
       renderDashboard();
 
-      expect(mockUsePageTitle).toHaveBeenCalledWith("Dashboard");
+      expect(mockUsePageTitle).toHaveBeenCalledWith("Overview");
     });
   });
 });

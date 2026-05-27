@@ -26,6 +26,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
     required,
     style: {
       width: "100%",
+      boxSizing: "border-box",
       padding: "12px 16px",
       border: error
         ? "1px solid var(--brand-danger)"
@@ -42,7 +43,15 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", gap: "8px", ...style }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
+        ...style,
+      }}
     >
       {label && (
         <label

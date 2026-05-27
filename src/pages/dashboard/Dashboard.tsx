@@ -78,10 +78,10 @@ const Dashboard: React.FC = () => {
 
   return (
     <div
+      className="dashboard-page"
       style={{
         maxWidth: 1024,
         margin: "0 auto",
-        padding: "32px 48px",
         display: "flex",
         flexDirection: "column",
         gap: 48,
@@ -115,7 +115,7 @@ const Dashboard: React.FC = () => {
           <h3
             style={{
               fontFamily: "var(--font-heading)",
-              fontSize: 40,
+              fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
               fontWeight: 700,
               letterSpacing: "-0.02em",
               lineHeight: 1.2,
@@ -356,6 +356,7 @@ const Dashboard: React.FC = () => {
 
                   {/* Center: amount + badge */}
                   <div
+                    className="doc-card-amount"
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -395,6 +396,7 @@ const Dashboard: React.FC = () => {
 
                   {/* Right: actions */}
                   <div
+                    className="doc-card-actions"
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -609,6 +611,7 @@ const Dashboard: React.FC = () => {
 
       {/* Helpful tips bento */}
       <section
+        className="dashboard-bento"
         style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}
       >
         <div
