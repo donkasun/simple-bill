@@ -21,7 +21,9 @@
     "prepare": "husky",
     "lint-staged": "lint-staged",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:playwright": "node scripts/playwright-milestone6.mjs",
+    "test:playwright:smoke": "node scripts/playwright-smoke.mjs"
   },
   "dependencies": {
     "firebase": "^12.1.0",

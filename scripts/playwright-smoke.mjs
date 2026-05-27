@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:5175";
+const BASE_URL = process.env.BASE_URL || "http://localhost:5173";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

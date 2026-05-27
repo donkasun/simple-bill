@@ -268,7 +268,7 @@ describe("Dashboard", () => {
       renderDashboard();
 
       expect(
-        screen.getByText("You haven't made any invoices yet"),
+        screen.getByText("You haven't created any invoices yet"),
       ).toBeTruthy();
       expect(
         screen.getByText(

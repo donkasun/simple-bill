@@ -3,6 +3,9 @@ import type { BaseEntity } from "@models/firestore";
 export type UserProfile = BaseEntity & {
   userId: string;
   currency?: string;
+  onboarding?: {
+    createInvoiceDismissed?: boolean;
+  };
   business?: {
     name?: string;
     address?: string;

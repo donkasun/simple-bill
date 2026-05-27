@@ -51,12 +51,13 @@ import {
   type ItemUsageMap,
 } from "@utils/itemUsage";
 import { SUPPORTED_CURRENCIES } from "@utils/currency";
+import OnboardingStepper from "@components/core/OnboardingStepper";
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile, updateUserProfile } = useUserProfile();
 
   const { items: customers, loading: loadingCustomers } =
     useFirestore<Customer>({
@@ -116,6 +117,33 @@ const DocumentCreation: React.FC = () => {
   const [customerQuery, setCustomerQuery] = useState("");
   const [itemUsage, setItemUsage] = useState<ItemUsageMap>({});
   const [currency, setCurrency] = useState<string>("USD");
+  const [hasDocs, setHasDocs] = useState<boolean | null>(null);
+  const dismissCreateGuide = !!profile?.onboarding?.createInvoiceDismissed;
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    // Determine whether this is a first-run scenario (no documents yet).
+    const q = query(
+      collection(db, "documents"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(1),
+    );
+    getDocs(q)
+      .then((snap) => setHasDocs(snap.docs.length > 0))
+      .catch(() => setHasDocs(true)); // fail open: hide onboarding if uncertain
+  }, [user?.uid]);
+
+  const showCreateGuide = !dismissCreateGuide && hasDocs === false;
+
+  const handleDismissCreateGuide = () => {
+    void updateUserProfile({
+      onboarding: {
+        ...(profile?.onboarding ?? {}),
+        createInvoiceDismissed: true,
+      },
+    });
+  };
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -406,6 +434,56 @@ const DocumentCreation: React.FC = () => {
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
         {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
 
+        {showCreateGuide && (
+          <OnboardingStepper
+            title="First invoice guide"
+            onDismissForever={handleDismissCreateGuide}
+            steps={[
+              {
+                id: "billto",
+                title: "Who are you billing?",
+                body: (
+                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                    Pick the customer you’re billing in <strong>Bill To</strong>
+                    . If you don’t see them yet, add them from the Customers
+                    page first.
+                  </div>
+                ),
+              },
+              {
+                id: "items",
+                title: "What are you charging for?",
+                body: (
+                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                    Add line items for products or services. You can choose from
+                    saved items or type a custom name.
+                  </div>
+                ),
+              },
+              {
+                id: "totals",
+                title: "Double-check currency and totals",
+                body: (
+                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                    Choose a currency for this document and quickly review the
+                    subtotal and total before saving.
+                  </div>
+                ),
+              },
+              {
+                id: "save",
+                title: "Save draft vs finalize",
+                body: (
+                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                    <strong>Save Draft</strong> keeps it editable.{" "}
+                    <strong>Finalize</strong> generates a PDF for sharing.
+                  </div>
+                ),
+              },
+            ]}
+          />
+        )}
+
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
@@ -427,6 +505,17 @@ const DocumentCreation: React.FC = () => {
               <option value="invoice">Invoice</option>
               <option value="quotation">Quotation</option>
             </StyledDropdown>
+            <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--md-on-surface-variant)",
+                }}
+              >
+                Use <strong>Quotation</strong> when you’re proposing work. Use{" "}
+                <strong>Invoice</strong> when you’re billing for payment.
+              </div>
+            </div>
 
             <StyledInput
               label="Document #"
@@ -501,6 +590,17 @@ const DocumentCreation: React.FC = () => {
                 </option>
               ))}
             </StyledDropdown>
+            <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--md-on-surface-variant)",
+                }}
+              >
+                Drafts stay editable. Finalized documents generate a PDF for
+                sharing.
+              </div>
+            </div>
           </div>
         </div>
 

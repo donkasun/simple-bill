@@ -190,6 +190,11 @@ const Items: React.FC = () => {
                 <div style={{ color: "var(--brand-text-secondary)" }}>
                   Add your first product or service to start invoicing.
                 </div>
+                <div style={{ marginTop: "1.25rem" }}>
+                  <PrimaryButton onClick={handleAddClick}>
+                    Add your first item
+                  </PrimaryButton>
+                </div>
               </div>
             )}
           </>

@@ -749,7 +749,7 @@ const Dashboard: React.FC = () => {
                   margin: "0 0 8px",
                 }}
               >
-                You haven't made any invoices yet
+                You haven't created any invoices yet
               </h4>
               <p
                 style={{
