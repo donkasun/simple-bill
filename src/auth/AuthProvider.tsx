@@ -36,7 +36,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(MOCK_USER ? false : true);
 
   const signInWithGoogle = async () => {
-    if (MOCK_USER) return; // no-op in mock mode
+    if (MOCK_USER) {
+      setUser(MOCK_USER); // restore mock session
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -55,7 +58,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOutUser = async () => {
-    if (MOCK_USER) return; // no-op in mock mode
+    if (MOCK_USER) {
+      setUser(null); // clear mock session → ProtectedRoute redirects to /login
+      return;
+    }
     try {
       await signOut(auth);
     } catch (error) {
