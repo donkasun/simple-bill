@@ -6,6 +6,7 @@ import { useFirestore } from "@hooks/useFirestore";
 import CustomerModal, {
   type CustomerFormData,
 } from "@components/customers/CustomerModal";
+import ConfirmDialog from "@components/core/ConfirmDialog";
 import type { Customer } from "../types/customer";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 
@@ -28,6 +29,10 @@ const Customers: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleAddClick = () => {
     setEditingCustomer(null);
     setModalOpen(true);
@@ -36,6 +41,28 @@ const Customers: React.FC = () => {
   const handleEditClick = (c: Customer) => {
     setEditingCustomer(c);
     setModalOpen(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setCustomerToDelete(id);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (customerToDelete) {
+      setDeletingId(customerToDelete);
+      setConfirmOpen(false);
+      try {
+        await remove(customerToDelete);
+      } catch (err) {
+        setPageError(
+          err instanceof Error ? err.message : "Failed to delete customer",
+        );
+      } finally {
+        setDeletingId(null);
+        setCustomerToDelete(null);
+      }
+    }
   };
 
   const handleSubmit = async (data: CustomerFormData) => {
@@ -96,49 +123,87 @@ const Customers: React.FC = () => {
         )}
 
         {!loading && !error && (
-          <StyledTable>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Address</th>
-                <th className="td-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td>{c.email || "-"}</td>
-                  <td>
-                    <div style={{ whiteSpace: "pre-wrap" }}>
-                      {c.addressDisplay}
-                    </div>
-                  </td>
-                  <td className="td-right">
-                    <div className="actions">
-                      <button
-                        className="link-btn"
-                        onClick={() => handleEditClick(c)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="link-btn link-danger"
-                        onClick={async () => {
-                          if (c.id && window.confirm("Delete this customer?"))
-                            await remove(c.id);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </StyledTable>
+          <>
+            {items.length > 0 ? (
+              <StyledTable>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Address</th>
+                    <th className="td-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((c) => (
+                    <tr key={c.id}>
+                      <td>{c.name}</td>
+                      <td>{c.email || "-"}</td>
+                      <td>
+                        <div style={{ whiteSpace: "pre-wrap" }}>
+                          {c.addressDisplay}
+                        </div>
+                      </td>
+                      <td className="td-right">
+                        <div className="actions">
+                          <button
+                            className="link-btn"
+                            style={{ minHeight: "44px" }}
+                            onClick={() => handleEditClick(c)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="link-btn link-danger"
+                            style={{ minHeight: "44px" }}
+                            disabled={deletingId === c.id}
+                            onClick={() => c.id && handleDeleteClick(c.id)}
+                          >
+                            {deletingId === c.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </StyledTable>
+            ) : (
+              <div
+                style={{
+                  padding: "3rem 1rem",
+                  textAlign: "center",
+                  background: "var(--white)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--brand-border)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "1.25rem",
+                    fontWeight: "600",
+                    color: "var(--brand-text-primary)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  No customers saved yet.
+                </div>
+                <div style={{ color: "var(--brand-text-secondary)" }}>
+                  Add your first customer to start creating invoices.
+                </div>
+              </div>
+            )}
+          </>
         )}
+        <ConfirmDialog
+          isOpen={confirmOpen}
+          title="Delete Customer"
+          message="Are you sure you want to delete this customer? This action cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setConfirmOpen(false)}
+          danger
+        />
+
         <CustomerModal
           open={modalOpen}
           title={editingCustomer ? "Edit Customer" : "Add Customer"}

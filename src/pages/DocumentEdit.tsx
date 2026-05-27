@@ -413,7 +413,7 @@ const DocumentEdit: React.FC = () => {
       navigate("/dashboard");
     } catch (e: unknown) {
       const message =
-        e instanceof Error ? e.message : "Failed to finalize & download";
+        e instanceof Error ? e.message : "Failed to finish & save";
       setFinalizeError(message);
     } finally {
       setFinalizing(false);
@@ -448,7 +448,7 @@ const DocumentEdit: React.FC = () => {
                     saving || finalizing || initializing || finalizeDisabled
                   }
                 >
-                  {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
+                  {finalizing ? "Finishing…" : "Finish & Save PDF"}
                 </PrimaryButton>
               </>
             ) : (
