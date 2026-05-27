@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect } from "react";
 
 export type PageTitleContextType = {
   setTitle: (title: string) => void;
+  title: string;
 };
 
 export const PageTitleContext = createContext<PageTitleContextType | null>(

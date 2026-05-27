@@ -13,32 +13,10 @@ import { getDocumentFilename } from "@utils/documents";
 type DocumentRow = DocumentEntity & {
   typeLabel: string;
   customerName: string;
-  customerInitial: string;
-};
-
-const statusConfig = {
-  draft: { label: "Draft", bg: "#fff4e5", color: "#b45309" },
-  finalized: { label: "Finalized", bg: "#e6f7f1", color: "#0f5238" },
-  paid: { label: "Paid", bg: "#e8f5e9", color: "#1b5e20" },
-};
-
-const getStatusStyle = (status: string) => {
-  const cfg =
-    statusConfig[status as keyof typeof statusConfig] ?? statusConfig.draft;
-  return {
-    display: "inline-flex" as const,
-    alignItems: "center" as const,
-    padding: "3px 10px",
-    borderRadius: "999px",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    backgroundColor: cfg.bg,
-    color: cfg.color,
-  };
 };
 
 const Dashboard: React.FC = () => {
-  usePageTitle("Dashboard");
+  usePageTitle("Overview");
   const navigate = useNavigate();
   const { user } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -58,7 +36,6 @@ const Dashboard: React.FC = () => {
       ...doc,
       typeLabel: doc.type === "invoice" ? "Invoice" : "Quotation",
       customerName: doc.customerDetails?.name ?? "—",
-      customerInitial: (doc.customerDetails?.name ?? "?")[0].toUpperCase(),
     }),
   });
 
@@ -94,83 +71,142 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Greeting
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const firstName = user?.displayName?.split(" ")[0] ?? "";
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <div className="container-xl">
-        {/* Header */}
-        <div style={{ marginBottom: "1.5rem" }}>
+    <div
+      style={{
+        maxWidth: 1024,
+        margin: "0 auto",
+        padding: "32px 48px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 48,
+      }}
+    >
+      {/* Welcome + CTA */}
+      <section
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
           {firstName && (
             <p
               style={{
-                color: "var(--brand-primary)",
+                fontFamily: "var(--font-body)",
+                fontSize: 16,
                 fontWeight: 600,
-                fontSize: "0.9rem",
+                letterSpacing: "0.01em",
+                color: "var(--md-secondary)",
                 margin: "0 0 4px",
               }}
             >
               {greeting}, {firstName}
             </p>
           )}
-          <div
+          <h3
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              fontFamily: "var(--font-heading)",
+              fontSize: 40,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+              color: "var(--md-on-surface)",
+              margin: 0,
             }}
           >
-            <h1
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "1.75rem",
-                fontWeight: 700,
-                color: "var(--brand-text-primary)",
-                margin: 0,
-              }}
-            >
-              Your business at a glance
-            </h1>
-            <button
-              onClick={() => navigate("/documents/new")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "10px 20px",
-                background: "var(--brand-primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "9999px",
-                fontWeight: 700,
-                fontSize: "0.95rem",
-                cursor: "pointer",
-                minHeight: "44px",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background =
-                  "var(--brand-primary-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "var(--brand-primary)")
-              }
-            >
-              + New Invoice
-            </button>
-          </div>
+            Your business at a glance
+          </h3>
+        </div>
+        <button
+          onClick={() => navigate("/documents/new")}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            background: "var(--md-primary)",
+            color: "#fff",
+            fontFamily: "var(--font-body)",
+            fontSize: 16,
+            fontWeight: 600,
+            letterSpacing: "0.01em",
+            padding: "16px 32px",
+            borderRadius: 12,
+            border: "none",
+            boxShadow: "0 2px 0 #063b28",
+            cursor: "pointer",
+            transition: "all 0.15s",
+            minHeight: 48,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(1px)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "";
+            e.currentTarget.style.boxShadow = "0 2px 0 #063b28";
+          }}
+        >
+          <span
+            className="material-symbols-outlined filled"
+            style={{ fontSize: 20 }}
+          >
+            add
+          </span>
+          New invoice
+        </button>
+      </section>
+
+      {/* Document list */}
+      <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <h4
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 14,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "var(--md-on-surface-variant)",
+              margin: 0,
+            }}
+          >
+            Recent Documents
+          </h4>
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "var(--md-primary)",
+              cursor: "pointer",
+            }}
+          >
+            View all
+          </span>
         </div>
 
-        {/* States */}
         {loading && (
           <div
             style={{
               textAlign: "center",
               padding: "3rem",
-              color: "var(--brand-text-secondary)",
+              color: "var(--md-on-surface-variant)",
             }}
           >
             Loading documents…
@@ -178,103 +214,194 @@ const Dashboard: React.FC = () => {
         )}
         {error && <ErrorBanner>{error}</ErrorBanner>}
 
-        {/* Document cards */}
+        {/* Cards */}
         {!loading && !error && documents.length > 0 && (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {documents.map((d) => {
               const isDraft = !d.status || d.status === "draft";
               const isFinalized = d.status === "finalized";
               const isPaid = d.status === "paid";
               const isDeleting = deletingId === d.id;
               const isDownloading = downloadingId === d.id;
-              const statusLabel = isPaid
-                ? "paid"
-                : isFinalized
-                  ? "finalized"
-                  : "draft";
+
+              // Icon + colors per status
+              const iconName = isDraft ? "edit_document" : "receipt_long";
+              const iconBg = isDraft
+                ? "var(--md-surface-container-highest)"
+                : "var(--md-secondary-container)";
+              const iconColor = isDraft
+                ? "var(--md-on-surface-variant)"
+                : "var(--md-on-secondary-container)";
+
+              // Status badge
+              const badgeStyles: Record<
+                string,
+                { bg: string; color: string; label: string }
+              > = {
+                draft: {
+                  bg: "var(--md-surface-container-highest)",
+                  color: "var(--md-on-surface-variant)",
+                  label: "Draft",
+                },
+                finalized: {
+                  bg: "var(--md-secondary-container)",
+                  color: "var(--md-on-secondary-container)",
+                  label: "Finalized",
+                },
+                paid: {
+                  bg: "var(--md-primary-container)",
+                  color: "var(--md-on-primary-container)",
+                  label: "Paid",
+                },
+              };
+              const badge =
+                badgeStyles[d.status ?? "draft"] ?? badgeStyles.draft;
 
               return (
                 <div
                   key={d.id}
                   style={{
-                    background: "var(--white)",
-                    border: "1px solid var(--brand-border)",
-                    borderRadius: "12px",
-                    padding: "1rem 1.25rem",
+                    background: "var(--md-surface-container-lowest)",
+                    border: "1px solid var(--md-outline-variant)",
+                    borderRadius: 12,
+                    padding: "24px",
                     display: "flex",
                     alignItems: "center",
-                    gap: "1rem",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    justifyContent: "space-between",
+                    gap: 24,
+                    flexWrap: "wrap",
+                    transition: "box-shadow 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow =
+                      "0 4px 12px rgba(0,0,0,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
                   }}
                 >
-                  {/* Avatar */}
+                  {/* Left: icon + info */}
                   <div
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      background: "var(--brand-background)",
-                      color: "var(--brand-primary)",
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 700,
-                      fontSize: "1rem",
+                      alignItems: "flex-start",
+                      gap: 20,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "50%",
+                        background: iconBg,
+                        color: iconColor,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: 22 }}
+                      >
+                        {iconName}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 4,
+                      }}
+                    >
+                      <h5
+                        style={{
+                          fontFamily: "var(--font-heading)",
+                          fontSize: 24,
+                          fontWeight: 600,
+                          lineHeight: 1.3,
+                          color: "var(--md-on-surface)",
+                          margin: 0,
+                        }}
+                      >
+                        {d.customerName}
+                      </h5>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: 18,
+                          color: "var(--md-on-surface-variant)",
+                          margin: 0,
+                        }}
+                      >
+                        {d.typeLabel} #{d.docNumber || "—"}
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          letterSpacing: "0.03em",
+                          color: "var(--md-outline)",
+                          margin: 0,
+                        }}
+                      >
+                        {d.date}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Center: amount + badge */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 8,
                       flexShrink: 0,
                     }}
                   >
-                    {d.customerInitial}
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
+                    <span
                       style={{
-                        fontWeight: 700,
-                        fontSize: "1rem",
-                        color: "var(--brand-text-primary)",
-                        marginBottom: 2,
-                      }}
-                    >
-                      {d.customerName}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--brand-text-muted)",
-                      }}
-                    >
-                      {d.typeLabel} · {d.docNumber || "—"} · {d.date}
-                    </div>
-                  </div>
-
-                  {/* Amount + status */}
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: "1rem",
-                        color: "var(--brand-text-primary)",
-                        marginBottom: 4,
+                        fontFamily: "var(--font-heading)",
+                        fontSize: 24,
+                        fontWeight: 600,
+                        color: isDraft
+                          ? "var(--md-on-surface-variant)"
+                          : "var(--md-primary)",
                       }}
                     >
                       {formatCurrency(d.total, d.currency || "USD")}
-                    </div>
-                    <span style={getStatusStyle(statusLabel)}>
-                      {statusConfig[statusLabel as keyof typeof statusConfig]
-                        ?.label ?? "Draft"}
+                    </span>
+                    <span
+                      style={{
+                        padding: "4px 12px",
+                        borderRadius: 9999,
+                        background: badge.bg,
+                        color: badge.color,
+                        fontFamily: "var(--font-body)",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        letterSpacing: "0.03em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {badge.label}
                     </span>
                   </div>
 
-                  {/* Actions */}
+                  {/* Right: actions */}
                   <div
                     style={{
                       display: "flex",
-                      gap: "0.5rem",
-                      flexShrink: 0,
                       alignItems: "center",
+                      gap: isDraft ? 24 : 12,
+                      paddingLeft: 16,
+                      borderLeft: "1px solid var(--md-outline-variant)",
+                      flexShrink: 0,
                     }}
                   >
                     {isDraft && (
@@ -282,15 +409,18 @@ const Dashboard: React.FC = () => {
                         <button
                           onClick={() => navigate(`/documents/${d.id}/edit`)}
                           style={{
-                            padding: "8px 14px",
-                            background: "var(--brand-primary)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "8px",
+                            background: "var(--md-primary-container)",
+                            color: "var(--md-on-primary-container)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 16,
                             fontWeight: 600,
-                            fontSize: "0.85rem",
+                            padding: "12px 24px",
+                            minHeight: 48,
+                            borderRadius: 8,
+                            border: "none",
                             cursor: "pointer",
-                            minHeight: "36px",
+                            transition: "opacity 0.15s",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           Continue editing
@@ -299,16 +429,28 @@ const Dashboard: React.FC = () => {
                           onClick={() => d.id && setConfirmDelete(d.id)}
                           disabled={isDeleting}
                           style={{
-                            padding: "8px 14px",
                             background: "transparent",
-                            color: "var(--brand-danger)",
-                            border: "1px solid var(--brand-danger)",
-                            borderRadius: "8px",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
+                            color: isDeleting
+                              ? "var(--md-outline)"
+                              : "var(--md-outline)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            letterSpacing: "0.03em",
+                            padding: "0 8px",
+                            border: "none",
                             cursor: "pointer",
-                            minHeight: "36px",
-                            opacity: isDeleting ? 0.6 : 1,
+                            textDecoration: "underline",
+                            transition: "color 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isDeleting)
+                              (e.currentTarget as HTMLElement).style.color =
+                                "var(--brand-danger)";
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.color =
+                              "var(--md-outline)";
                           }}
                         >
                           {isDeleting ? "Deleting…" : "Delete"}
@@ -320,32 +462,36 @@ const Dashboard: React.FC = () => {
                         <button
                           onClick={() => navigate(`/documents/${d.id}/edit`)}
                           style={{
-                            padding: "8px 14px",
-                            background: "transparent",
-                            color: "var(--brand-text-secondary)",
-                            border: "1px solid var(--brand-border)",
-                            borderRadius: "8px",
+                            background: "var(--md-primary)",
+                            color: "#fff",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 16,
                             fontWeight: 600,
-                            fontSize: "0.85rem",
+                            padding: "12px 24px",
+                            minHeight: 48,
+                            borderRadius: 8,
+                            border: "none",
                             cursor: "pointer",
-                            minHeight: "36px",
+                            whiteSpace: "nowrap",
                           }}
                         >
-                          View
+                          Mark as paid
                         </button>
                         <button
                           onClick={() => handleDownload(d)}
                           disabled={isDownloading}
                           style={{
-                            padding: "8px 14px",
                             background: "transparent",
-                            color: "var(--brand-primary)",
-                            border: "1px solid var(--brand-primary)",
-                            borderRadius: "8px",
+                            color: "var(--md-on-surface-variant)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 16,
                             fontWeight: 600,
-                            fontSize: "0.85rem",
+                            padding: "12px 24px",
+                            minHeight: 48,
+                            borderRadius: 8,
+                            border: "1px solid var(--md-outline)",
                             cursor: "pointer",
-                            minHeight: "36px",
+                            whiteSpace: "nowrap",
                             opacity: isDownloading ? 0.6 : 1,
                           }}
                         >
@@ -354,42 +500,26 @@ const Dashboard: React.FC = () => {
                       </>
                     )}
                     {isPaid && (
-                      <>
-                        <button
-                          onClick={() => navigate(`/documents/${d.id}/edit`)}
-                          style={{
-                            padding: "8px 14px",
-                            background: "transparent",
-                            color: "var(--brand-text-secondary)",
-                            border: "1px solid var(--brand-border)",
-                            borderRadius: "8px",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            cursor: "pointer",
-                            minHeight: "36px",
-                          }}
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => handleDownload(d)}
-                          disabled={isDownloading}
-                          style={{
-                            padding: "8px 14px",
-                            background: "transparent",
-                            color: "var(--brand-primary)",
-                            border: "1px solid var(--brand-primary)",
-                            borderRadius: "8px",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            cursor: "pointer",
-                            minHeight: "36px",
-                            opacity: isDownloading ? 0.6 : 1,
-                          }}
-                        >
-                          {isDownloading ? "Downloading…" : "Download PDF"}
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleDownload(d)}
+                        disabled={isDownloading}
+                        style={{
+                          background: "transparent",
+                          color: "var(--md-on-surface-variant)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: 16,
+                          fontWeight: 600,
+                          padding: "12px 24px",
+                          minHeight: 48,
+                          borderRadius: 8,
+                          border: "1px solid var(--md-outline)",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          opacity: isDownloading ? 0.6 : 1,
+                        }}
+                      >
+                        {isDownloading ? "Downloading…" : "Download PDF"}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -402,52 +532,192 @@ const Dashboard: React.FC = () => {
         {!loading && !error && documents.length === 0 && (
           <div
             style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
               textAlign: "center",
-              padding: "4rem 2rem",
-              background: "var(--white)",
-              borderRadius: "12px",
-              border: "1px solid var(--brand-border)",
+              padding: "6rem 2rem",
+              gap: 24,
             }}
           >
-            <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>📄</div>
             <div
               style={{
-                fontSize: "1.1rem",
-                fontWeight: 700,
-                color: "var(--brand-text-primary)",
-                marginBottom: "0.5rem",
+                width: 120,
+                height: 120,
+                borderRadius: "50%",
+                background: "var(--md-surface-container)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              No documents yet.
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  fontSize: 64,
+                  color: "var(--md-outline-variant)",
+                  fontVariationSettings: "'wght' 200",
+                }}
+              >
+                drafts
+              </span>
             </div>
-            <p
-              style={{
-                color: "var(--brand-text-secondary)",
-                marginBottom: "1.5rem",
-                margin: "0 0 1.5rem",
-              }}
-            >
-              Create your first invoice or quotation to get started.
-            </p>
+            <div style={{ maxWidth: 400 }}>
+              <h4
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: "var(--md-on-surface)",
+                  margin: "0 0 8px",
+                }}
+              >
+                You haven't made any invoices yet
+              </h4>
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 20,
+                  color: "var(--md-on-surface-variant)",
+                  margin: 0,
+                }}
+              >
+                Let's create your first one! It only takes a minute to get
+                started.
+              </p>
+            </div>
             <button
               onClick={() => navigate("/documents/new")}
               style={{
-                padding: "12px 24px",
-                background: "var(--brand-primary)",
-                color: "white",
+                background: "var(--md-primary)",
+                color: "#fff",
+                fontFamily: "var(--font-body)",
+                fontSize: 16,
+                fontWeight: 600,
+                padding: "20px 40px",
+                borderRadius: 12,
                 border: "none",
-                borderRadius: "9999px",
-                fontWeight: 700,
-                fontSize: "1rem",
                 cursor: "pointer",
-                minHeight: "48px",
+                boxShadow: "0 4px 12px rgba(15,82,56,0.3)",
               }}
             >
-              Create Your First Document
+              Create First Invoice
             </button>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* Helpful tips bento */}
+      <section
+        style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}
+      >
+        <div
+          style={{
+            background: "var(--md-secondary-container)",
+            borderRadius: 12,
+            padding: 32,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minHeight: 200,
+          }}
+        >
+          <div>
+            <h4
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: 24,
+                fontWeight: 600,
+                color: "var(--md-on-secondary-container)",
+                margin: "0 0 12px",
+              }}
+            >
+              Setting up your brand
+            </h4>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 18,
+                color: "var(--md-on-secondary-container)",
+                opacity: 0.8,
+                margin: 0,
+              }}
+            >
+              Add your logo and business details to make your documents look
+              professional from day one.
+            </p>
+          </div>
+          <a
+            href="/settings"
+            style={{
+              marginTop: 16,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              color: "var(--md-on-secondary-container)",
+              fontWeight: 700,
+              textDecoration: "none",
+              fontSize: 16,
+              transition: "gap 0.15s",
+            }}
+          >
+            Personalize my bill
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: 20 }}
+            >
+              arrow_forward
+            </span>
+          </a>
+        </div>
+        <div
+          style={{
+            background: "var(--md-surface-container-highest)",
+            borderRadius: 12,
+            padding: 32,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          <span
+            className="material-symbols-outlined"
+            style={{
+              fontSize: 40,
+              color: "var(--md-primary)",
+              marginBottom: 8,
+            }}
+          >
+            security
+          </span>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 16,
+              fontWeight: 600,
+              letterSpacing: "0.01em",
+              color: "var(--md-on-surface)",
+              margin: "0 0 4px",
+            }}
+          >
+            Secure Cloud Storage
+          </p>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 14,
+              fontWeight: 700,
+              letterSpacing: "0.03em",
+              color: "var(--md-on-surface-variant)",
+              margin: 0,
+            }}
+          >
+            All your documents are automatically backed up.
+          </p>
+        </div>
+      </section>
 
       <ConfirmDialog
         isOpen={!!confirmDelete}
