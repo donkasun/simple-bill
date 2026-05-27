@@ -22,12 +22,19 @@ const Dashboard: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [confirmMarkPaid, setConfirmMarkPaid] = useState<string | null>(null);
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+  const [confirmMarkUnpaid, setConfirmMarkUnpaid] = useState<string | null>(
+    null,
+  );
+  const [markingUnpaidId, setMarkingUnpaidId] = useState<string | null>(null);
 
   const {
     items: documents,
     loading,
     error,
     remove,
+    update,
   } = useFirestore<DocumentEntity, DocumentRow>({
     collectionName: "documents",
     userId: user?.uid,
@@ -70,6 +77,28 @@ const Dashboard: React.FC = () => {
       setDeletingId(null);
     }
   };
+
+  const handleConfirmMarkPaid = useCallback(async () => {
+    if (!confirmMarkPaid) return;
+    setMarkingPaidId(confirmMarkPaid);
+    setConfirmMarkPaid(null);
+    try {
+      await update(confirmMarkPaid, { status: "paid" });
+    } finally {
+      setMarkingPaidId(null);
+    }
+  }, [confirmMarkPaid, update]);
+
+  const handleConfirmMarkUnpaid = useCallback(async () => {
+    if (!confirmMarkUnpaid) return;
+    setMarkingUnpaidId(confirmMarkUnpaid);
+    setConfirmMarkUnpaid(null);
+    try {
+      await update(confirmMarkUnpaid, { status: "finalized" });
+    } finally {
+      setMarkingUnpaidId(null);
+    }
+  }, [confirmMarkUnpaid, update]);
 
   const hour = new Date().getHours();
   const greeting =
@@ -223,6 +252,8 @@ const Dashboard: React.FC = () => {
               const isPaid = d.status === "paid";
               const isDeleting = deletingId === d.id;
               const isDownloading = downloadingId === d.id;
+              const isMarkingPaid = markingPaidId === d.id;
+              const isMarkingUnpaid = markingUnpaidId === d.id;
 
               // Icon + colors per status
               const iconName = isDraft ? "edit_document" : "receipt_long";
@@ -233,7 +264,7 @@ const Dashboard: React.FC = () => {
                 ? "var(--md-on-surface-variant)"
                 : "var(--md-on-secondary-container)";
 
-              // Status badge
+              // Status badge — handle legacy/unknown statuses gracefully
               const badgeStyles: Record<
                 string,
                 { bg: string; color: string; label: string }
@@ -246,7 +277,7 @@ const Dashboard: React.FC = () => {
                 finalized: {
                   bg: "var(--md-secondary-container)",
                   color: "var(--md-on-secondary-container)",
-                  label: "Finalized",
+                  label: "Sent",
                 },
                 paid: {
                   bg: "var(--md-primary-container)",
@@ -462,7 +493,8 @@ const Dashboard: React.FC = () => {
                     {isFinalized && (
                       <>
                         <button
-                          onClick={() => navigate(`/documents/${d.id}/edit`)}
+                          onClick={() => d.id && setConfirmMarkPaid(d.id)}
+                          disabled={isMarkingPaid}
                           style={{
                             background: "var(--md-primary)",
                             color: "#fff",
@@ -473,11 +505,13 @@ const Dashboard: React.FC = () => {
                             minHeight: 48,
                             borderRadius: 8,
                             border: "none",
-                            cursor: "pointer",
+                            cursor: isMarkingPaid ? "not-allowed" : "pointer",
                             whiteSpace: "nowrap",
+                            opacity: isMarkingPaid ? 0.6 : 1,
+                            transition: "opacity 0.15s",
                           }}
                         >
-                          Mark as paid
+                          {isMarkingPaid ? "Saving…" : "Mark as paid"}
                         </button>
                         <button
                           onClick={() => handleDownload(d)}
@@ -492,7 +526,7 @@ const Dashboard: React.FC = () => {
                             minHeight: 48,
                             borderRadius: 8,
                             border: "1px solid var(--md-outline)",
-                            cursor: "pointer",
+                            cursor: isDownloading ? "not-allowed" : "pointer",
                             whiteSpace: "nowrap",
                             opacity: isDownloading ? 0.6 : 1,
                           }}
@@ -502,26 +536,60 @@ const Dashboard: React.FC = () => {
                       </>
                     )}
                     {isPaid && (
-                      <button
-                        onClick={() => handleDownload(d)}
-                        disabled={isDownloading}
-                        style={{
-                          background: "transparent",
-                          color: "var(--md-on-surface-variant)",
-                          fontFamily: "var(--font-body)",
-                          fontSize: 16,
-                          fontWeight: 600,
-                          padding: "12px 24px",
-                          minHeight: 48,
-                          borderRadius: 8,
-                          border: "1px solid var(--md-outline)",
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                          opacity: isDownloading ? 0.6 : 1,
-                        }}
-                      >
-                        {isDownloading ? "Downloading…" : "Download PDF"}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleDownload(d)}
+                          disabled={isDownloading}
+                          style={{
+                            background: "transparent",
+                            color: "var(--md-on-surface-variant)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 16,
+                            fontWeight: 600,
+                            padding: "12px 24px",
+                            minHeight: 48,
+                            borderRadius: 8,
+                            border: "1px solid var(--md-outline)",
+                            cursor: isDownloading ? "not-allowed" : "pointer",
+                            whiteSpace: "nowrap",
+                            opacity: isDownloading ? 0.6 : 1,
+                          }}
+                        >
+                          {isDownloading ? "Downloading…" : "Download PDF"}
+                        </button>
+                        <button
+                          onClick={() => d.id && setConfirmMarkUnpaid(d.id)}
+                          disabled={isMarkingUnpaid}
+                          style={{
+                            background: "transparent",
+                            color: isMarkingUnpaid
+                              ? "var(--md-outline)"
+                              : "var(--md-outline)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            letterSpacing: "0.03em",
+                            padding: "0 8px",
+                            border: "none",
+                            cursor: isMarkingUnpaid ? "not-allowed" : "pointer",
+                            textDecoration: "underline",
+                            transition: "color 0.15s",
+                            opacity: isMarkingUnpaid ? 0.6 : 1,
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isMarkingUnpaid)
+                              (e.currentTarget as HTMLElement).style.color =
+                                "var(--md-on-surface-variant)";
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.color =
+                              "var(--md-outline)";
+                          }}
+                        >
+                          {isMarkingUnpaid ? "Saving…" : "Mark as unpaid"}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -730,6 +798,26 @@ const Dashboard: React.FC = () => {
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDelete(null)}
         danger
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmMarkPaid}
+        title="Mark as paid"
+        message="Mark this document as paid? You can always undo this from the dashboard."
+        confirmLabel="Mark as paid"
+        onConfirm={handleConfirmMarkPaid}
+        onCancel={() => setConfirmMarkPaid(null)}
+        danger={false}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmMarkUnpaid}
+        title="Mark as unpaid"
+        message="Revert this document back to finalized (unpaid)?"
+        confirmLabel="Mark as unpaid"
+        onConfirm={handleConfirmMarkUnpaid}
+        onCancel={() => setConfirmMarkUnpaid(null)}
+        danger={false}
       />
     </div>
   );
