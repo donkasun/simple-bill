@@ -74,10 +74,11 @@ const Dashboard: React.FC = () => {
             onClick={() => navigate("/documents/new")}
             style={styles.createButton}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#1565c0";
+              e.currentTarget.style.backgroundColor =
+                "var(--brand-primary-hover)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#1976d2";
+              e.currentTarget.style.backgroundColor = "var(--brand-primary)";
             }}
           >
             Create New Document
@@ -121,11 +122,8 @@ const Dashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {documents.map((d, index) => (
-                    <tr
-                      key={d.id}
-                      style={getTableRowStyle(index, documents.length)}
-                    >
+                  {documents.map((d) => (
+                    <tr key={d.id} style={getTableRowStyle()}>
                       <td style={styles.tableCellStrong}>
                         {d.docNumber || "—"}
                       </td>

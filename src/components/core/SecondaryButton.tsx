@@ -15,20 +15,12 @@ const SecondaryButton: React.FC<SecondaryButtonProps> = ({
       {...props}
       className={`btn-secondary ${className || ""}`}
       style={{
-        padding: "10px 20px",
-        border: "1px solid var(--brand-border)",
-        borderRadius: "8px",
+        padding: "0 24px",
         fontSize: "1rem",
-        fontWeight: "600",
-        cursor: "pointer",
-        transition: "all 0.2s ease",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         gap: "8px",
-        minHeight: "44px",
-        background: "var(--white)",
-        color: "var(--brand-text-primary)",
         ...style,
       }}
     >

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import StyledInput from "../core/StyledInput";
 import StyledTextarea from "../core/StyledTextarea";
 import PrimaryButton from "../core/PrimaryButton";
+import SecondaryButton from "../core/SecondaryButton";
 
 export type CustomerFormData = {
   name: string;
@@ -27,35 +28,39 @@ const overlayStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   zIndex: 1000,
+  backdropFilter: "blur(2px)",
 };
 
 const modalStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 480,
-  background: "#fff",
-  border: "1px solid rgba(52,58,64,0.2)",
-  borderRadius: 12,
-  padding: 16,
-  boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+  background: "var(--white)",
+  border: "1px solid var(--brand-border)",
+  borderRadius: 16,
+  padding: 24,
+  boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
 };
 
 const footerStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "flex-end",
-  gap: 8,
-  marginTop: 16,
+  gap: 12,
+  marginTop: 24,
 };
 
 const headerStyle: React.CSSProperties = {
-  fontSize: 18,
+  fontFamily: "var(--font-heading)",
+  fontSize: 20,
   fontWeight: 700,
-  marginBottom: 12,
+  marginBottom: 20,
+  color: "var(--brand-text-primary)",
 };
 
 const errorTextStyle: React.CSSProperties = {
-  color: "crimson",
+  color: "var(--brand-danger)",
   fontSize: 13,
   marginTop: 6,
+  fontWeight: 500,
 };
 
 const CustomerModal: React.FC<CustomerModalProps> = ({
@@ -127,27 +132,31 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       <div style={modalStyle}>
         <div style={headerStyle}>{title ?? "Customer"}</div>
         <form onSubmit={handleSubmit}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <StyledInput
-              label="Name"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Jane Doe / Acme Corp"
-              required
-              error={errors.name}
-            />
-            {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <StyledInput
+                label="Name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Jane Doe / Acme Corp"
+                required
+                error={errors.name}
+              />
+              {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
+            </div>
 
-            <StyledInput
-              label="Email (optional)"
-              type="email"
-              name="email"
-              value={form.email ?? ""}
-              onChange={handleChange}
-              placeholder="billing@example.com"
-            />
-            {errors.email && <div style={errorTextStyle}>{errors.email}</div>}
+            <div>
+              <StyledInput
+                label="Email (optional)"
+                type="email"
+                name="email"
+                value={form.email ?? ""}
+                onChange={handleChange}
+                placeholder="billing@example.com"
+              />
+              {errors.email && <div style={errorTextStyle}>{errors.email}</div>}
+            </div>
 
             <StyledTextarea
               label="Address"
@@ -158,21 +167,39 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               rows={4}
             />
 
-            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                fontSize: "0.9375rem",
+                color: "var(--brand-text-secondary)",
+              }}
+            >
               <input
                 type="checkbox"
                 name="showEmail"
                 checked={!!form.showEmail}
                 onChange={handleChange}
+                style={{
+                  width: 16,
+                  height: 16,
+                  accentColor: "var(--brand-primary)",
+                }}
               />
               <span>Show email on invoices/receipts</span>
             </label>
           </div>
 
           <div style={footerStyle}>
-            <button type="button" onClick={onCancel} disabled={submitting}>
+            <SecondaryButton
+              type="button"
+              onClick={onCancel}
+              disabled={submitting}
+            >
               Cancel
-            </button>
+            </SecondaryButton>
             <PrimaryButton type="submit" disabled={submitting}>
               {submitting ? "Saving…" : "Save"}
             </PrimaryButton>

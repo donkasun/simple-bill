@@ -11,18 +11,18 @@ const Terms: React.FC = () => {
         minHeight: "100dvh",
         overflow: "auto",
         padding: "1rem",
-        backgroundColor: "#FDFBF6",
-        color: "#343a40",
+        backgroundColor: "var(--brand-background)",
+        color: "var(--brand-text-primary)",
       }}
     >
       <div style={{ width: "100%", maxWidth: 800 }}>
         <div
           style={{
-            background: "#fff",
-            padding: "2rem",
-            borderRadius: "12px",
-            border: "1px solid rgba(52,58,64,0.2)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            background: "var(--white)",
+            padding: "3rem",
+            borderRadius: "16px",
+            border: "1px solid var(--brand-border)",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.02)",
           }}
         >
           <div style={{ marginBottom: "2rem" }}>
@@ -32,29 +32,30 @@ const Terms: React.FC = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "0.5rem",
-                color: "#0d6efd",
+                color: "var(--brand-primary)",
                 textDecoration: "none",
-                fontWeight: 500,
-                marginBottom: "1rem",
+                fontWeight: 600,
+                marginBottom: "2rem",
               }}
             >
               ← Back to Login
             </Link>
             <h1
-              className="brand"
               style={{
-                fontSize: "2rem",
+                fontFamily: "var(--font-heading)",
+                fontSize: "2.5rem",
                 lineHeight: "2.25rem",
                 fontWeight: 700,
                 marginBottom: "1rem",
+                color: "var(--brand-text-primary)",
               }}
             >
               Terms of Service
             </h1>
             <p
               style={{
-                fontSize: "0.875rem",
-                color: "rgba(52,58,64,0.7)",
+                fontSize: "0.9375rem",
+                color: "var(--brand-text-muted)",
                 marginBottom: "2rem",
               }}
             >
@@ -66,14 +67,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 1. Acceptance of Terms
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 By accessing and using SimpleBill, you accept and agree to be
                 bound by the terms and provision of this agreement.
               </p>
@@ -82,14 +90,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 2. Description of Service
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 SimpleBill is a comprehensive business management platform
                 designed to streamline financial document creation and customer
                 relationship management. The service provides professional
@@ -104,14 +119,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 3. User Accounts
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 You are responsible for maintaining the confidentiality of your
                 account and for all activities that occur under your account.
                 You agree to notify us immediately of any unauthorized use of
@@ -122,14 +144,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 4. Data and Privacy
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 Your business data and personal information are stored securely
                 using industry-standard Firebase services with enterprise-grade
                 security measures. We implement appropriate technical and
@@ -144,14 +173,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 5. Acceptable Use
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 You agree to use SimpleBill exclusively for legitimate business
                 purposes and in strict compliance with these Terms of Service
                 and all applicable laws and regulations. You are prohibited from
@@ -167,14 +203,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 6. Limitation of Liability
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 SimpleBill is provided "as is" and "as available" without any
                 warranties, express or implied, including but not limited to
                 warranties of merchantability, fitness for a particular purpose,
@@ -189,14 +232,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 7. Changes to Terms
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 We reserve the right to modify these terms at any time.
                 Continued use of the service after changes constitutes
                 acceptance of the new terms.
@@ -206,14 +256,21 @@ const Terms: React.FC = () => {
             <section style={{ marginBottom: "2rem" }}>
               <h2
                 style={{
+                  fontFamily: "var(--font-heading)",
                   fontSize: "1.5rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: "1rem",
+                  color: "var(--brand-text-primary)",
                 }}
               >
                 8. Contact Information
               </h2>
-              <p style={{ marginBottom: "1rem" }}>
+              <p
+                style={{
+                  marginBottom: "1rem",
+                  color: "var(--brand-text-secondary)",
+                }}
+              >
                 For questions, concerns, or support regarding these Terms of
                 Service or the SimpleBill platform, please contact our support
                 team through the application's built-in support features or
@@ -226,8 +283,8 @@ const Terms: React.FC = () => {
           <div
             style={{
               marginTop: "2rem",
-              paddingTop: "1rem",
-              borderTop: "1px solid rgba(52,58,64,0.2)",
+              paddingTop: "2rem",
+              borderTop: "1px solid var(--brand-border)",
             }}
           >
             <Link
@@ -236,9 +293,9 @@ const Terms: React.FC = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "0.5rem",
-                color: "#0d6efd",
+                color: "var(--brand-primary)",
                 textDecoration: "none",
-                fontWeight: 500,
+                fontWeight: 600,
               }}
             >
               ← Back to Login

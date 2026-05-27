@@ -34,6 +34,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       outline: "none",
       background: "var(--white)",
       fontSize: "1rem",
+      fontFamily: "inherit",
       transition: "border-color 0.2s ease, box-shadow 0.2s ease",
       ...(children.props?.style || {}),
     },
@@ -45,7 +46,11 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
     >
       {label && (
         <label
-          style={{ fontWeight: "600", color: "var(--brand-text-primary)" }}
+          style={{
+            fontWeight: "600",
+            color: "var(--brand-text-primary)",
+            fontSize: "0.9375rem",
+          }}
         >
           {label}
           {required && <span style={{ color: "var(--brand-danger)" }}> *</span>}
@@ -59,6 +64,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             color: "var(--brand-danger)",
             fontSize: "0.875rem",
             fontWeight: "500",
+            marginTop: "4px",
           }}
         >
           {error}

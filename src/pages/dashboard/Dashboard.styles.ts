@@ -14,20 +14,22 @@ export const styles = {
   } as CSSProperties,
 
   title: {
+    fontFamily: "var(--font-heading)",
     fontSize: "1.875rem",
     fontWeight: 700,
-    color: "#333",
+    color: "var(--brand-text-primary)",
     margin: 0,
   } as CSSProperties,
 
   createButton: {
-    backgroundColor: "#1976d2",
-    color: "#fff",
+    backgroundColor: "var(--brand-primary)",
+    color: "var(--white)",
     border: "none",
     padding: "0.75rem 1.5rem",
-    borderRadius: "8px",
-    fontWeight: 600,
+    borderRadius: "9999px",
+    fontWeight: 700,
     fontSize: "1rem",
+    minHeight: "48px",
     cursor: "pointer",
     transition: "background-color 0.2s ease",
   } as CSSProperties,
@@ -35,27 +37,27 @@ export const styles = {
   loadingContainer: {
     textAlign: "center",
     padding: "2rem",
-    color: "#666",
+    color: "var(--brand-text-secondary)",
   } as CSSProperties,
 
   tableContainer: {
-    background: "#fff",
+    background: "var(--white)",
     borderRadius: "12px",
-    border: "1px solid #e0e0e0",
+    border: "1px solid var(--brand-border)",
     overflow: "hidden",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
   } as CSSProperties,
 
   tableHeader: {
-    backgroundColor: "#f8f9fa",
-    borderBottom: "1px solid #e0e0e0",
+    backgroundColor: "var(--brand-background)",
+    borderBottom: "1px solid var(--brand-border)",
   } as CSSProperties,
 
   tableHeaderCell: {
     padding: "1rem",
     textAlign: "left",
     fontWeight: 600,
-    color: "#333",
+    color: "var(--brand-text-secondary)",
     fontSize: "0.875rem",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
@@ -63,18 +65,18 @@ export const styles = {
 
   tableCell: {
     padding: "1rem",
-    color: "#666",
+    color: "var(--brand-text-secondary)",
   } as CSSProperties,
 
   tableCellStrong: {
     padding: "1rem",
     fontWeight: 600,
-    color: "#333",
+    color: "var(--brand-text-primary)",
   } as CSSProperties,
 
   relationsCell: {
     padding: "1rem",
-    color: "#666",
+    color: "var(--brand-text-secondary)",
     fontSize: "0.875rem",
   } as CSSProperties,
 
@@ -87,10 +89,10 @@ export const styles = {
   actionButton: {
     background: "none",
     border: "none",
-    color: "#1976d2",
+    color: "var(--brand-primary)",
     cursor: "pointer",
     fontSize: "0.875rem",
-    fontWeight: 500,
+    fontWeight: 600,
     padding: 0,
   } as CSSProperties,
 
@@ -105,37 +107,35 @@ export const styles = {
 
   emptyStateTitle: {
     fontSize: "1.125rem",
-    color: "#666",
+    color: "var(--brand-text-secondary)",
     marginBottom: "0.5rem",
   } as CSSProperties,
 
   emptyStateText: {
     fontSize: "0.875rem",
-    color: "#999",
+    color: "var(--brand-text-muted)",
     margin: 0,
     maxWidth: "400px",
   } as CSSProperties,
 
   emptyStateButton: {
     marginTop: "1rem",
-    backgroundColor: "#1976d2",
-    color: "#fff",
+    backgroundColor: "var(--brand-primary)",
+    color: "var(--white)",
     border: "none",
     padding: "0.75rem 1.5rem",
-    borderRadius: "8px",
-    fontWeight: 600,
+    borderRadius: "9999px",
+    fontWeight: 700,
     fontSize: "1rem",
+    minHeight: "48px",
     cursor: "pointer",
   } as CSSProperties,
 };
 
 // Helper functions for dynamic styles
-export const getTableRowStyle = (
-  index: number,
-  totalRows: number,
-): CSSProperties => ({
-  borderBottom: index < totalRows - 1 ? "1px solid #f0f0f0" : "none",
-  backgroundColor: "#fff",
+export const getTableRowStyle = (): CSSProperties => ({
+  borderBottom: "1px solid var(--brand-border)",
+  backgroundColor: "var(--white)",
 });
 
 export const getStatusBadgeStyle = (isFinalized: boolean): CSSProperties => ({
@@ -146,5 +146,5 @@ export const getStatusBadgeStyle = (isFinalized: boolean): CSSProperties => ({
   fontSize: "0.75rem",
   fontWeight: 600,
   backgroundColor: isFinalized ? "#e6f7f1" : "#fff4e5",
-  color: isFinalized ? "#008a5a" : "#ff8c00",
+  color: isFinalized ? "var(--brand-success)" : "var(--brand-warning)",
 });
