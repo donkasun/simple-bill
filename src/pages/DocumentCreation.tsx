@@ -50,6 +50,7 @@ import {
   sortCatalogByUsage,
   type ItemUsageMap,
 } from "@utils/itemUsage";
+import { SUPPORTED_CURRENCIES } from "@utils/currency";
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
@@ -114,11 +115,16 @@ const DocumentCreation: React.FC = () => {
   const [prefilling, setPrefilling] = useState(false);
   const [customerQuery, setCustomerQuery] = useState("");
   const [itemUsage, setItemUsage] = useState<ItemUsageMap>({});
+  const [currency, setCurrency] = useState<string>("USD");
 
   useEffect(() => {
     if (!user?.uid) return;
     setItemUsage(loadItemUsage(user.uid));
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (profile?.currency) setCurrency(profile.currency);
+  }, [profile?.currency]);
 
   const visibleCustomers = useMemo(() => {
     const q = customerQuery.trim().toLowerCase();
@@ -280,7 +286,7 @@ const DocumentCreation: React.FC = () => {
           selectCustomerDetails(customers, state.customerId),
           { subtotal, total },
         ),
-        currency: profile?.currency || "USD",
+        currency,
       };
       const id = await addDocument(payload);
       if (id) navigate("/dashboard");
@@ -325,7 +331,7 @@ const DocumentCreation: React.FC = () => {
           selectCustomerDetails(customers, state.customerId),
           { subtotal, total },
         ),
-        currency: profile?.currency || "USD",
+        currency,
         finalizedAt:
           serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
       } as Omit<DocumentEntity, "id" | "createdAt" | "updatedAt"> & {
@@ -451,6 +457,19 @@ const DocumentCreation: React.FC = () => {
               error={headerErrors.date}
             />
 
+            <StyledDropdown
+              label="Currency"
+              id="doc-currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+            >
+              {SUPPORTED_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </StyledDropdown>
+
             <StyledInput
               label="Find customer"
               placeholder="Start typing a name…"
@@ -493,7 +512,7 @@ const DocumentCreation: React.FC = () => {
             recentItemIds={recentIds}
             loadingCatalog={loadingItems}
             canEdit
-            currency={profile?.currency || "USD"}
+            currency={currency}
             onSelectItem={handleSelectItem}
             onChange={changeLine}
             onRemove={removeLine}
@@ -515,7 +534,7 @@ const DocumentCreation: React.FC = () => {
                   Subtotal
                 </div>
                 <div className="td-strong">
-                  {formatCurrency(subtotal, profile?.currency || "USD")}
+                  {formatCurrency(subtotal, currency)}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -523,7 +542,7 @@ const DocumentCreation: React.FC = () => {
                   Total
                 </div>
                 <div className="td-strong" style={{ fontSize: 18 }}>
-                  {formatCurrency(total, profile?.currency || "USD")}
+                  {formatCurrency(total, currency)}
                 </div>
               </div>
             </div>

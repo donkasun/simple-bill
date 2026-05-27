@@ -60,6 +60,7 @@ import {
   sortCatalogByUsage,
   type ItemUsageMap,
 } from "@utils/itemUsage";
+import { SUPPORTED_CURRENCIES } from "@utils/currency";
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -310,7 +311,7 @@ const DocumentEdit: React.FC = () => {
         selectCustomerDetails(customers, state.customerId),
         { subtotal, total },
       );
-      await setDocument(id, payload);
+      await setDocument(id, { ...payload, currency });
       // Stay in edit mode after saving - don't navigate away
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to save changes";
@@ -354,6 +355,7 @@ const DocumentEdit: React.FC = () => {
       // Add relationship tracking
       const invoicePayload = {
         ...payload,
+        currency,
         sourceDocumentId: id,
         sourceDocumentType: "quotation" as const,
       };
@@ -418,6 +420,7 @@ const DocumentEdit: React.FC = () => {
       );
       const payload: Partial<PersistedDocumentEntity> = {
         ...base,
+        currency,
         finalizedAt:
           serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
       };
@@ -437,7 +440,7 @@ const DocumentEdit: React.FC = () => {
         items: base.items,
         subtotal: base.subtotal as number,
         total: base.total as number,
-        currency: base.currency || "USD",
+        currency,
       });
       const filename = `${getDocumentFilename(
         base.type as DocumentType,
@@ -585,6 +588,28 @@ const DocumentEdit: React.FC = () => {
                   required
                   error={headerErrors.date}
                 />
+
+                {canEdit ? (
+                  <StyledDropdown
+                    label="Currency"
+                    id="doc-currency"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                  >
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </StyledDropdown>
+                ) : (
+                  <StyledInput
+                    label="Currency"
+                    id="doc-currency"
+                    value={currency}
+                    disabled
+                  />
+                )}
 
                 <StyledInput
                   label="Find customer"

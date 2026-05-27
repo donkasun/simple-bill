@@ -3,8 +3,7 @@ import { usePageTitle } from "@components/layout/PageTitleContext";
 import useUserProfile from "../hooks/useUserProfile";
 import StyledDropdown from "../components/core/StyledDropdown";
 import { useTheme } from "../hooks/useTheme";
-
-const currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"];
+import { SUPPORTED_CURRENCIES } from "@utils/currency";
 
 const Settings: React.FC = () => {
   usePageTitle("Settings");
@@ -73,7 +72,7 @@ const Settings: React.FC = () => {
                   onChange={handleCurrencyChange}
                   style={{ width: "100%" }}
                 >
-                  {currencies.map((c) => (
+                  {SUPPORTED_CURRENCIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
