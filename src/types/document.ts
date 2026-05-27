@@ -2,7 +2,7 @@ import type { BaseEntity } from "@models/firestore";
 import type { Timestamp } from "firebase/firestore";
 
 export type DocumentType = "invoice" | "quotation";
-export type DocumentStatus = "draft" | "finalized";
+export type DocumentStatus = "draft" | "finalized" | "paid";
 
 export type DocumentLineItem = {
   itemId?: string;

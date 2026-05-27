@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import StyledTable from "@components/core/StyledTable";
 import PrimaryButton from "@components/core/PrimaryButton";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
@@ -96,28 +95,53 @@ const Customers: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div style={{ padding: "1.5rem" }}>
       <div className="container-xl">
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginBottom: "1rem",
+            alignItems: "flex-end",
+            marginBottom: "1.5rem",
           }}
         >
-          <h2 className="page-title" style={{ margin: 0 }}>
-            Customers
-          </h2>
-          <div style={{ display: "flex", gap: 8 }}>
-            <PrimaryButton onClick={handleAddClick}>
-              Add New Customer
-            </PrimaryButton>
+          <div>
+            <h1
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: "1.75rem",
+                fontWeight: 700,
+                color: "var(--brand-text-primary)",
+                margin: "0 0 4px",
+              }}
+            >
+              Your customers
+            </h1>
+            <p
+              style={{
+                color: "var(--brand-text-secondary)",
+                margin: 0,
+                fontSize: "0.9rem",
+              }}
+            >
+              The people and businesses you bill.
+            </p>
           </div>
+          <PrimaryButton onClick={handleAddClick}>+ Add customer</PrimaryButton>
         </div>
 
-        {loading && <div>Loading customers…</div>}
+        {loading && (
+          <div
+            style={{ color: "var(--brand-text-secondary)", padding: "2rem 0" }}
+          >
+            Loading customers…
+          </div>
+        )}
         {(error || pageError) && (
-          <div role="alert" style={{ color: "crimson" }}>
+          <div
+            role="alert"
+            style={{ color: "var(--brand-danger)", marginBottom: "1rem" }}
+          >
             {error || pageError}
           </div>
         )}
@@ -125,71 +149,127 @@ const Customers: React.FC = () => {
         {!loading && !error && (
           <>
             {items.length > 0 ? (
-              <StyledTable>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Address</th>
-                    <th className="td-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((c) => (
-                    <tr key={c.id}>
-                      <td>{c.name}</td>
-                      <td>{c.email || "-"}</td>
-                      <td>
-                        <div style={{ whiteSpace: "pre-wrap" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem",
+                }}
+              >
+                {items.map((c) => (
+                  <div
+                    key={c.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "1rem",
+                      background: "var(--white)",
+                      border: "1px solid var(--brand-border)",
+                      borderRadius: "12px",
+                      padding: "0.875rem 1.25rem",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    {/* Avatar */}
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "var(--brand-background)",
+                        color: "var(--brand-primary)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                        fontSize: "1rem",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {c.name[0]?.toUpperCase() ?? "?"}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          color: "var(--brand-text-primary)",
+                          fontSize: "0.95rem",
+                        }}
+                      >
+                        {c.name}
+                      </div>
+                      {c.addressDisplay && c.addressDisplay !== "-" && (
+                        <div
+                          style={{
+                            fontSize: "0.8rem",
+                            color: "var(--brand-text-muted)",
+                            marginTop: 2,
+                          }}
+                        >
                           {c.addressDisplay}
                         </div>
-                      </td>
-                      <td className="td-right">
-                        <div className="actions">
-                          <button
-                            className="link-btn"
-                            style={{ minHeight: "44px" }}
-                            onClick={() => handleEditClick(c)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="link-btn link-danger"
-                            style={{ minHeight: "44px" }}
-                            disabled={deletingId === c.id}
-                            onClick={() => c.id && handleDeleteClick(c.id)}
-                          >
-                            {deletingId === c.id ? "Deleting…" : "Delete"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </StyledTable>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="actions" style={{ flexShrink: 0 }}>
+                      <button
+                        className="link-btn"
+                        style={{ minHeight: "44px" }}
+                        onClick={() => handleEditClick(c)}
+                      >
+                        Edit
+                      </button>
+                      <span style={{ color: "var(--brand-border)" }}>|</span>
+                      <button
+                        className="link-btn link-danger"
+                        style={{ minHeight: "44px" }}
+                        disabled={deletingId === c.id}
+                        onClick={() => c.id && handleDeleteClick(c.id)}
+                      >
+                        {deletingId === c.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div
                 style={{
-                  padding: "3rem 1rem",
+                  padding: "3rem 2rem",
                   textAlign: "center",
-                  background: "var(--white)",
+                  border: "2px dashed var(--brand-border)",
                   borderRadius: "12px",
-                  border: "1px solid var(--brand-border)",
                 }}
               >
+                <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>
+                  👥
+                </div>
                 <div
                   style={{
-                    fontSize: "1.25rem",
-                    fontWeight: "600",
+                    fontWeight: 700,
+                    fontSize: "1.1rem",
                     color: "var(--brand-text-primary)",
                     marginBottom: "0.5rem",
                   }}
                 >
-                  No customers saved yet.
+                  Grow your list
                 </div>
-                <div style={{ color: "var(--brand-text-secondary)" }}>
-                  Add your first customer to start creating invoices.
+                <div
+                  style={{
+                    color: "var(--brand-text-secondary)",
+                    fontSize: "0.9rem",
+                    marginBottom: "1.25rem",
+                  }}
+                >
+                  Every great business starts with a customer. Add your first
+                  one to begin invoicing.
                 </div>
+                <PrimaryButton onClick={handleAddClick}>
+                  Add your first customer
+                </PrimaryButton>
               </div>
             )}
           </>
