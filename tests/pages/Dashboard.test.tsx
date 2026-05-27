@@ -1,6 +1,12 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import Dashboard from "../../src/pages/Dashboard";
 import { useAuth } from "@auth/useAuth";
@@ -155,7 +161,7 @@ describe("Dashboard", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/documents/doc1/edit");
     });
 
-    it("should navigate to edit page when clicking 'Mark as paid' on finalized document", async () => {
+    it("should open confirmation and mark as paid for finalized document", async () => {
       renderDashboard();
 
       // Find the second document (finalized invoice)
@@ -166,7 +172,29 @@ describe("Dashboard", () => {
 
       fireEvent.click(firstMarkPaidButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith("/documents/doc2/edit");
+      expect(
+        screen.getByRole("heading", { name: "Mark as paid" }),
+      ).toBeTruthy();
+      expect(
+        screen.getByText(
+          "Mark this document as paid? You can always undo this from the dashboard.",
+        ),
+      ).toBeTruthy();
+
+      const dialog = screen.getByRole("dialog");
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Mark as paid" }),
+      );
+
+      const firestoreApi = mockUseFirestore.mock.results[0]?.value as
+        | { update?: (id: string, data: unknown) => unknown }
+        | undefined;
+
+      await waitFor(() => {
+        expect(firestoreApi?.update).toHaveBeenCalledWith("doc2", {
+          status: "paid",
+        });
+      });
     });
 
     it("should trigger download when clicking 'Download PDF' on finalized document", async () => {
@@ -306,7 +334,8 @@ describe("Dashboard", () => {
       expect(screen.getAllByText("Acme Corp")[0]).toBeTruthy();
       expect(screen.getAllByText("Beta Inc")[0]).toBeTruthy();
       expect(screen.getAllByText("Draft")[0]).toBeTruthy();
-      expect(screen.getAllByText("Finalized")[0]).toBeTruthy();
+      // Finalized documents display as "Sent" badge in the redesigned dashboard
+      expect(screen.getAllByText("Sent")[0]).toBeTruthy();
     });
 
     // TODO(M1): asserts old relations-column copy; re-verify after the card-based redesign.

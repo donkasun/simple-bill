@@ -23,6 +23,28 @@ export function selectCustomerDetails(
     : undefined;
 }
 
+export function buildDuplicatePayload(
+  userId: string,
+  source: DocumentEntity,
+  docNumber: string,
+  today: string,
+): Omit<DocumentEntity, "id" | "createdAt" | "updatedAt"> {
+  return {
+    userId,
+    type: source.type,
+    docNumber,
+    date: today,
+    customerId: source.customerId,
+    customerDetails: source.customerDetails,
+    items: source.items,
+    subtotal: source.subtotal,
+    total: source.total,
+    notes: source.notes,
+    currency: source.currency,
+    status: "draft",
+  };
+}
+
 export function buildDocumentPayload(
   userId: string,
   state: DocumentFormState,

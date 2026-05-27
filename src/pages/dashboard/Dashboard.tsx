@@ -8,7 +8,9 @@ import { usePageTitle } from "@components/layout/PageTitleContext";
 import type { DocumentEntity } from "../../types/document";
 import { formatCurrency } from "@utils/currency";
 import { downloadBlob } from "@utils/download";
-import { getDocumentFilename } from "@utils/documents";
+import { buildDuplicatePayload, getDocumentFilename } from "@utils/documents";
+import { allocateNextDocumentNumber } from "@utils/docNumber";
+import { todayIso } from "@utils/date";
 
 type DocumentRow = DocumentEntity & {
   typeLabel: string;
@@ -33,6 +35,7 @@ const Dashboard: React.FC = () => {
     items: documents,
     loading,
     error,
+    add,
     remove,
     update,
   } = useFirestore<DocumentEntity, DocumentRow>({
@@ -45,6 +48,42 @@ const Dashboard: React.FC = () => {
       customerName: doc.customerDetails?.name ?? "—",
     }),
   });
+
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+
+  const handleDuplicate = useCallback(
+    async (source: DocumentEntity) => {
+      if (!user?.uid) return;
+      setDuplicatingId(source.id ?? null);
+      setMutationError(null);
+
+      try {
+        const today = todayIso();
+        const nextNumber = await allocateNextDocumentNumber(
+          user.uid,
+          source.type,
+          today,
+        );
+        const payload = buildDuplicatePayload(
+          user.uid,
+          source,
+          nextNumber,
+          today,
+        );
+        const newId = await add(payload);
+        navigate(`/documents/${newId}/edit`);
+      } catch (e: unknown) {
+        console.error("Failed to duplicate document:", e);
+        setMutationError(
+          e instanceof Error ? e.message : "Failed to duplicate document",
+        );
+      } finally {
+        setDuplicatingId(null);
+      }
+    },
+    [add, navigate, user?.uid],
+  );
 
   const handleDownload = useCallback(async (doc: DocumentEntity) => {
     setDownloadingId(doc.id ?? null);
@@ -242,6 +281,7 @@ const Dashboard: React.FC = () => {
           </div>
         )}
         {error && <ErrorBanner>{error}</ErrorBanner>}
+        {mutationError && <ErrorBanner>{mutationError}</ErrorBanner>}
 
         {/* Cards */}
         {!loading && !error && documents.length > 0 && (
@@ -441,6 +481,7 @@ const Dashboard: React.FC = () => {
                       <>
                         <button
                           onClick={() => navigate(`/documents/${d.id}/edit`)}
+                          disabled={!!duplicatingId}
                           style={{
                             background: "var(--md-primary-container)",
                             color: "var(--md-on-primary-container)",
@@ -457,6 +498,28 @@ const Dashboard: React.FC = () => {
                           }}
                         >
                           Continue editing
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(d)}
+                          disabled={!!duplicatingId}
+                          style={{
+                            background: "transparent",
+                            color: "var(--md-on-surface-variant)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 16,
+                            fontWeight: 600,
+                            padding: "12px 24px",
+                            minHeight: 48,
+                            borderRadius: 8,
+                            border: "1px solid var(--md-outline)",
+                            cursor: duplicatingId ? "not-allowed" : "pointer",
+                            whiteSpace: "nowrap",
+                            opacity: duplicatingId ? 0.6 : 1,
+                          }}
+                        >
+                          {duplicatingId === d.id
+                            ? "Duplicating…"
+                            : "Duplicate"}
                         </button>
                         <button
                           onClick={() => d.id && setConfirmDelete(d.id)}
@@ -494,7 +557,7 @@ const Dashboard: React.FC = () => {
                       <>
                         <button
                           onClick={() => d.id && setConfirmMarkPaid(d.id)}
-                          disabled={isMarkingPaid}
+                          disabled={isMarkingPaid || !!duplicatingId}
                           style={{
                             background: "var(--md-primary)",
                             color: "#fff",
@@ -514,8 +577,30 @@ const Dashboard: React.FC = () => {
                           {isMarkingPaid ? "Saving…" : "Mark as paid"}
                         </button>
                         <button
+                          onClick={() => handleDuplicate(d)}
+                          disabled={!!duplicatingId}
+                          style={{
+                            background: "transparent",
+                            color: "var(--md-on-surface-variant)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 16,
+                            fontWeight: 600,
+                            padding: "12px 24px",
+                            minHeight: 48,
+                            borderRadius: 8,
+                            border: "1px solid var(--md-outline)",
+                            cursor: duplicatingId ? "not-allowed" : "pointer",
+                            whiteSpace: "nowrap",
+                            opacity: duplicatingId ? 0.6 : 1,
+                          }}
+                        >
+                          {duplicatingId === d.id
+                            ? "Duplicating…"
+                            : "Duplicate"}
+                        </button>
+                        <button
                           onClick={() => handleDownload(d)}
-                          disabled={isDownloading}
+                          disabled={isDownloading || !!duplicatingId}
                           style={{
                             background: "transparent",
                             color: "var(--md-on-surface-variant)",
@@ -539,7 +624,7 @@ const Dashboard: React.FC = () => {
                       <>
                         <button
                           onClick={() => handleDownload(d)}
-                          disabled={isDownloading}
+                          disabled={isDownloading || !!duplicatingId}
                           style={{
                             background: "transparent",
                             color: "var(--md-on-surface-variant)",
@@ -558,8 +643,30 @@ const Dashboard: React.FC = () => {
                           {isDownloading ? "Downloading…" : "Download PDF"}
                         </button>
                         <button
+                          onClick={() => handleDuplicate(d)}
+                          disabled={!!duplicatingId}
+                          style={{
+                            background: "transparent",
+                            color: "var(--md-on-surface-variant)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 16,
+                            fontWeight: 600,
+                            padding: "12px 24px",
+                            minHeight: 48,
+                            borderRadius: 8,
+                            border: "1px solid var(--md-outline)",
+                            cursor: duplicatingId ? "not-allowed" : "pointer",
+                            whiteSpace: "nowrap",
+                            opacity: duplicatingId ? 0.6 : 1,
+                          }}
+                        >
+                          {duplicatingId === d.id
+                            ? "Duplicating…"
+                            : "Duplicate"}
+                        </button>
+                        <button
                           onClick={() => d.id && setConfirmMarkUnpaid(d.id)}
-                          disabled={isMarkingUnpaid}
+                          disabled={isMarkingUnpaid || !!duplicatingId}
                           style={{
                             background: "transparent",
                             color: isMarkingUnpaid

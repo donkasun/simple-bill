@@ -8,7 +8,15 @@ import SecondaryButton from "@components/core/SecondaryButton";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { useNavigate } from "react-router-dom";
-import { serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
+} from "firebase/firestore";
 import { allocateNextDocumentNumber } from "@utils/docNumber";
 import { formatCurrency } from "@utils/currency";
 import type { DocumentEntity, DocumentType } from "../types/document";
@@ -32,6 +40,16 @@ import {
 import { validateDraft, validateFinalize } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import useUserProfile from "@hooks/useUserProfile";
+import { db } from "../firebase/config";
+import { todayIso } from "@utils/date";
+import { computeAmount } from "@utils/documentMath";
+import {
+  incrementItemUsage,
+  loadItemUsage,
+  recentItemIds,
+  sortCatalogByUsage,
+  type ItemUsageMap,
+} from "@utils/itemUsage";
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
@@ -93,6 +111,105 @@ const DocumentCreation: React.FC = () => {
   const [itemErrors, setItemErrors] = useState<
     Record<string, LineItemFieldErrors>
   >({});
+  const [prefilling, setPrefilling] = useState(false);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [itemUsage, setItemUsage] = useState<ItemUsageMap>({});
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    setItemUsage(loadItemUsage(user.uid));
+  }, [user?.uid]);
+
+  const visibleCustomers = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase();
+    if (!q) return customers;
+    const filtered = customers.filter((c) =>
+      String(c.name ?? "")
+        .toLowerCase()
+        .includes(q),
+    );
+    const selected = state.customerId
+      ? customers.find((c) => c.id === state.customerId)
+      : undefined;
+    if (selected && !filtered.some((c) => c.id === selected.id))
+      return [selected, ...filtered];
+    return filtered;
+  }, [customers, customerQuery, state.customerId]);
+
+  const sortedCatalog = useMemo(
+    () => sortCatalogByUsage(itemCatalog, itemUsage),
+    [itemCatalog, itemUsage],
+  );
+  const recentIds = useMemo(() => recentItemIds(itemUsage, 5), [itemUsage]);
+
+  const handleSelectItem = (lineId: string, itemId?: string) => {
+    selectItemById(lineId, itemId);
+    if (user?.uid && itemId) setItemUsage(incrementItemUsage(user.uid, itemId));
+  };
+
+  const handleCopyFromPrevious = async () => {
+    if (!user?.uid) return;
+    setPrefilling(true);
+    setSaveError(null);
+    setFinalizeError(null);
+    setHeaderErrors({});
+    setItemErrors({});
+    try {
+      const q = query(
+        collection(db, "documents"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc"),
+        limit(1),
+      );
+      const snap = await getDocs(q);
+      const d = snap.docs[0];
+      if (!d) return;
+
+      const prev = {
+        id: d.id,
+        ...(d.data() as DocumentEntity),
+      } as DocumentEntity;
+      const nextCustomerId = prev.customerId
+        ? customers.some((c) => c.id === prev.customerId)
+          ? prev.customerId
+          : undefined
+        : undefined;
+
+      dispatch({
+        type: "SET_ALL",
+        value: {
+          documentType: prev.type,
+          documentNumber: "",
+          date: todayIso(),
+          customerId: nextCustomerId,
+          notes: prev.notes ?? "",
+          lineItems:
+            prev.items?.length > 0
+              ? prev.items.map((it) => ({
+                  id: crypto.randomUUID(),
+                  itemId: it.itemId,
+                  name: it.name ?? "",
+                  description: it.description ?? "",
+                  unitPrice: Number.isFinite(it.unitPrice) ? it.unitPrice : 0,
+                  quantity: Number.isFinite(it.quantity) ? it.quantity : 1,
+                  amount: computeAmount(
+                    Number.isFinite(it.unitPrice) ? it.unitPrice : 0,
+                    Number.isFinite(it.quantity) ? it.quantity : 1,
+                  ),
+                }))
+              : getDefaultInitialState().lineItems,
+        },
+      });
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Failed to copy from previous document";
+      setSaveError(message);
+    } finally {
+      setPrefilling(false);
+    }
+  };
 
   const finalizeDisabled = useMemo(() => {
     const res = validateFinalize(state);
@@ -256,6 +373,13 @@ const DocumentCreation: React.FC = () => {
             <SecondaryButton onClick={() => navigate("/dashboard")}>
               Cancel
             </SecondaryButton>
+            <SecondaryButton
+              onClick={handleCopyFromPrevious}
+              disabled={prefilling || saving || finalizing}
+              aria-disabled={prefilling || saving || finalizing}
+            >
+              {prefilling ? "Copying…" : "Copy from previous"}
+            </SecondaryButton>
             <PrimaryButton
               onClick={handleSaveDraft}
               disabled={saving || finalizing}
@@ -327,6 +451,13 @@ const DocumentCreation: React.FC = () => {
               error={headerErrors.date}
             />
 
+            <StyledInput
+              label="Find customer"
+              placeholder="Start typing a name…"
+              value={customerQuery}
+              onChange={(e) => setCustomerQuery(e.target.value)}
+              disabled={loadingCustomers}
+            />
             <StyledDropdown
               label="Bill To"
               id="doc-customerId"
@@ -345,7 +476,7 @@ const DocumentCreation: React.FC = () => {
               <option value="">
                 {loadingCustomers ? "Loading customers..." : "Select customer"}
               </option>
-              {customers.map((customer) => (
+              {visibleCustomers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.name}
                 </option>
@@ -358,11 +489,12 @@ const DocumentCreation: React.FC = () => {
           <LineItemsTable
             items={state.lineItems}
             itemErrors={itemErrors}
-            catalog={itemCatalog}
+            catalog={sortedCatalog}
+            recentItemIds={recentIds}
             loadingCatalog={loadingItems}
             canEdit
             currency={profile?.currency || "USD"}
-            onSelectItem={selectItemById}
+            onSelectItem={handleSelectItem}
             onChange={changeLine}
             onRemove={removeLine}
           />

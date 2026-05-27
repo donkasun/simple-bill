@@ -53,6 +53,13 @@ import {
   validateFinalize as validateFinalizeShared,
 } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import {
+  incrementItemUsage,
+  loadItemUsage,
+  recentItemIds,
+  sortCatalogByUsage,
+  type ItemUsageMap,
+} from "@utils/itemUsage";
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -84,6 +91,8 @@ const DocumentEdit: React.FC = () => {
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
   const [isEditMode, setIsEditMode] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [itemUsage, setItemUsage] = useState<ItemUsageMap>({});
 
   const { state, dispatch, subtotal, total } = useDocumentForm({
     initial: {
@@ -175,6 +184,11 @@ const DocumentEdit: React.FC = () => {
     }
   }, [customers, state.customerId, dispatch]);
 
+  useEffect(() => {
+    if (!user?.uid) return;
+    setItemUsage(loadItemUsage(user.uid));
+  }, [user?.uid]);
+
   const findItemById = (itemId?: string) =>
     itemCatalog.find((i) => i.id === itemId);
 
@@ -192,6 +206,28 @@ const DocumentEdit: React.FC = () => {
   const [itemErrors, setItemErrors] = useState<
     Record<string, { name?: string; unitPrice?: string; quantity?: string }>
   >({});
+
+  const visibleCustomers = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase();
+    if (!q) return customers;
+    const filtered = customers.filter((c) =>
+      String(c.name ?? "")
+        .toLowerCase()
+        .includes(q),
+    );
+    const selected = state.customerId
+      ? customers.find((c) => c.id === state.customerId)
+      : undefined;
+    if (selected && !filtered.some((c) => c.id === selected.id))
+      return [selected, ...filtered];
+    return filtered;
+  }, [customers, customerQuery, state.customerId]);
+
+  const sortedCatalog = useMemo(
+    () => sortCatalogByUsage(itemCatalog, itemUsage),
+    [itemCatalog, itemUsage],
+  );
+  const recentIds = useMemo(() => recentItemIds(itemUsage, 5), [itemUsage]);
 
   function validateDraft(s: DocumentFormState) {
     return validateDraftShared(s);
@@ -550,6 +586,13 @@ const DocumentEdit: React.FC = () => {
                   error={headerErrors.date}
                 />
 
+                <StyledInput
+                  label="Find customer"
+                  placeholder="Start typing a name…"
+                  value={customerQuery}
+                  onChange={(e) => setCustomerQuery(e.target.value)}
+                  disabled={loadingCustomers}
+                />
                 <StyledDropdown
                   label="Bill To"
                   id="doc-customerId"
@@ -570,7 +613,7 @@ const DocumentEdit: React.FC = () => {
                       ? "Loading customers..."
                       : "Select customer"}
                   </option>
-                  {customers.map((customer) => (
+                  {visibleCustomers.map((customer) => (
                     <option key={customer.id} value={customer.id}>
                       {customer.name}
                     </option>
@@ -583,12 +626,15 @@ const DocumentEdit: React.FC = () => {
               <LineItemsTable
                 items={state.lineItems}
                 itemErrors={itemErrors}
-                catalog={itemCatalog}
+                catalog={sortedCatalog}
+                recentItemIds={recentIds}
                 loadingCatalog={loadingItems}
                 canEdit={canEdit}
                 currency={currency}
                 onSelectItem={(lineId, itemId) => {
                   const selected = findItemById(itemId);
+                  if (user?.uid && itemId)
+                    setItemUsage(incrementItemUsage(user.uid, itemId));
                   dispatch({
                     type: "SET_ITEM_SELECTION",
                     id: lineId,

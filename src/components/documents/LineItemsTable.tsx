@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { FormLineItem } from "../../types/document";
 import type { Item } from "../../types/item";
 import StyledTable from "../core/StyledTable";
@@ -14,6 +14,7 @@ type LineItemsTableProps = {
   items: FormLineItem[];
   itemErrors: Record<string, ItemErrors>;
   catalog: Item[];
+  recentItemIds?: string[];
   loadingCatalog?: boolean;
   canEdit?: boolean;
   currency: string;
@@ -26,6 +27,7 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
   items,
   itemErrors,
   catalog,
+  recentItemIds,
   loadingCatalog = false,
   canEdit = true,
   currency,
@@ -48,6 +50,17 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
       setItemToRemove(null);
     }
   };
+
+  const { recent, rest } = useMemo(() => {
+    const set = new Set(recentItemIds ?? []);
+    const recentList =
+      set.size > 0 ? catalog.filter((it) => it.id && set.has(it.id)) : [];
+    const restList =
+      recentList.length > 0
+        ? catalog.filter((it) => !it.id || !set.has(it.id))
+        : catalog;
+    return { recent: recentList, rest: restList };
+  }, [catalog, recentItemIds]);
 
   return (
     <>
@@ -84,11 +97,30 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   <option value="">
                     {loadingCatalog ? "Loading…" : "Select item"}
                   </option>
-                  {catalog.map((it) => (
-                    <option key={it.id} value={it.id}>
-                      {it.name}
-                    </option>
-                  ))}
+                  {recent.length > 0 ? (
+                    <>
+                      <optgroup label="Recently used">
+                        {recent.map((it) => (
+                          <option key={it.id} value={it.id}>
+                            {it.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="All items">
+                        {rest.map((it) => (
+                          <option key={it.id} value={it.id}>
+                            {it.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  ) : (
+                    rest.map((it) => (
+                      <option key={it.id} value={it.id}>
+                        {it.name}
+                      </option>
+                    ))
+                  )}
                 </StyledDropdown>
                 <StyledInput
                   placeholder="Custom item name"
