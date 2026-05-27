@@ -7,7 +7,7 @@
 [![React Router](https://img.shields.io/badge/React%20Router-CA4245?logo=react-router&logoColor=white)](https://reactrouter.com/)
 [![pdf-lib](https://img.shields.io/badge/pdf--lib-0A7EA4)](https://pdf-lib.js.org/)
 
-A minimal, charming invoicing app built with React + TypeScript, Firebase, and Rough.js. Create and manage customers, items, and billing documents quickly.
+A minimal, calm invoicing app built with React + TypeScript and Firebase. Create and manage customers, items, and billing documents quickly, with multi-currency support and PDF export.
 
 ## Why SimpleBill?
 
@@ -17,7 +17,6 @@ I built SimpleBill for my non‑tech‑savvy dad, who only needs to make an invo
 
 - React (Vite, TypeScript)
 - Firebase (Auth with Google, Firestore)
-- Rough.js for sketch‑style UI accents
 - pdf-lib for PDF generation
 
 ## Prerequisites
@@ -85,16 +84,19 @@ npm run dev
 - Documents (Invoices/Quotations)
   - Create, edit, validate draft/finalize
   - Auto document number allocation
+  - Multi-currency: per-document currency with a user default (e.g. LKR, USD)
   - PDF export (pdf-lib) with dynamic import
 - Dashboard: list and download recent documents
 
 ## Design Language
 
-- Rough.js‑enhanced components:
-  - `PrimaryButton`, `SecondaryButton` (sketch borders/fills, hover states)
-  - `StyledInput`, `StyledTextarea` (rough borders)
-  - `StyledTable` (card with rough border)
-- Link‑style table actions for Edit/Delete
+SimpleBill uses the **"Simple Humanist"** design system — calm and high-legibility, built
+for a non-technical user:
+
+- Sage-green palette with warm neutrals; light and dark themes
+- Atkinson Hyperlegible (body, optimized for low vision) + Epilogue (headings)
+- Large tap targets, labeled controls (never icon-only), plain-English copy
+- Generous whitespace and soft, rounded surfaces
 
 ## Code Structure
 
