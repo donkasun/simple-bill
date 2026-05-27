@@ -4,9 +4,18 @@ import { PageTitleContext } from "./PageTitleContext";
 import { useAuth } from "@auth/useAuth";
 import { getFallbackAvatar } from "@utils/fallbackAvatar";
 import ThemeToggle from "../core/ThemeToggle";
+import ConfirmDialog from "../core/ConfirmDialog";
+
+// Persist sidebar collapsed state across refreshes
+const COLLAPSED_KEY = "sb_sidebar_collapsed";
 
 const AppShell: React.FC = () => {
   const [pageTitle, setPageTitle] = useState<string>("");
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => localStorage.getItem(COLLAPSED_KEY) === "true",
+  );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -15,7 +24,18 @@ const AppShell: React.FC = () => {
     [pageTitle],
   );
 
-  const handleSignOut = useCallback(async () => {
+  const toggleCollapse = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(COLLAPSED_KEY, String(next));
+      return next;
+    });
+  }, []);
+
+  const handleSignOutClick = () => setShowSignOutConfirm(true);
+
+  const handleConfirmSignOut = useCallback(async () => {
+    setShowSignOutConfirm(false);
     await signOut();
   }, [signOut]);
 
@@ -32,9 +52,10 @@ const AppShell: React.FC = () => {
       to={to}
       end={end}
       className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
+      title={collapsed ? label : undefined}
     >
       <span className="material-symbols-outlined">{icon}</span>
-      {label}
+      <span className="sidebar-link-label">{label}</span>
     </NavLink>
   );
 
@@ -48,14 +69,15 @@ const AppShell: React.FC = () => {
 
   return (
     <PageTitleContext.Provider value={pageTitleCtx}>
-      <div className="app-layout">
+      <div className="app-layout" data-collapsed={collapsed ? "true" : "false"}>
         {/* ── Fixed Sidebar ── */}
-        <aside className="sidebar">
+        <aside className="sidebar" data-open={isSidebarOpen ? "true" : "false"}>
           <div className="sidebar-inner">
             {/* Brand */}
             <div
               className="sidebar-brand"
               onClick={() => navigate("/dashboard")}
+              style={{ cursor: "pointer" }}
             >
               <div className="brand-logo-box">
                 <span
@@ -81,9 +103,13 @@ const AppShell: React.FC = () => {
 
             {/* Sign out */}
             <div className="sidebar-signout">
-              <button className="sidebar-link danger" onClick={handleSignOut}>
+              <button
+                className="sidebar-link danger"
+                onClick={handleSignOutClick}
+                title={collapsed ? "Sign out" : undefined}
+              >
                 <span className="material-symbols-outlined">logout</span>
-                Sign out
+                <span className="sidebar-signout-label">Sign out</span>
               </button>
             </div>
 
@@ -110,7 +136,9 @@ const AppShell: React.FC = () => {
                   </div>
                   <div className="sidebar-user-email">{user?.email ?? ""}</div>
                 </div>
-                <ThemeToggle />
+                <div className="theme-toggle-wrap">
+                  <ThemeToggle />
+                </div>
               </div>
             </div>
           </div>
@@ -118,9 +146,29 @@ const AppShell: React.FC = () => {
 
         {/* ── Main area ── */}
         <div className="main-area">
+          {/* Tap-to-close overlay (mobile) */}
+          <button
+            className={`sidebar-overlay${isSidebarOpen ? " visible" : ""}`}
+            aria-label="Close menu"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+
           {/* Sticky top header */}
           <header className="top-header">
-            <h2 className="top-header-title">{pageTitle || "Overview"}</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Desktop: sidebar collapse toggle */}
+              <button
+                className="sidebar-collapse-btn"
+                onClick={toggleCollapse}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                <span className="material-symbols-outlined">
+                  {collapsed ? "menu_open" : "menu"}
+                </span>
+              </button>
+              {/* Mobile hamburger (CSS shows/hides based on breakpoint — same btn, separate class) */}
+              <h2 className="top-header-title">{pageTitle || "Overview"}</h2>
+            </div>
             <div className="top-header-actions">
               <button className="icon-btn" aria-label="Help">
                 <span className="material-symbols-outlined">help</span>
@@ -150,6 +198,16 @@ const AppShell: React.FC = () => {
           </main>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showSignOutConfirm}
+        title="Sign Out"
+        message="Are you sure you want to sign out of SimpleBill?"
+        confirmLabel="Sign out"
+        onConfirm={handleConfirmSignOut}
+        onCancel={() => setShowSignOutConfirm(false)}
+        danger={false}
+      />
     </PageTitleContext.Provider>
   );
 };

@@ -77,15 +77,38 @@
 }
 
 [data-theme="dark"] {
-  /* We maintain a similar feel but with dark mode adjustments if needed. 
-     For now, we'll keep the humanist palette or adjust slightly for contrast. 
-     Note: Task didn't specify dark mode tokens, so using reasonable defaults. */
+  /* Legacy brand tokens */
   --brand-background: #1a1a18;
-  --white: #242422;
+  --white: #1e2022;
   --brand-border: #3d3d3a;
   --brand-text-primary: #f5f5f0;
   --brand-text-secondary: #b0b0a8;
   --brand-text-muted: #7c7c75;
+
+  /* MD3 surface tokens */
+  --md-surface: #191c1d;
+  --md-surface-container-low: #1e2122;
+  --md-surface-container: #232627;
+  --md-surface-container-high: #2c2f30;
+  --md-surface-container-highest: #333638;
+  --md-surface-container-lowest: #141718;
+
+  /* MD3 on-surface tokens */
+  --md-on-surface: #e1e3e4;
+  --md-on-surface-variant: #bfc9c1;
+  --md-outline: #8a9388;
+  --md-outline-variant: #3f4945;
+
+  /* MD3 primary tokens */
+  --md-primary: #5acea4;
+  --md-on-primary: #003828;
+  --md-primary-container: #1a4f3a;
+  --md-on-primary-container: #78deb6;
+
+  /* MD3 secondary tokens */
+  --md-secondary-container: #1b3d52;
+  --md-on-secondary-container: #9ecff0;
+  --md-secondary: #7bbcdc;
 }
 
 * {
@@ -137,6 +160,7 @@ h6 {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 .sidebar-inner {
   display: flex;
@@ -149,6 +173,7 @@ h6 {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
 }
 
 /* Brand */
@@ -289,6 +314,99 @@ h6 {
   text-overflow: ellipsis;
 }
 
+/* ── Sidebar collapse ─────────────────────────────── */
+/* Sidebar width token — driven by data-collapsed on .app-layout */
+.sidebar {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.main-area {
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed state: icon rail (64 px) */
+.app-layout[data-collapsed="true"] .sidebar {
+  width: 64px;
+}
+.app-layout[data-collapsed="true"] .main-area {
+  margin-left: 64px;
+}
+
+/* Hide text + user-strip details when collapsed */
+.app-layout[data-collapsed="true"] .brand-title,
+.app-layout[data-collapsed="true"] .brand-tagline,
+.app-layout[data-collapsed="true"] .sidebar-link-label,
+.app-layout[data-collapsed="true"] .sidebar-user-text,
+.app-layout[data-collapsed="true"] .sidebar-signout-label,
+.app-layout[data-collapsed="true"] .theme-toggle-wrap {
+  display: none;
+}
+
+/* Centre nav icons when collapsed */
+.app-layout[data-collapsed="true"] .sidebar-nav .sidebar-link {
+  justify-content: center;
+  padding: 12px 0;
+  gap: 0;
+  border-left: none;
+  border-radius: 8px;
+  margin: 0 8px;
+  width: calc(100% - 16px);
+}
+.app-layout[data-collapsed="true"] .sidebar-nav .sidebar-link.active {
+  border-left: none;
+  background: var(--md-surface-container-highest);
+}
+
+/* Collapse the brand area */
+.app-layout[data-collapsed="true"] .sidebar-brand {
+  justify-content: center;
+  padding: 16px 0;
+  gap: 0;
+  margin-bottom: 32px;
+}
+
+/* Collapse sign-out + user strip */
+.app-layout[data-collapsed="true"] .sidebar-signout button {
+  justify-content: center;
+  padding: 12px 0;
+  gap: 0;
+}
+.app-layout[data-collapsed="true"] .sidebar-user {
+  padding: 12px 0;
+  display: flex;
+  justify-content: center;
+}
+.app-layout[data-collapsed="true"] .sidebar-user-button {
+  justify-content: center;
+}
+
+/* Collapse toggle button — lives in the top header */
+.sidebar-collapse-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.sidebar-collapse-btn:hover {
+  background: var(--md-surface-container);
+}
+.sidebar-collapse-btn .material-symbols-outlined {
+  font-size: 22px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.app-layout[data-collapsed="true"]
+  .sidebar-collapse-btn
+  .material-symbols-outlined {
+  transform: rotate(180deg);
+}
+
 /* Top header bar */
 .top-header {
   position: sticky;
@@ -298,7 +416,7 @@ h6 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 48px;
+  padding: 0 clamp(16px, 4vw, 48px);
   background: var(--md-surface);
   border-bottom: 1px solid var(--md-outline-variant);
 }
@@ -308,6 +426,25 @@ h6 {
   font-weight: 600;
   color: var(--md-primary);
   margin: 0;
+}
+
+/* Hamburger toggle (mobile only) */
+.hamburger-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.hamburger-btn:hover {
+  background: var(--md-surface-container);
 }
 .top-header-actions {
   display: flex;
@@ -357,29 +494,69 @@ h6 {
 /* Mobile responsive sidebar */
 @media (max-width: 1023px) {
   .app-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
+
+  /* Sidebar slides off-screen; main content takes full width */
+  .main-area {
+    margin-left: 0;
+  }
+
   .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
     width: 280px;
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 50;
   }
   .sidebar[data-open="true"] {
     transform: translateX(0);
   }
+
+  /* Overlay that closes the drawer when tapped */
   .sidebar-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.4);
     display: none;
     border: none;
-    z-index: 40;
+    z-index: 49;
+    cursor: pointer;
   }
-  .sidebar[data-open="true"] ~ .main-area .sidebar-overlay {
+  .sidebar-overlay.visible {
     display: block;
+  }
+
+  /* Show hamburger */
+  .hamburger-btn {
+    display: flex;
+  }
+}
+
+/* Dashboard page responsive padding */
+.dashboard-page {
+  padding: clamp(16px, 4vw, 32px) clamp(16px, 4vw, 48px);
+}
+
+@media (max-width: 639px) {
+  /* Bento grid collapses to single column */
+  .dashboard-bento {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Document cards: stack vertically, hide border-left divider */
+  .doc-card-actions {
+    border-left: none !important;
+    padding-left: 0 !important;
+    padding-top: 12px;
+    border-top: 1px solid var(--md-outline-variant);
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .doc-card-amount {
+    align-items: flex-start !important;
   }
 }
 
@@ -421,24 +598,7 @@ h6 {
   box-shadow: none;
 }
 
-/* Header */
-.top-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  padding: 1rem 0;
-  background: var(--white);
-  border-bottom: 1px solid var(--brand-border);
-}
-.top-header__inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0 1.25rem;
-  max-width: 1440px;
-  margin: 0 auto;
-}
+/* (legacy .top-header removed — MD3 version defined above) */
 
 .brand-group {
   display: flex;
