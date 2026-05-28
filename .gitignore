@@ -24,3 +24,10 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Playwright MCP screenshots and snapshots
+.playwright-mcp/
+
+# Claude Code tooling
+.claude/
+.superpowers/

@@ -1,5 +1,5 @@
 {
-  "name": "simple-bill-temp",
+  "name": "simple-bill",
   "private": true,
   "version": "0.0.0",
   "license": "MIT",
@@ -21,7 +21,9 @@
     "prepare": "husky",
     "lint-staged": "lint-staged",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:playwright": "node scripts/playwright-milestone6.mjs",
+    "test:playwright:smoke": "node scripts/playwright-smoke.mjs"
   },
   "dependencies": {
     "firebase": "^12.1.0",
@@ -47,6 +49,7 @@
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^15.5.2",
+    "playwright": "^1.60.0",
     "prettier": "^3.6.2",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.0",

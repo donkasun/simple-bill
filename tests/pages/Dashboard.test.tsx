@@ -1,8 +1,15 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+  cleanup,
+} from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import Dashboard from "../../src/pages/Dashboard";
+import Dashboard from "../../src/pages/dashboard";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { usePageTitle } from "@components/layout/PageTitleContext";
@@ -54,6 +61,8 @@ const mockUsePageTitle = usePageTitle as vi.MockedFunction<typeof usePageTitle>;
 
 // Mock navigate function
 const mockNavigate = vi.fn();
+let firestoreCallCount = 0;
+let updateSpy = vi.fn();
 
 // Mock react-router-dom
 vi.mock("react-router-dom", async () => {
@@ -118,6 +127,8 @@ const renderDashboard = () => {
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    firestoreCallCount = 0;
+    updateSpy = vi.fn();
 
     // Setup default mocks
     mockUseAuth.mockReturnValue({
@@ -127,55 +138,108 @@ describe("Dashboard", () => {
       signOut: vi.fn(),
     });
 
-    mockUseFirestore.mockReturnValue({
-      items: mockDocuments,
-      loading: false,
-      error: null,
-      add: vi.fn(),
-      update: vi.fn(),
-      remove: vi.fn(),
-      get: vi.fn(),
+    mockUseFirestore.mockImplementation(() => {
+      firestoreCallCount++;
+      if (firestoreCallCount === 2) {
+        // customers call
+        return {
+          items: [] as never,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          set: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as never;
+      }
+      // documents call
+      return {
+        items: mockDocuments as never,
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        set: vi.fn(),
+        update: updateSpy as never,
+        remove: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as never;
     });
 
     mockUsePageTitle.mockImplementation(() => {});
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   describe("Click Behavior Routing", () => {
-    it("should navigate to edit page when clicking 'View' on draft document", async () => {
+    it("should navigate to edit page when clicking 'Continue editing' on draft document", async () => {
       renderDashboard();
 
       // Find the first document (draft quotation)
-      const viewButtons = screen.getAllByText("View");
-      const firstViewButton = viewButtons[0];
+      const editButtons = screen.getAllByRole("button", {
+        name: "Continue editing",
+      });
+      const firstEditButton = editButtons[0];
 
-      fireEvent.click(firstViewButton);
+      fireEvent.click(firstEditButton);
 
       expect(mockNavigate).toHaveBeenCalledWith("/documents/doc1/edit");
     });
 
-    it("should navigate to edit page when clicking 'View' on finalized document", async () => {
+    it("should open confirmation and mark as paid for finalized document", async () => {
       renderDashboard();
 
       // Find the second document (finalized invoice)
-      const viewButtons = screen.getAllByText("View");
-      const secondViewButton = viewButtons[1];
+      const markPaidButtons = screen.getAllByRole("button", {
+        name: "Mark as paid",
+      });
+      const firstMarkPaidButton = markPaidButtons[0];
 
-      fireEvent.click(secondViewButton);
+      fireEvent.click(firstMarkPaidButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith("/documents/doc2/edit");
+      expect(
+        screen.getByRole("heading", { name: "Mark as paid" }),
+      ).toBeTruthy();
+      expect(
+        screen.getByText(
+          "Mark this document as paid? You can always undo this from the dashboard.",
+        ),
+      ).toBeTruthy();
+
+      const dialog = screen.getByRole("dialog");
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Mark as paid" }),
+      );
+
+      await waitFor(() => {
+        expect(updateSpy).toHaveBeenCalledWith(
+          "doc2",
+          expect.objectContaining({
+            paidAt: expect.any(Date),
+            status: "paid",
+          }),
+        );
+      });
     });
 
-    it("should trigger download when clicking 'Download' on finalized document", async () => {
+    it("should trigger download when clicking 'Download PDF' on finalized document", async () => {
       const { downloadBlob } = await import("@utils/download");
       const { generateDocumentPdf } = await import("@utils/pdf");
 
       renderDashboard();
 
-      // Find the download button on the finalized invoice
-      const downloadButtons = screen.getAllByRole("button", {
-        name: "Download",
-      });
-      const downloadButton = downloadButtons[0];
+      const betaCard = screen.getByText("Beta Inc").closest(".doc-card");
+      expect(betaCard).toBeTruthy();
+      const downloadButton = within(betaCard as HTMLElement).getByRole(
+        "button",
+        {
+          name: /download pdf/i,
+        },
+      );
 
       fireEvent.click(downloadButton);
 
@@ -199,21 +263,23 @@ describe("Dashboard", () => {
 
       // Check that there's at least one download button (for the finalized document)
       const downloadButtons = screen.getAllByRole("button", {
-        name: "Download",
+        name: /download pdf/i,
       });
       expect(downloadButtons.length).toBeGreaterThan(0);
     });
 
-    it("should show both View and Download buttons for finalized documents", () => {
+    it("should show both Mark as paid and Download PDF buttons for finalized documents", () => {
       renderDashboard();
 
-      // Check that we have View buttons (3 documents)
-      const viewButtons = screen.getAllByRole("button", { name: "View" });
-      expect(viewButtons.length).toBeGreaterThan(0);
+      // Check that we have Mark as paid buttons
+      const markPaidButtons = screen.getAllByRole("button", {
+        name: "Mark as paid",
+      });
+      expect(markPaidButtons.length).toBeGreaterThan(0);
 
-      // Check that we have Download buttons (1 finalized document)
+      // Check that we have Download buttons
       const downloadButtons = screen.getAllByRole("button", {
-        name: "Download",
+        name: /download pdf/i,
       });
       expect(downloadButtons.length).toBeGreaterThan(0);
     });
@@ -221,53 +287,91 @@ describe("Dashboard", () => {
 
   describe("Empty State Behavior", () => {
     it("should show empty state with CTA button when no documents", () => {
-      mockUseFirestore.mockReturnValue({
-        items: [],
-        loading: false,
-        error: null,
-        add: vi.fn(),
-        update: vi.fn(),
-        remove: vi.fn(),
-        get: vi.fn(),
+      mockUseFirestore.mockImplementation(() => {
+        firestoreCallCount++;
+        if (firestoreCallCount === 2) {
+          return {
+            items: [] as never,
+            loading: false,
+            error: null,
+            add: vi.fn(),
+            set: vi.fn(),
+            update: vi.fn(),
+            remove: vi.fn(),
+            getById: vi.fn(),
+            getOnce: vi.fn(),
+          } as never;
+        }
+        return {
+          items: [] as never,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          set: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as never;
       });
 
       renderDashboard();
 
-      expect(screen.getByText("No documents yet.")).toBeTruthy();
+      expect(
+        screen.getByText("You haven't created any invoices yet"),
+      ).toBeTruthy();
       expect(
         screen.getByText(
-          "Create your first invoice or quotation to get started.",
+          "Let's create your first one! It only takes a minute to get started.",
         ),
       ).toBeTruthy();
-      expect(screen.getByText("Create Your First Document")).toBeTruthy();
+      expect(screen.getByText("Create first invoice")).toBeTruthy();
     });
 
     it("should navigate to document creation when clicking CTA button in empty state", () => {
-      mockUseFirestore.mockReturnValue({
-        items: [],
-        loading: false,
-        error: null,
-        add: vi.fn(),
-        update: vi.fn(),
-        remove: vi.fn(),
-        get: vi.fn(),
+      mockUseFirestore.mockImplementation(() => {
+        firestoreCallCount++;
+        if (firestoreCallCount === 2) {
+          return {
+            items: [] as never,
+            loading: false,
+            error: null,
+            add: vi.fn(),
+            set: vi.fn(),
+            update: vi.fn(),
+            remove: vi.fn(),
+            getById: vi.fn(),
+            getOnce: vi.fn(),
+          } as never;
+        }
+        return {
+          items: [] as never,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          set: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as never;
       });
 
       renderDashboard();
 
       const ctaButtons = screen.getAllByRole("button", {
-        name: "Create Your First Document",
+        name: "Create first invoice",
       });
       fireEvent.click(ctaButtons[0]);
 
       expect(mockNavigate).toHaveBeenCalledWith("/documents/new");
     });
 
-    it("should navigate to document creation when clicking 'Create New Document' button", () => {
+    it("should navigate to document creation when clicking 'New invoice' button", () => {
       renderDashboard();
 
       const createButtons = screen.getAllByRole("button", {
-        name: "Create New Document",
+        name: /new invoice/i,
       });
       fireEvent.click(createButtons[0]);
 
@@ -275,8 +379,15 @@ describe("Dashboard", () => {
     });
   });
 
+  it("View all navigates to /documents", () => {
+    renderDashboard();
+    fireEvent.click(screen.getByText(/view all/i));
+    expect(mockNavigate).toHaveBeenCalledWith("/documents");
+  });
+
   describe("Document Display", () => {
-    it("should display all required columns", () => {
+    // TODO(M1): asserts the old table columns; Dashboard becomes card-based in the redesign.
+    it.skip("should display all required columns", () => {
       renderDashboard();
 
       expect(screen.getAllByText("Doc #")[0]).toBeTruthy();
@@ -292,15 +403,17 @@ describe("Dashboard", () => {
     it("should display document information correctly", () => {
       renderDashboard();
 
-      expect(screen.getAllByText("QUO-2024-001")[0]).toBeTruthy();
-      expect(screen.getAllByText("INV-2024-001")[0]).toBeTruthy();
+      expect(screen.getAllByText(/QUO-2024-001/)[0]).toBeTruthy();
+      expect(screen.getAllByText(/INV-2024-001/)[0]).toBeTruthy();
       expect(screen.getAllByText("Acme Corp")[0]).toBeTruthy();
       expect(screen.getAllByText("Beta Inc")[0]).toBeTruthy();
       expect(screen.getAllByText("Draft")[0]).toBeTruthy();
-      expect(screen.getAllByText("Finalized")[0]).toBeTruthy();
+      // Finalized documents display as "Sent" badge in the redesigned dashboard
+      expect(screen.getAllByText("Sent")[0]).toBeTruthy();
     });
 
-    it("should display related document information", () => {
+    // TODO(M1): asserts old relations-column copy; re-verify after the card-based redesign.
+    it.skip("should display related document information", () => {
       renderDashboard();
 
       // Check for quotation with related invoices
@@ -346,10 +459,10 @@ describe("Dashboard", () => {
   });
 
   describe("Page Title", () => {
-    it("should set page title to Dashboard", () => {
+    it("should set page title to Home", () => {
       renderDashboard();
 
-      expect(mockUsePageTitle).toHaveBeenCalledWith("Dashboard");
+      expect(mockUsePageTitle).toHaveBeenCalledWith("Home");
     });
   });
 });

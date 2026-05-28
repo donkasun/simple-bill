@@ -2,7 +2,14 @@
 
 ## Overview
 
-This document lists all features for the SimpleBill application with their current status and descriptions. Features are listed in no particular order - categorization and prioritization will be added later.
+This document lists all features for the SimpleBill application with their current status and descriptions.
+
+> **Audience anchor (read first):** SimpleBill targets (1) a **non-technical, occasional
+> user who quotes regularly, reuses the same customers/items, and wants a simple "paid"
+> toggle** (uses LKR), and (2) a **public showcase** that must support other currencies
+> (e.g. USD). Features are scoped to these two audiences. Power-user/SaaS features
+> (versioning, categories, recurring invoices, retention, i18n, offline) are **deferred or
+> cut** — see `project_plan.md`. When in doubt, favor simplicity over capability.
 
 ---
 
@@ -55,10 +62,9 @@ This document lists all features for the SimpleBill application with their curre
    - **Outcome**: Users can easily convert approved quotations into invoices for billing
 
 8. **Multiple Invoice Creation from Quotation**
-   - **Status**: ✅ Implemented
-   - **Description**: Create multiple invoices from the same quotation
-   - **Implementation**: Support for creating multiple invoices from single quotation, relationship tracking
-   - **Outcome**: Users can create multiple invoices from one quotation for different billing periods or partial payments
+   - **Status**: 🔄 Being simplified
+   - **Description**: A quotation can be converted to an invoice **multiple times**; each conversion creates a fresh editable invoice draft (line items copied in) and the user deletes/adjusts the lines they don't need.
+   - **Decision**: Keep multi-conversion + relationship tracking. **Cut** quantity-accounting (`originalQuantity`/`invoicedQuantity`/`remainingQuantity`) — too complex for the target user. See `project_plan.md`.
 
 9. **Document Numbering System**
    - **Status**: ✅ Implemented
@@ -67,10 +73,10 @@ This document lists all features for the SimpleBill application with their curre
    - **Outcome**: Documents are automatically numbered in a consistent, professional format
 
 10. **Document Status Management**
-    - **Status**: ✅ Implemented
-    - **Description**: Track document status (Draft, Finalized, Sent, Paid, Cancelled, Pending)
-    - **Implementation**: Status tracking system with visual indicators, status update functionality
-    - **Outcome**: Users can track the lifecycle of their documents with clear status indicators
+    - **Status**: 🔄 Being simplified
+    - **Description**: Track document status. **Decision: collapse to three states — Draft → Finalized → Paid.** The earlier six-state model (Sent, Cancelled, Pending) is being removed as too complex for the target user.
+    - **Implementation**: Three-state status with visual badges; one-click "Mark as paid".
+    - **Outcome**: Users see at a glance whether a document is unfinished, done, or paid — nothing more to learn.
 
 11. **Document Relationships & Navigation**
     - **Status**: ✅ Implemented
@@ -170,16 +176,13 @@ This document lists all features for the SimpleBill application with their curre
 
 ### User Experience & Interface
 
-27. **Rough.js Styling**
-    - **Status**: ✅ Implemented
-    - **Description**: Hand-drawn aesthetic throughout the UI with sketch-style components
+27. **Simple Humanist Design System**
+    - **Status**: 🔄 In Progress
+    - **Description**: Modern, calm, high-legibility UI (sage-green palette, large tap targets, plain-English copy, light/dark). Designed in Google Stitch. **Supersedes the removed Rough.js / hand-drawn aesthetic.**
 
 28. **Line-art SVG Icons**
-    - **Status**: ⏳ Planned
-    - **Priority**: 🎯 High
-    - **Description**: Minimal, accessible action icons for edit/delete operations
-    - **Implementation**: Create or source line-art SVG icons for edit, delete, and other actions, ensure accessibility with proper labels
-    - **Outcome**: Clean, consistent iconography that matches the Rough.js aesthetic and improves visual clarity
+    - **Status**: ✂️ Cut
+    - **Description**: Obsoleted by the Simple Humanist design system. Note: actions must NOT be icon-only for this user — use labeled controls.
 
 29. **Color-coded Status Badges**
     - **Status**: ✅ Implemented
@@ -200,17 +203,15 @@ This document lists all features for the SimpleBill application with their curre
     - **Outcome**: Users can easily identify and navigate between related quotations and invoices
 
 32. **Typography and Design Tokens**
-    - **Status**: ✅ Implemented
-    - **Description**: Consistent typography with Caveat for headings and Atkinson Hyperlegible for body text
+    - **Status**: 🔄 In Progress (migrating to Simple Humanist)
+    - **Description**: Atkinson Hyperlegible (body, low-vision optimized) + Epilogue (headings). Replaces the earlier Caveat heading font. Tokens centralized in CSS variables.
 
 ### Smart Features & Automation
 
 33. **Auto-calculate Totals**
-    - **Status**: ⏳ Planned
-    - **Priority**: 🎯 High
+    - **Status**: ✅ Implemented (verify + add tests)
     - **Description**: Auto-calculate totals as you add line items
-    - **Implementation**: Add real-time calculation of line item totals, subtotals, and final amounts as users type or modify items
-    - **Outcome**: Users see totals update instantly, reducing errors and providing immediate feedback on document amounts
+    - **Implementation**: Real-time line-item amount, subtotal, and total via `computeAmount`/`computeSubtotal` in `useDocumentForm`/`documentMath`.
 
 34. **Suggest Common Item Descriptions**
     - **Status**: ⏳ Planned
@@ -303,6 +304,10 @@ This document lists all features for the SimpleBill application with their curre
     - **Implementation**: Add i18n framework, translate all UI text, add language selection, support RTL languages
     - **Outcome**: Application can be used by international users in their preferred language
 
+### Financial
+
+46.5. **Multi-Currency Support** _(showcase-critical)_ - **Status**: 🔄 In Progress (baseline exists) - **Priority**: 🎯 High - **Description**: Per-document currency with a user default. Primary user uses **LKR**; public-showcase users need **USD** and others. - **Implementation**: Supported-currency list with correct symbol/locale formatting via `formatCurrency`; default currency in Settings; per-document override locked at finalize; PDF renders the document's currency. - **Out of scope**: live exchange-rate conversion between currencies (each document is single-currency). - **Outcome**: One user can default to LKR while another uses USD; every document formats correctly in UI and PDF.
+
 ### Settings & Configuration
 
 47. **Document Numbering Format Settings**
@@ -338,10 +343,11 @@ The following features have been identified but are not planned for implementati
 
 ### Financial Features
 
-- **Payment Tracking**: Track payment status and due dates
 - **Tax Calculations**: Built-in tax calculation and reporting
 - **Financial Reports**: Revenue reports and outstanding payments tracking
-- **Currency Support**: Multiple currency support for international clients
+
+> **Moved in-scope:** _Payment Tracking_ is now a simple "Mark as paid" toggle (feature
+> #10). _Multiple currency support_ is now in-scope and showcase-critical (feature #46.5).
 
 ### Security & Compliance
 
@@ -372,6 +378,11 @@ The following features have been identified but are not planned for implementati
 ---
 
 ## Summary
+
+> ⚠️ **The counts and the "Planned Features by Priority" / "Implementation Recommendations"
+> sections below are stale** (they predate the re-anchoring and contain mismatched feature
+> IDs). For current sequencing and priorities, **`project_plan.md` is the source of truth.**
+> The sections below are retained only for historical reference.
 
 **Total Features**: 51
 

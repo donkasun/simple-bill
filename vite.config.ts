@@ -4,6 +4,11 @@ import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
+  },
   resolve: {
     alias: {
       "@assets": fileURLToPath(new URL("./src/assets", import.meta.url)),
