@@ -4,16 +4,16 @@ import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import PageHeader from "@components/layout/PageHeader";
-import PrimaryButton from "@components/core/PrimaryButton";
+import Button from "@components/core/Button";
 import ErrorBanner from "@components/core/ErrorBanner";
 import ConfirmDialog from "@components/core/ConfirmDialog";
 import SegmentedToggle from "@components/core/SegmentedToggle";
 import type { DocumentEntity } from "../types/document";
-import { formatCurrency } from "@utils/currency";
 import { downloadBlob } from "@utils/download";
 import { buildDuplicatePayload, getDocumentFilename } from "@utils/documents";
 import { allocateNextDocumentNumber } from "@utils/docNumber";
 import { todayIso } from "@utils/date";
+import DocumentCard from "@components/documents/DocumentCard";
 
 type DocumentRow = DocumentEntity & {
   typeLabel: string;
@@ -71,6 +71,16 @@ const Documents: React.FC = () => {
       return typeMatch && statusMatch;
     });
   }, [documents, statusFilter, typeFilter]);
+
+  const documentSummary = useMemo(() => {
+    const drafts = documents.filter(
+      (doc) => !doc.status || doc.status === "draft",
+    ).length;
+    const sent = documents.filter((doc) => doc.status === "finalized").length;
+    const paid = documents.filter((doc) => doc.status === "paid").length;
+    const countLabel = documents.length === 1 ? "document" : "documents";
+    return `${documents.length} ${countLabel} · ${drafts} drafts · ${sent} sent · ${paid} paid`;
+  }, [documents]);
 
   const handleDuplicate = useCallback(
     async (source: DocumentEntity) => {
@@ -141,7 +151,10 @@ const Documents: React.FC = () => {
     setMarkingPaidId(confirmMarkPaid);
     setConfirmMarkPaid(null);
     try {
-      await update(confirmMarkPaid, { status: "paid" });
+      await update(confirmMarkPaid, {
+        status: "paid",
+        paidAt: new Date(),
+      });
     } finally {
       setMarkingPaidId(null);
     }
@@ -152,58 +165,64 @@ const Documents: React.FC = () => {
     setMarkingUnpaidId(confirmMarkUnpaid);
     setConfirmMarkUnpaid(null);
     try {
-      await update(confirmMarkUnpaid, { status: "finalized" });
+      await update(confirmMarkUnpaid, {
+        status: "finalized",
+        paidAt: null,
+      });
     } finally {
       setMarkingUnpaidId(null);
     }
   }, [confirmMarkUnpaid, update]);
 
-  const badgeStyles: Record<
-    string,
-    { bg: string; color: string; label: string }
-  > = {
-    draft: {
-      bg: "var(--md-surface-container-highest)",
-      color: "var(--md-on-surface-variant)",
-      label: "Draft",
-    },
-    finalized: {
-      bg: "var(--md-secondary-container)",
-      color: "var(--md-on-secondary-container)",
-      label: "Sent",
-    },
-    paid: {
-      bg: "var(--md-primary-container)",
-      color: "var(--md-on-primary-container)",
-      label: "Paid",
-    },
-  };
-
   return (
     <div className="app-page">
       <PageHeader
         title="Documents"
-        subtitle="Your invoices and quotations."
+        subtitle={documentSummary}
         actions={
-          <PrimaryButton
-            type="button"
-            onClick={() => navigate("/documents/new")}
-          >
-            <span className="material-symbols-outlined filled page-header-cta-icon">
-              add
-            </span>
-            New invoice
-          </PrimaryButton>
+          <div className="new-document-menu">
+            <Button type="button" onClick={() => navigate("/documents/new")}>
+              <span className="material-symbols-outlined filled page-header-cta-icon">
+                add
+              </span>
+              New document
+            </Button>
+            <details className="new-document-menu__more">
+              <summary aria-label="Choose document type" title="Choose type">
+                <span className="material-symbols-outlined" aria-hidden>
+                  expand_more
+                </span>
+              </summary>
+              <div className="new-document-menu__content">
+                <button
+                  type="button"
+                  onClick={() => navigate("/documents/new")}
+                >
+                  New invoice
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/documents/new", {
+                      state: { documentType: "quotation" },
+                    })
+                  }
+                >
+                  New quotation
+                </button>
+              </div>
+            </details>
+          </div>
         }
       />
 
       <div className="docs-filter-bar">
         <SegmentedToggle
           id="doc-type-filter"
-          ariaLabel="Filter by type"
+          ariaLabel="Filter by document type"
           value={typeFilter}
           options={[
-            { value: "all", label: "All" },
+            { value: "all", label: "All types" },
             { value: "invoice", label: "Invoices" },
             { value: "quotation", label: "Quotations" },
           ]}
@@ -230,175 +249,22 @@ const Documents: React.FC = () => {
 
         {!loading && !error && filtered.length > 0 && (
           <div className="doc-card-list">
-            {filtered.map((d) => {
-              const isDraft = !d.status || d.status === "draft";
-              const isFinalized = d.status === "finalized";
-              const isPaid = d.status === "paid";
-              const isDeleting = deletingId === d.id;
-              const isDownloading = downloadingId === d.id;
-              const isMarkingPaid = markingPaidId === d.id;
-              const isMarkingUnpaid = markingUnpaidId === d.id;
-              const isQuotation = d.type === "quotation";
-              const iconName = isQuotation ? "request_quote" : "receipt_long";
-              const iconBg = isQuotation
-                ? isDraft
-                  ? "var(--orange-light)"
-                  : "var(--green-light)"
-                : isDraft
-                  ? "var(--md-surface-container-highest)"
-                  : "var(--md-secondary-container)";
-              const iconColor = isQuotation
-                ? isDraft
-                  ? "var(--brand-warning)"
-                  : "var(--brand-success)"
-                : isDraft
-                  ? "var(--md-on-surface-variant)"
-                  : "var(--md-on-secondary-container)";
-              const badge =
-                badgeStyles[d.status ?? "draft"] ?? badgeStyles.draft;
-
-              return (
-                <div key={d.id} className="doc-card">
-                  <div className="doc-card__main">
-                    <div
-                      className="doc-card__icon"
-                      style={{ background: iconBg, color: iconColor }}
-                    >
-                      <span className="material-symbols-outlined icon-md">
-                        {iconName}
-                      </span>
-                    </div>
-                    <div className="doc-card__info">
-                      <h5 className="doc-card__title">{d.customerName}</h5>
-                      <p className="doc-card__subtitle">
-                        {d.typeLabel} #{d.docNumber || "—"}
-                      </p>
-                      <p className="doc-card__date">{d.date}</p>
-                    </div>
-                  </div>
-
-                  <div className="doc-card-amount">
-                    <span
-                      className={`doc-card__amount ${isDraft ? "doc-card__amount--draft" : "doc-card__amount--active"}`}
-                    >
-                      {formatCurrency(d.total, d.currency || "USD")}
-                    </span>
-                    <span
-                      className="doc-card__status"
-                      style={{ background: badge.bg, color: badge.color }}
-                    >
-                      {badge.label}
-                    </span>
-                  </div>
-
-                  <div
-                    className={`doc-card-actions${isDraft ? " doc-card-actions--draft" : ""}`}
-                  >
-                    {isDraft && (
-                      <>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--primary"
-                          onClick={() => navigate(`/documents/${d.id}/edit`)}
-                          disabled={!!duplicatingId}
-                        >
-                          Continue editing
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDuplicate(d)}
-                          disabled={!!duplicatingId}
-                        >
-                          {duplicatingId === d.id
-                            ? "Duplicating…"
-                            : "Duplicate"}
-                        </button>
-                        <button
-                          type="button"
-                          className="icon-btn icon-btn-danger"
-                          aria-label={
-                            isDeleting ? "Deleting document" : "Delete document"
-                          }
-                          title="Delete document"
-                          onClick={() => d.id && setConfirmDelete(d.id)}
-                          disabled={isDeleting}
-                        >
-                          <span
-                            className="material-symbols-outlined"
-                            aria-hidden
-                          >
-                            delete
-                          </span>
-                        </button>
-                      </>
-                    )}
-
-                    {isFinalized && (
-                      <>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--accent"
-                          onClick={() => d.id && setConfirmMarkPaid(d.id)}
-                          disabled={isMarkingPaid || !!duplicatingId}
-                        >
-                          {isMarkingPaid ? "Saving…" : "Mark as paid"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDuplicate(d)}
-                          disabled={!!duplicatingId}
-                        >
-                          {duplicatingId === d.id
-                            ? "Duplicating…"
-                            : "Duplicate"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDownload(d)}
-                          disabled={isDownloading || !!duplicatingId}
-                        >
-                          {isDownloading ? "Downloading…" : "Download PDF"}
-                        </button>
-                      </>
-                    )}
-
-                    {isPaid && (
-                      <>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDownload(d)}
-                          disabled={isDownloading || !!duplicatingId}
-                        >
-                          {isDownloading ? "Downloading…" : "Download PDF"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDuplicate(d)}
-                          disabled={!!duplicatingId}
-                        >
-                          {duplicatingId === d.id
-                            ? "Duplicating…"
-                            : "Duplicate"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-link doc-card-link--muted"
-                          onClick={() => d.id && setConfirmMarkUnpaid(d.id)}
-                          disabled={isMarkingUnpaid || !!duplicatingId}
-                        >
-                          {isMarkingUnpaid ? "Saving…" : "Mark as unpaid"}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {filtered.map((d) => (
+              <DocumentCard
+                key={d.id}
+                document={d}
+                duplicatingId={duplicatingId}
+                deletingId={deletingId}
+                downloadingId={downloadingId}
+                markingPaidId={markingPaidId}
+                markingUnpaidId={markingUnpaidId}
+                onDuplicate={handleDuplicate}
+                onDownload={handleDownload}
+                onDelete={setConfirmDelete}
+                onMarkPaid={setConfirmMarkPaid}
+                onMarkUnpaid={setConfirmMarkUnpaid}
+              />
+            ))}
           </div>
         )}
 
@@ -431,12 +297,9 @@ const Documents: React.FC = () => {
                 Create your first invoice or quotation to get started.
               </p>
             </div>
-            <PrimaryButton
-              type="button"
-              onClick={() => navigate("/documents/new")}
-            >
+            <Button type="button" onClick={() => navigate("/documents/new")}>
               Create first invoice
-            </PrimaryButton>
+            </Button>
           </div>
         )}
       </section>

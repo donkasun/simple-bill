@@ -123,6 +123,20 @@ describe("Documents page", () => {
     );
     expect(screen.getAllByText("Don Kasun").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText("2 documents · 1 drafts · 1 sent · 0 paid"),
+    ).toBeInTheDocument();
+  });
+
+  it("filters to drafts only when Draft toggle clicked", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Draft" }));
+    expect(screen.getAllByText("Don Kasun").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Finlays")).not.toBeInTheDocument();
   });
 
   it("filters to invoices only when Invoices toggle clicked", () => {
@@ -147,6 +161,17 @@ describe("Documents page", () => {
     expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
   });
 
+  it("filters to sent only when Sent toggle clicked", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Sent" }));
+    expect(screen.queryByText("Don Kasun")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
+  });
+
   it("shows empty state when status filter produces no results", () => {
     render(
       <BrowserRouter>
@@ -159,13 +184,13 @@ describe("Documents page", () => {
     ).toBeInTheDocument();
   });
 
-  it("New invoice button navigates to /documents/new", () => {
+  it("New document button navigates to /documents/new", () => {
     render(
       <BrowserRouter>
         <Documents />
       </BrowserRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: /new invoice/i }));
+    fireEvent.click(screen.getByRole("button", { name: /new document/i }));
     expect(mockNavigate).toHaveBeenCalledWith("/documents/new");
   });
 });

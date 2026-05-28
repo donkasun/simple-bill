@@ -55,16 +55,12 @@ async function ensureServer() {
 
   if (await httpGetOk(BASE_URL)) return;
 
-  devChild = spawn(
-    "npx",
-    ["vite", "--port", String(PORT), "--strictPort"],
-    {
-      cwd: repoRoot,
-      env: { ...process.env, VITE_MOCK_USER: "true" },
-      stdio: "inherit",
-      shell: process.platform === "win32",
-    },
-  );
+  devChild = spawn("npx", ["vite", "--port", String(PORT), "--strictPort"], {
+    cwd: repoRoot,
+    env: { ...process.env, VITE_MOCK_USER: "true" },
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
 
   devChild.on("error", (err) => {
     console.error("Failed to start Vite:", err);
@@ -87,17 +83,19 @@ async function run() {
 
   try {
     await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
-    await page.getByText("Recent Documents", { exact: false }).waitFor({
+    await page.getByText("Recent documents", { exact: false }).waitFor({
       timeout: 30_000,
     });
 
     // M6: Dashboard copy (empty state or header area still loads)
-    await page.getByRole("button", { name: /new invoice/i }).click();
+    await page
+      .getByRole("button", { name: "New invoice", exact: true })
+      .click();
     await page.waitForURL("**/documents/new", { timeout: 15_000 });
 
     await page
       .getByRole("main")
-      .getByRole("heading", { name: "Create Document" })
+      .getByRole("heading", { name: "New invoice or quote" })
       .waitFor({
         timeout: 15_000,
       });
@@ -118,9 +116,7 @@ async function run() {
     const guide = page.getByLabel("First invoice guide");
     try {
       await guide.waitFor({ state: "visible", timeout: 12_000 });
-      await page
-        .getByRole("button", { name: /got it.*show again/i })
-        .click();
+      await page.getByRole("button", { name: /got it.*show again/i }).click();
       await guide.waitFor({ state: "hidden", timeout: 10_000 });
     } catch {
       console.warn(
@@ -143,11 +139,13 @@ async function run() {
     }
 
     // M4 baseline still present on create page
-    await page.goto(`${BASE_URL}/documents/new`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE_URL}/documents/new`, {
+      waitUntil: "domcontentloaded",
+    });
     await page.getByText("Copy from previous", { exact: false }).waitFor({
       timeout: 15_000,
     });
-    await page.getByText("Find customer", { exact: false }).waitFor({
+    await page.getByText("Bill To", { exact: false }).waitFor({
       timeout: 10_000,
     });
 

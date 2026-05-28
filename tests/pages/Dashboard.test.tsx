@@ -216,9 +216,13 @@ describe("Dashboard", () => {
       );
 
       await waitFor(() => {
-        expect(updateSpy).toHaveBeenCalledWith("doc2", {
-          status: "paid",
-        });
+        expect(updateSpy).toHaveBeenCalledWith(
+          "doc2",
+          expect.objectContaining({
+            paidAt: expect.any(Date),
+            status: "paid",
+          }),
+        );
       });
     });
 
@@ -228,11 +232,14 @@ describe("Dashboard", () => {
 
       renderDashboard();
 
-      // Find the download button on the finalized invoice
-      const downloadButtons = screen.getAllByRole("button", {
-        name: /download pdf/i,
-      });
-      const downloadButton = downloadButtons[0];
+      const betaCard = screen.getByText("Beta Inc").closest(".doc-card");
+      expect(betaCard).toBeTruthy();
+      const downloadButton = within(betaCard as HTMLElement).getByRole(
+        "button",
+        {
+          name: /download pdf/i,
+        },
+      );
 
       fireEvent.click(downloadButton);
 

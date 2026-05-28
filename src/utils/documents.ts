@@ -14,7 +14,7 @@ export function selectCustomerDetails(
   customerId?: string,
 ): DocumentEntity["customerDetails"] {
   const selected = customers.find((c) => c.id === customerId);
-  if (!selected) return null;
+  if (!selected) return undefined;
   const details: NonNullable<DocumentEntity["customerDetails"]> = {
     name: selected.name,
   };
@@ -34,17 +34,13 @@ export function buildDuplicatePayload(
     type: source.type,
     docNumber,
     date: today,
-    customerId: source.customerId ?? null,
-    customerDetails: source.customerDetails ?? null,
-    items: source.items.map((it) => ({
-      ...it,
-      itemId: it.itemId ?? null,
-      description: it.description ?? "",
-    })),
+    customerId: source.customerId ?? undefined,
+    customerDetails: source.customerDetails ?? undefined,
+    items: source.items.map((it) => ({ ...it })),
     subtotal: source.subtotal,
     total: source.total,
     notes: source.notes ?? "",
-    currency: source.currency ?? null,
+    currency: source.currency ?? undefined,
     // Always create duplicates as editable drafts — never carry over finalized state
     status: "draft",
   };
@@ -63,10 +59,10 @@ export function buildDocumentPayload(
     type: state.documentType,
     docNumber,
     date: state.date,
-    customerId: state.customerId ?? null,
-    customerDetails: customerDetails ?? null,
+    customerId: state.customerId ?? undefined,
+    customerDetails: customerDetails ?? undefined,
     items: state.lineItems.map((li) => ({
-      itemId: li.itemId ?? null,
+      itemId: li.itemId ?? undefined,
       name: li.name ?? "",
       description: li.description ?? "",
       unitPrice: Number.isFinite(li.unitPrice) ? li.unitPrice : 0,
