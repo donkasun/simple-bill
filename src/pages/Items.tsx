@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import StyledTable from "@components/core/StyledTable";
-import PrimaryButton from "@components/core/PrimaryButton";
+import Button from "@components/core/Button";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import ItemModal, { type ItemFormData } from "@components/items/ItemModal";
@@ -103,9 +103,7 @@ const Items: React.FC = () => {
       <PageHeader
         title="Products & services"
         subtitle="What you sell and the rates you charge."
-        actions={
-          <PrimaryButton onClick={handleAddClick}>Add item</PrimaryButton>
-        }
+        actions={<Button onClick={handleAddClick}>Add item</Button>}
       />
 
       {loading && <div>Loading items…</div>}
@@ -196,9 +194,7 @@ const Items: React.FC = () => {
                 Add your first product or service to start invoicing.
               </div>
               <div style={{ marginTop: "1.25rem" }}>
-                <PrimaryButton onClick={handleAddClick}>
-                  Add your first item
-                </PrimaryButton>
+                <Button onClick={handleAddClick}>Add your first item</Button>
               </div>
             </div>
           )}

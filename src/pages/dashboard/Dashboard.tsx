@@ -6,7 +6,7 @@ import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import PageHeader from "@components/layout/PageHeader";
-import PrimaryButton from "@components/core/PrimaryButton";
+import Button from "@components/core/Button";
 import type { DocumentEntity } from "../../types/document";
 import { formatCurrency } from "@utils/currency";
 import { downloadBlob } from "@utils/download";
@@ -74,7 +74,7 @@ const Dashboard: React.FC = () => {
           today,
         );
         const newId = await add(payload);
-        navigate(`/documents/${newId}/edit`);
+        navigate(`/documents/${newId}/edit`, { state: { autoEdit: true } });
       } catch (e: unknown) {
         console.error("Failed to duplicate document:", e);
         setMutationError(
@@ -154,7 +154,7 @@ const Dashboard: React.FC = () => {
         eyebrow={firstName ? `${greeting}, ${firstName}` : undefined}
         title="Your business at a glance"
         actions={
-          <PrimaryButton
+          <Button
             type="button"
             onClick={() => navigate("/documents/new")}
             style={{ borderRadius: 12, padding: "16px 32px" }}
@@ -163,7 +163,7 @@ const Dashboard: React.FC = () => {
               add
             </span>
             New invoice
-          </PrimaryButton>
+          </Button>
         }
       />
 
@@ -190,14 +190,23 @@ const Dashboard: React.FC = () => {
               const isMarkingPaid = markingPaidId === d.id;
               const isMarkingUnpaid = markingUnpaidId === d.id;
 
-              // Icon + colors per status
-              const iconName = isDraft ? "edit_document" : "receipt_long";
-              const iconBg = isDraft
-                ? "var(--md-surface-container-highest)"
-                : "var(--md-secondary-container)";
-              const iconColor = isDraft
-                ? "var(--md-on-surface-variant)"
-                : "var(--md-on-secondary-container)";
+              // Icon + colors: shape tracks type, tint tracks status
+              const isQuotation = d.type === "quotation";
+              const iconName = isQuotation ? "request_quote" : "receipt_long";
+              const iconBg = isQuotation
+                ? isDraft
+                  ? "var(--orange-light)"
+                  : "var(--green-light)"
+                : isDraft
+                  ? "var(--md-surface-container-highest)"
+                  : "var(--md-secondary-container)";
+              const iconColor = isQuotation
+                ? isDraft
+                  ? "var(--brand-warning)"
+                  : "var(--brand-success)"
+                : isDraft
+                  ? "var(--md-on-surface-variant)"
+                  : "var(--md-on-secondary-container)";
 
               // Status badge — handle legacy/unknown statuses gracefully
               const badgeStyles: Record<
@@ -383,13 +392,13 @@ const Dashboard: React.FC = () => {
                 started.
               </p>
             </div>
-            <PrimaryButton
+            <Button
               type="button"
               onClick={() => navigate("/documents/new")}
               style={{ borderRadius: 12, padding: "20px 40px" }}
             >
               Create first invoice
-            </PrimaryButton>
+            </Button>
           </div>
         )}
       </section>

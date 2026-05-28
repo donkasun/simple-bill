@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import StyledDropdown from "@components/core/StyledDropdown";
 import StyledInput from "@components/core/StyledInput";
 import StyledTextarea from "@components/core/StyledTextarea";
+import SegmentedToggle from "@components/core/SegmentedToggle";
 import LineItemsTable from "@components/documents/LineItemsTable";
-import PrimaryButton from "@components/core/PrimaryButton";
-import SecondaryButton from "@components/core/SecondaryButton";
+import Button from "@components/core/Button";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { useNavigate } from "react-router-dom";
@@ -125,7 +125,6 @@ const DocumentCreation: React.FC = () => {
     Record<string, LineItemFieldErrors>
   >({});
   const [prefilling, setPrefilling] = useState(false);
-  const [customerQuery, setCustomerQuery] = useState("");
   const [itemUsage, setItemUsage] = useState<ItemUsageMap>({});
   const [currency, setCurrency] = useState<string>("USD");
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
@@ -166,20 +165,11 @@ const DocumentCreation: React.FC = () => {
   }, [profile?.currency]);
 
   const visibleCustomers = useMemo(() => {
-    const q = customerQuery.trim().toLowerCase();
-    if (!q) return customers;
-    const filtered = customers.filter((c) =>
-      String(c.name ?? "")
-        .toLowerCase()
-        .includes(q),
-    );
-    const selected = state.customerId
-      ? customers.find((c) => c.id === state.customerId)
-      : undefined;
-    if (selected && !filtered.some((c) => c.id === selected.id))
-      return [selected, ...filtered];
-    return filtered;
-  }, [customers, customerQuery, state.customerId]);
+    if (!state.customerId) return customers;
+    const selected = customers.find((c) => c.id === state.customerId);
+    if (!selected) return customers;
+    return [selected, ...customers.filter((c) => c.id !== selected.id)];
+  }, [customers, state.customerId]);
 
   const sortedCatalog = useMemo(
     () => sortCatalogByUsage(itemCatalog, itemUsage),
@@ -435,32 +425,40 @@ const DocumentCreation: React.FC = () => {
           toolbar
           title="New invoice or quote"
           subtitle="Fill in the details below, then save a draft or download a PDF."
-          actions={
+          secondaryActions={
             <>
-              <SecondaryButton onClick={() => navigate("/dashboard")}>
+              <Button
+                variant="secondary"
+                onClick={() => navigate("/dashboard")}
+              >
                 Cancel
-              </SecondaryButton>
-              <SecondaryButton
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={handleCopyFromPrevious}
                 disabled={prefilling || saving || finalizing}
                 aria-disabled={prefilling || saving || finalizing}
               >
                 {prefilling ? "Copying…" : "Copy from previous"}
-              </SecondaryButton>
-              <PrimaryButton
+              </Button>
+            </>
+          }
+          actions={
+            <>
+              <Button
                 onClick={handleSaveDraft}
                 disabled={saving || finalizing}
                 aria-disabled={saving || finalizing}
               >
                 {saving ? "Saving…" : "Save draft"}
-              </PrimaryButton>
-              <PrimaryButton
+              </Button>
+              <Button
                 onClick={handleFinalizeAndDownload}
                 disabled={saving || finalizing || finalizeDisabled}
                 aria-disabled={saving || finalizing || finalizeDisabled}
               >
                 {finalizing ? "Finalizing…" : "Finalize & download PDF"}
-              </PrimaryButton>
+              </Button>
             </>
           }
         />
@@ -477,7 +475,7 @@ const DocumentCreation: React.FC = () => {
                 id: "billto",
                 title: "Who are you billing?",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     Pick the customer you’re billing in <strong>Bill To</strong>
                     . If you don’t see them yet, add them from the Customers
                     page first.
@@ -488,7 +486,7 @@ const DocumentCreation: React.FC = () => {
                 id: "items",
                 title: "What are you charging for?",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     Add line items for products or services. You can choose from
                     saved items or type a custom name.
                   </div>
@@ -498,7 +496,7 @@ const DocumentCreation: React.FC = () => {
                 id: "totals",
                 title: "Double-check currency and totals",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     Choose a currency for this document and quickly review the
                     subtotal and total before saving.
                   </div>
@@ -508,7 +506,7 @@ const DocumentCreation: React.FC = () => {
                 id: "save",
                 title: "Save draft vs finalize",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     <strong>Save Draft</strong> keeps it editable.{" "}
                     <strong>Finalize</strong> generates a PDF for sharing.
                   </div>
@@ -522,23 +520,52 @@ const DocumentCreation: React.FC = () => {
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
           >
-            <StyledDropdown
-              label="Document Type"
-              id="doc-documentType"
-              value={state.documentType}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_FIELD",
-                  field: "documentType",
-                  value: e.target.value as DocumentType,
-                })
-              }
-              required
-              error={headerErrors.documentType}
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                gap: 16,
+                flexWrap: "wrap",
+              }}
             >
-              <option value="invoice">Invoice</option>
-              <option value="quotation">Quotation</option>
-            </StyledDropdown>
+              <StyledDropdown
+                id="doc-currency"
+                aria-label="Currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                style={{ maxWidth: 140 }}
+              >
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </StyledDropdown>
+
+              <div style={{ marginLeft: "auto", minWidth: 260, maxWidth: 420 }}>
+                <SegmentedToggle<DocumentType>
+                  ariaLabel="Document Type"
+                  id="doc-documentType"
+                  value={state.documentType}
+                  options={[
+                    { value: "invoice", label: "Invoice" },
+                    { value: "quotation", label: "Quotation" },
+                  ]}
+                  onChange={(next) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "documentType",
+                      value: next,
+                    })
+                  }
+                />
+                {headerErrors.documentType ? (
+                  <div className="modal-error">{headerErrors.documentType}</div>
+                ) : null}
+              </div>
+            </div>
             <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
               <div
                 className="text-xs"
@@ -578,59 +605,50 @@ const DocumentCreation: React.FC = () => {
               error={headerErrors.date}
             />
 
-            <StyledDropdown
-              label="Currency"
-              id="doc-currency"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                display: "flex",
+                gap: 12,
+                alignItems: "flex-end",
+              }}
             >
-              {SUPPORTED_CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </StyledDropdown>
-
-            <StyledInput
-              label="Find customer"
-              placeholder="Start typing a name…"
-              value={customerQuery}
-              onChange={(e) => setCustomerQuery(e.target.value)}
-              disabled={loadingCustomers}
-            />
-            <StyledDropdown
-              label="Bill To"
-              id="doc-customerId"
-              value={state.customerId || ""}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_FIELD",
-                  field: "customerId",
-                  value: e.target.value || undefined,
-                })
-              }
-              required
-              disabled={loadingCustomers}
-              error={headerErrors.customerId}
-            >
-              <option value="">
-                {loadingCustomers ? "Loading customers..." : "Select customer"}
-              </option>
-              {visibleCustomers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </StyledDropdown>
-            <div style={{ gridColumn: "1 / -1", marginTop: -4 }}>
-              <button
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <StyledDropdown
+                  label="Bill To"
+                  id="doc-customerId"
+                  value={state.customerId || ""}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "customerId",
+                      value: e.target.value || undefined,
+                    })
+                  }
+                  required
+                  disabled={loadingCustomers}
+                  error={headerErrors.customerId}
+                >
+                  <option value="">
+                    {loadingCustomers
+                      ? "Loading customers..."
+                      : "Select customer"}
+                  </option>
+                  {visibleCustomers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </option>
+                  ))}
+                </StyledDropdown>
+              </div>
+              <Button
                 type="button"
-                className="link-btn"
+                prominent
                 onClick={catalogModals.openCustomerModal}
                 disabled={loadingCustomers}
               >
-                Add new customer…
-              </button>
+                Add customer
+              </Button>
             </div>
             <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
               <div
@@ -663,19 +681,11 @@ const DocumentCreation: React.FC = () => {
               display: "flex",
               justifyContent: "space-between",
               marginTop: 12,
-              padding: "0 16px",
             }}
           >
-            <SecondaryButton onClick={handleAddRow}>
+            <Button variant="secondary" onClick={handleAddRow}>
               Add line item
-            </SecondaryButton>
-            <button
-              type="button"
-              className="link-btn"
-              onClick={() => catalogModals.openItemModal()}
-            >
-              Add product or service…
-            </button>
+            </Button>
             <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
               <div style={{ textAlign: "right" }}>
                 <div className="muted">Subtotal</div>

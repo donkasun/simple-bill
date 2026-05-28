@@ -33,7 +33,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         : "1px solid var(--md-outline-variant)",
       borderRadius: "8px",
       outline: "none",
-      background: "var(--white)",
+      backgroundColor: "var(--white)",
       fontSize: "var(--text-base)",
       fontFamily: "inherit",
       transition: "border-color 0.2s ease, box-shadow 0.2s ease",
@@ -43,6 +43,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
 
   return (
     <div
+      className="FieldWrapper"
       style={{
         display: "flex",
         flexDirection: "column",

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import PrimaryButton from "@components/core/PrimaryButton";
+import Button from "@components/core/Button";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import CustomerModal, {
@@ -100,9 +100,7 @@ const Customers: React.FC = () => {
       <PageHeader
         title="Customers"
         subtitle="The people and businesses you bill."
-        actions={
-          <PrimaryButton onClick={handleAddClick}>Add customer</PrimaryButton>
-        }
+        actions={<Button onClick={handleAddClick}>Add customer</Button>}
       />
 
       {loading && (
@@ -250,9 +248,7 @@ const Customers: React.FC = () => {
                 Every great business starts with a customer. Add your first one
                 to begin invoicing.
               </div>
-              <PrimaryButton onClick={handleAddClick}>
-                Add your first customer
-              </PrimaryButton>
+              <Button onClick={handleAddClick}>Add your first customer</Button>
             </div>
           )}
         </>

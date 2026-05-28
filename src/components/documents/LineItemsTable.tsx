@@ -39,6 +39,26 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
 }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<string | null>(null);
+  // Tracks which rows are in "custom name" mode (text input) vs catalog mode (dropdown).
+  // A row starts in custom mode if it already has a typed name but no catalog item.
+  const [customModeIds, setCustomModeIds] = useState<Set<string>>(
+    () =>
+      new Set(
+        items.filter((li) => !li.itemId && li.name?.trim()).map((li) => li.id),
+      ),
+  );
+
+  const enterCustomMode = (id: string) =>
+    setCustomModeIds((prev) => new Set([...prev, id]));
+
+  const exitCustomMode = (id: string, lineId: string) => {
+    setCustomModeIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    onChange(lineId, { name: "" });
+  };
 
   const handleRemoveClick = (id: string) => {
     setItemToRemove(id);
@@ -89,58 +109,101 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
           {items.map((li) => (
             <tr key={li.id}>
               <td className="line-items-table__item" data-label="Item">
-                <StyledDropdown
-                  value={li.itemId ?? ""}
-                  onChange={(e) =>
-                    onSelectItem(li.id, e.target.value || undefined)
-                  }
-                  disabled={loadingCatalog || !canEdit}
-                >
-                  <option value="">
-                    {loadingCatalog ? "Loading…" : "Select item"}
-                  </option>
-                  {recent.length > 0 ? (
-                    <>
-                      <optgroup label="Recently used">
-                        {recent.map((it) => (
-                          <option key={it.id} value={it.id}>
-                            {it.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="All items">
-                        {rest.map((it) => (
-                          <option key={it.id} value={it.id}>
-                            {it.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </>
-                  ) : (
-                    rest.map((it) => (
-                      <option key={it.id} value={it.id}>
-                        {it.name}
+                {li.itemId || !customModeIds.has(li.id) ? (
+                  /* ── Catalog mode: dropdown ── */
+                  <>
+                    <StyledDropdown
+                      value={li.itemId ?? ""}
+                      onChange={(e) =>
+                        onSelectItem(li.id, e.target.value || undefined)
+                      }
+                      disabled={loadingCatalog || !canEdit}
+                    >
+                      <option value="">
+                        {loadingCatalog ? "Loading…" : "Select item"}
                       </option>
-                    ))
-                  )}
-                </StyledDropdown>
-                <StyledInput
-                  placeholder="Custom item name"
-                  id={`li-${li.id}-name`}
-                  value={li.name}
-                  onChange={(e) => onChange(li.id, { name: e.target.value })}
-                  style={{ marginTop: 8 }}
-                  disabled={!canEdit}
-                  error={itemErrors[li.id]?.name}
-                />
+                      {recent.length > 0 ? (
+                        <>
+                          <optgroup label="Recently used">
+                            {recent.map((it) => (
+                              <option key={it.id} value={it.id}>
+                                {it.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="All items">
+                            {rest.map((it) => (
+                              <option key={it.id} value={it.id}>
+                                {it.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </>
+                      ) : (
+                        rest.map((it) => (
+                          <option key={it.id} value={it.id}>
+                            {it.name}
+                          </option>
+                        ))
+                      )}
+                    </StyledDropdown>
+                    {canEdit && !li.itemId && (
+                      <button
+                        type="button"
+                        className="link-btn"
+                        style={{ marginTop: 6 }}
+                        onClick={() => enterCustomMode(li.id)}
+                      >
+                        Or enter custom name
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  /* ── Custom mode: text input ── */
+                  <>
+                    <StyledInput
+                      placeholder="Custom item name"
+                      id={`li-${li.id}-name`}
+                      value={li.name}
+                      onChange={(e) =>
+                        onChange(li.id, { name: e.target.value })
+                      }
+                      disabled={!canEdit}
+                      error={itemErrors[li.id]?.name}
+                      autoFocus
+                    />
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="link-btn"
+                        style={{ marginTop: 6 }}
+                        onClick={() => exitCustomMode(li.id, li.id)}
+                      >
+                        ← Pick from catalog
+                      </button>
+                    )}
+                  </>
+                )}
                 {canEdit && onAddCatalogItem ? (
                   <button
                     type="button"
                     className="link-btn"
-                    style={{ marginTop: 6 }}
+                    style={{
+                      marginTop: 6,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
                     onClick={() => onAddCatalogItem(li.id)}
                   >
-                    Add new product or service…
+                    <span
+                      className="material-symbols-outlined"
+                      aria-hidden
+                      style={{ fontSize: 14 }}
+                    >
+                      add
+                    </span>
+                    New product or service
                   </button>
                 ) : null}
               </td>

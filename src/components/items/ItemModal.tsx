@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import StyledInput from "../core/StyledInput";
 import StyledTextarea from "../core/StyledTextarea";
-import PrimaryButton from "../core/PrimaryButton";
-import SecondaryButton from "../core/SecondaryButton";
+import Button from "../core/Button";
 
 export type ItemFormData = {
   name: string;
@@ -154,16 +153,17 @@ const ItemModal: React.FC<ItemModalProps> = ({
           </div>
 
           <div style={footerStyle}>
-            <SecondaryButton
+            <Button
               type="button"
+              variant="secondary"
               onClick={onCancel}
               disabled={submitting}
             >
               Cancel
-            </SecondaryButton>
-            <PrimaryButton type="submit" disabled={submitting}>
+            </Button>
+            <Button type="submit" disabled={submitting}>
               {submitting ? "Saving…" : "Save"}
-            </PrimaryButton>
+            </Button>
           </div>
         </form>
       </div>

@@ -5,6 +5,8 @@ export type PageHeaderProps = {
   subtitle?: string;
   /** Small line above the title (e.g. greeting on Home) */
   eyebrow?: string;
+  /** Secondary actions (Cancel, Copy…) placed left of primary actions */
+  secondaryActions?: React.ReactNode;
   /** Primary actions aligned to the header (buttons, links) */
   actions?: React.ReactNode;
   /** Larger title for Home */
@@ -18,6 +20,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   subtitle,
   eyebrow,
+  secondaryActions,
   actions,
   size = "default",
   toolbar = false,
@@ -32,6 +35,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
     .filter(Boolean)
     .join(" ");
 
+  const hasActions = secondaryActions || actions;
+
   return (
     <header className={rootClass}>
       <div className="page-header__main">
@@ -39,7 +44,29 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         <h1 className="page-title">{title}</h1>
         {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="page-header__actions">{actions}</div> : null}
+      {toolbar && hasActions ? (
+        <div className="page-header__actions-row">
+          {secondaryActions ? (
+            <div className="page-header__secondary-actions">
+              {secondaryActions}
+            </div>
+          ) : null}
+          {actions ? (
+            <div className="page-header__actions">{actions}</div>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          {secondaryActions ? (
+            <div className="page-header__secondary-actions">
+              {secondaryActions}
+            </div>
+          ) : null}
+          {actions ? (
+            <div className="page-header__actions">{actions}</div>
+          ) : null}
+        </>
+      )}
     </header>
   );
 };
