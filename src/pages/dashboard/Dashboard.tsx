@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ErrorBanner from "@components/core/ErrorBanner";
 import ConfirmDialog from "@components/core/ConfirmDialog";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +13,13 @@ import { downloadBlob } from "@utils/download";
 import { buildDuplicatePayload, getDocumentFilename } from "@utils/documents";
 import { allocateNextDocumentNumber } from "@utils/docNumber";
 import { todayIso } from "@utils/date";
+import {
+  loadCustomerUsage,
+  recentCustomerIds,
+  formatLastBilled,
+  type CustomerUsageMap,
+} from "@utils/customerUsage";
+import type { Customer } from "../../types/customer";
 
 type DocumentRow = DocumentEntity & {
   typeLabel: string;
@@ -50,6 +57,26 @@ const Dashboard: React.FC = () => {
       customerName: doc.customerDetails?.name ?? "—",
     }),
   });
+
+  const { items: customers } = useFirestore<Customer>({
+    collectionName: "customers",
+    userId: user?.uid,
+    orderByField: "createdAt",
+  });
+
+  const [customerUsage, setCustomerUsage] = useState<CustomerUsageMap>({});
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    setCustomerUsage(loadCustomerUsage(user.uid));
+  }, [user?.uid]);
+
+  const quickActionCustomers = useMemo(() => {
+    const recentIds = recentCustomerIds(customerUsage, 2);
+    return recentIds
+      .map((id) => customers.find((c) => c.id === id))
+      .filter((c): c is Customer => c !== undefined);
+  }, [customerUsage, customers]);
 
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -90,7 +117,7 @@ const Dashboard: React.FC = () => {
   const handleDownload = useCallback(async (doc: DocumentEntity) => {
     setDownloadingId(doc.id ?? null);
     try {
-      const { generateDocumentPdf } = await import("../../utils/pdf");
+      const { generateDocumentPdf } = await import("@utils/pdf");
       const pdfBytes = await generateDocumentPdf({
         type: doc.type,
         docNumber: doc.docNumber,
@@ -153,25 +180,157 @@ const Dashboard: React.FC = () => {
         size="large"
         eyebrow={firstName ? `${greeting}, ${firstName}` : undefined}
         title="Your business at a glance"
-        actions={
-          <Button
-            type="button"
-            onClick={() => navigate("/documents/new")}
-            style={{ borderRadius: 12, padding: "16px 32px" }}
-          >
-            <span className="material-symbols-outlined filled page-header-cta-icon">
-              add
-            </span>
-            New invoice
-          </Button>
-        }
       />
 
-      {/* Document list */}
+      <section className="dashboard-section">
+        <div className="dashboard-section__head">
+          <h2 className="page-section-label">Quick actions</h2>
+        </div>
+        <div className="dashboard-quick-actions">
+          {(quickActionCustomers[0] ? [quickActionCustomers[0]] : []).map(
+            (customer) => (
+              <button
+                key={customer.id}
+                type="button"
+                className="quick-action-card quick-action-card--customer"
+                onClick={() =>
+                  navigate("/documents/new", {
+                    state: { customerId: customer.id },
+                  })
+                }
+              >
+                <div className="quick-action-card__avatar">
+                  {(customer.name?.[0] ?? "?").toUpperCase()}
+                </div>
+                <div className="quick-action-card__body">
+                  <span className="quick-action-card__name">
+                    {customer.name}
+                  </span>
+                  <span className="quick-action-card__hint">
+                    {formatLastBilled(customerUsage[customer.id!] ?? 0)}
+                  </span>
+                </div>
+                <span className="quick-action-card__cta">⚡ New invoice</span>
+              </button>
+            ),
+          )}
+
+          {(quickActionCustomers[1] ? [quickActionCustomers[1]] : []).map(
+            (customer) => (
+              <button
+                key={customer.id}
+                type="button"
+                className="quick-action-card quick-action-card--customer"
+                onClick={() =>
+                  navigate("/documents/new", {
+                    state: { customerId: customer.id },
+                  })
+                }
+              >
+                <div className="quick-action-card__avatar">
+                  {(customer.name?.[0] ?? "?").toUpperCase()}
+                </div>
+                <div className="quick-action-card__body">
+                  <span className="quick-action-card__name">
+                    {customer.name}
+                  </span>
+                  <span className="quick-action-card__hint">
+                    {formatLastBilled(customerUsage[customer.id!] ?? 0)}
+                  </span>
+                </div>
+                <span className="quick-action-card__cta">⚡ New invoice</span>
+              </button>
+            ),
+          )}
+
+          {!quickActionCustomers[0] ? (
+            <button
+              type="button"
+              className="quick-action-card quick-action-card--generic"
+              onClick={() => navigate("/documents/new")}
+            >
+              <span className="material-symbols-outlined quick-action-card__icon">
+                receipt_long
+              </span>
+              <div className="quick-action-card__body">
+                <span className="quick-action-card__name">New invoice</span>
+                <span className="quick-action-card__hint">
+                  Choose any customer
+                </span>
+              </div>
+            </button>
+          ) : null}
+
+          {!quickActionCustomers[1] ? (
+            <button
+              type="button"
+              className="quick-action-card quick-action-card--generic"
+              onClick={() =>
+                navigate("/documents/new", {
+                  state: { documentType: "quotation" },
+                })
+              }
+            >
+              <span className="material-symbols-outlined quick-action-card__icon">
+                request_quote
+              </span>
+              <div className="quick-action-card__body">
+                <span className="quick-action-card__name">New quotation</span>
+                <span className="quick-action-card__hint">
+                  Choose any customer
+                </span>
+              </div>
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            className="quick-action-card quick-action-card--generic"
+            onClick={() => navigate("/documents/new")}
+          >
+            <span className="material-symbols-outlined quick-action-card__icon">
+              receipt_long
+            </span>
+            <div className="quick-action-card__body">
+              <span className="quick-action-card__name">New invoice</span>
+              <span className="quick-action-card__hint">
+                Choose any customer
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className="quick-action-card quick-action-card--generic"
+            onClick={() =>
+              navigate("/documents/new", {
+                state: { documentType: "quotation" },
+              })
+            }
+          >
+            <span className="material-symbols-outlined quick-action-card__icon">
+              request_quote
+            </span>
+            <div className="quick-action-card__body">
+              <span className="quick-action-card__name">New quotation</span>
+              <span className="quick-action-card__hint">
+                Choose any customer
+              </span>
+            </div>
+          </button>
+        </div>
+      </section>
+
       <section className="dashboard-section">
         <div className="dashboard-section__head">
           <h2 className="page-section-label">Recent documents</h2>
-          <span className="dashboard-view-all">View all</span>
+          <button
+            type="button"
+            className="dashboard-view-all"
+            onClick={() => navigate("/documents")}
+          >
+            View all
+          </button>
         </div>
 
         {loading && <div className="dashboard-loading">Loading documents…</div>}
@@ -181,7 +340,7 @@ const Dashboard: React.FC = () => {
         {/* Cards */}
         {!loading && !error && documents.length > 0 && (
           <div className="doc-card-list">
-            {documents.map((d) => {
+            {documents.slice(0, 5).map((d) => {
               const isDraft = !d.status || d.status === "draft";
               const isFinalized = d.status === "finalized";
               const isPaid = d.status === "paid";
@@ -208,7 +367,6 @@ const Dashboard: React.FC = () => {
                   ? "var(--md-on-surface-variant)"
                   : "var(--md-on-secondary-container)";
 
-              // Status badge — handle legacy/unknown statuses gracefully
               const badgeStyles: Record<
                 string,
                 { bg: string; color: string; label: string }
@@ -401,36 +559,6 @@ const Dashboard: React.FC = () => {
             </Button>
           </div>
         )}
-      </section>
-
-      {/* Helpful tips bento */}
-      <section className="dashboard-bento">
-        <div className="dashboard-bento__primary">
-          <div>
-            <h4 className="dashboard-bento__title">Setting up your brand</h4>
-            <p className="dashboard-bento__body">
-              Add your logo and business details to make your documents look
-              professional from day one.
-            </p>
-          </div>
-          <a href="/settings" className="dashboard-bento__link">
-            Personalize my bill
-            <span className="material-symbols-outlined icon-sm">
-              arrow_forward
-            </span>
-          </a>
-        </div>
-        <div className="dashboard-bento__secondary">
-          <span className="material-symbols-outlined icon-lg dashboard-bento__secondary-icon">
-            security
-          </span>
-          <p className="dashboard-bento__secondary-title">
-            Secure Cloud Storage
-          </p>
-          <p className="dashboard-bento__secondary-body">
-            All your documents are automatically backed up.
-          </p>
-        </div>
       </section>
 
       <ConfirmDialog
