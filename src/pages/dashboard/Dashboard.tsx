@@ -9,7 +9,6 @@ import PageHeader from "@components/layout/PageHeader";
 import Button from "@components/core/Button";
 import DocumentCard from "@components/documents/DocumentCard";
 import type { DocumentEntity } from "../../types/document";
-import { formatCurrency } from "@utils/currency";
 import { downloadBlob } from "@utils/download";
 import { buildDuplicatePayload, getDocumentFilename } from "@utils/documents";
 import { allocateNextDocumentNumber } from "@utils/docNumber";
@@ -80,6 +79,27 @@ const Dashboard: React.FC = () => {
   }, [customerUsage, customers]);
 
   const summaryCurrency = documents[0]?.currency || "LKR";
+  const formatSummaryCurrency = useCallback(
+    (value: number) => {
+      const safe = Number.isFinite(value) ? value : 0;
+      const fractionDigits = Number.isInteger(safe) ? 0 : 2;
+      try {
+        return new Intl.NumberFormat(
+          typeof navigator !== "undefined" ? navigator.language : "en-US",
+          {
+            style: "currency",
+            currency: summaryCurrency,
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
+          },
+        ).format(safe);
+      } catch {
+        const fixed = safe.toFixed(fractionDigits);
+        return `${summaryCurrency} ${fixed}`;
+      }
+    },
+    [summaryCurrency],
+  );
   const financialSummary = useMemo(() => {
     const now = new Date();
     const outstanding = documents
@@ -105,6 +125,24 @@ const Dashboard: React.FC = () => {
 
     return { outstanding, paidThisMonth, drafts };
   }, [documents]);
+
+  useEffect(() => {
+    // If there is no usage history yet, derive a best-effort recency map from
+    // existing documents so quick actions can still be personalized.
+    if (!user?.uid) return;
+    if (Object.keys(customerUsage).length > 0) return;
+    if (documents.length === 0) return;
+
+    const next: CustomerUsageMap = {};
+    for (const d of documents) {
+      if (!d.customerId) continue;
+      if (next[d.customerId]) continue;
+      const ts = d.date ? new Date(d.date).getTime() : 0;
+      next[d.customerId] = Number.isFinite(ts) && ts > 0 ? ts : Date.now();
+      if (Object.keys(next).length >= 6) break;
+    }
+    if (Object.keys(next).length > 0) setCustomerUsage(next);
+  }, [customerUsage, documents, user?.uid]);
 
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -220,22 +258,24 @@ const Dashboard: React.FC = () => {
         className="dashboard-summary-strip"
         aria-label="Financial summary"
       >
-        <div className="dashboard-summary-strip__item">
-          <span>Outstanding</span>
-          <strong>
-            {formatCurrency(financialSummary.outstanding, summaryCurrency)}
-          </strong>
+        <div className="dashboard-summary-strip__item dashboard-summary-strip__item--primary">
+          <span>Awaiting payment</span>
+          <strong>{formatSummaryCurrency(financialSummary.outstanding)}</strong>
         </div>
         <div className="dashboard-summary-strip__item">
           <span>Paid this month</span>
           <strong>
-            {formatCurrency(financialSummary.paidThisMonth, summaryCurrency)}
+            {formatSummaryCurrency(financialSummary.paidThisMonth)}
           </strong>
         </div>
-        <div className="dashboard-summary-strip__item">
+        <button
+          type="button"
+          className="dashboard-summary-strip__item dashboard-summary-strip__item--link"
+          onClick={() => navigate("/documents?status=draft")}
+        >
           <span>Drafts</span>
           <strong>{financialSummary.drafts}</strong>
-        </div>
+        </button>
       </section>
 
       <section className="dashboard-section">
@@ -267,7 +307,6 @@ const Dashboard: React.FC = () => {
                       {formatLastBilled(customerUsage[customer.id!] ?? 0)}
                     </span>
                   </div>
-                  <span className="quick-action-card__cta">⚡ New invoice</span>
                 </button>
               ))}
             </div>
@@ -315,14 +354,16 @@ const Dashboard: React.FC = () => {
 
       <section className="dashboard-section">
         <div className="dashboard-section__head">
-          <h2 className="page-section-label">Recent documents</h2>
-          <button
-            type="button"
-            className="dashboard-view-all"
-            onClick={() => navigate("/documents")}
-          >
-            View all
-          </button>
+          <h2 className="page-section-label">Latest documents</h2>
+          {documents.length > 0 && (
+            <button
+              type="button"
+              className="dashboard-view-all"
+              onClick={() => navigate("/documents")}
+            >
+              View all →
+            </button>
+          )}
         </div>
 
         {loading && <div className="dashboard-loading">Loading documents…</div>}

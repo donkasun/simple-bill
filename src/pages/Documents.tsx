@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import { usePageTitle } from "@components/layout/PageTitleContext";
@@ -27,6 +28,7 @@ const Documents: React.FC = () => {
   usePageTitle("Documents");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -173,6 +175,23 @@ const Documents: React.FC = () => {
       setMarkingUnpaidId(null);
     }
   }, [confirmMarkUnpaid, update]);
+
+  useEffect(() => {
+    const type = searchParams.get("type");
+    const status = searchParams.get("status");
+
+    if (type === "invoice" || type === "quotation" || type === "all") {
+      setTypeFilter(type);
+    }
+    if (
+      status === "draft" ||
+      status === "finalized" ||
+      status === "paid" ||
+      status === "all"
+    ) {
+      setStatusFilter(status);
+    }
+  }, [searchParams]);
 
   return (
     <div className="app-page">

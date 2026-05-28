@@ -39,6 +39,11 @@
   --orange-light: #fff4e5;
   --orange-dark: var(--brand-warning);
 
+  /* Quick-action customer card hover — light green bg, dark text (light theme) */
+  --quick-action-customer-hover-bg: #d4f0e5;
+  --quick-action-customer-hover-text: #0d2b1c;
+  --quick-action-customer-hover-text-muted: #1e4d35;
+
   --avatar-size: 36px;
   --round-button-size: 36px;
 
@@ -138,6 +143,11 @@
   --md-secondary-container: #1b3d52;
   --md-on-secondary-container: #9ecff0;
   --md-secondary: #7bbcdc;
+
+  /* Quick-action customer card hover — lighter green bg, dark text (dark theme) */
+  --quick-action-customer-hover-bg: #3d8a5e;
+  --quick-action-customer-hover-text: #0d2b1c;
+  --quick-action-customer-hover-text-muted: #1a3d28;
 }
 
 /* Native form controls respect dark mode */
@@ -1296,6 +1306,16 @@ h6 {
   background: var(--md-surface-container-lowest);
 }
 
+.dashboard-summary-strip__item--link {
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboard-summary-strip__item--link:hover {
+  background: var(--md-surface-container);
+}
+
 .dashboard-summary-strip__item span {
   color: var(--md-on-surface-variant);
   font-size: var(--text-xs);
@@ -1309,6 +1329,10 @@ h6 {
   font-size: var(--text-xl);
   font-weight: 700;
   white-space: nowrap;
+}
+
+.dashboard-summary-strip__item--primary strong {
+  font-size: var(--text-2xl);
 }
 
 .dashboard-quick-actions {
@@ -1340,10 +1364,36 @@ h6 {
 .quick-action-card:hover {
   background: var(--md-surface-container-high);
 }
+/* customer variant overrides generic hover — see .quick-action-card--customer:hover below */
 
 .quick-action-card--customer {
   border-color: var(--md-primary);
   background: var(--md-primary-container);
+}
+
+/* Text inside customer cards must contrast against the dark primary-container bg */
+.quick-action-card--customer .quick-action-card__name {
+  color: var(--md-on-primary-container);
+}
+
+.quick-action-card--customer .quick-action-card__hint {
+  color: var(--md-on-primary-container);
+  opacity: 0.75;
+}
+
+/* On hover the card background becomes a lighter green, so text flips to dark.
+   Both tokens are set explicitly per theme — see :root and [data-theme="dark"] */
+.quick-action-card--customer:hover {
+  background: var(--quick-action-customer-hover-bg);
+}
+
+.quick-action-card--customer:hover .quick-action-card__name {
+  color: var(--quick-action-customer-hover-text);
+}
+
+.quick-action-card--customer:hover .quick-action-card__hint {
+  color: var(--quick-action-customer-hover-text-muted);
+  opacity: 1;
 }
 
 .quick-action-card--generic {
@@ -1389,15 +1439,6 @@ h6 {
   color: var(--md-on-surface-variant);
 }
 
-.quick-action-card__cta {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--md-primary);
-  background: var(--md-primary-container);
-  border-radius: 6px;
-  padding: 4px 10px;
-  text-align: center;
-}
 .dashboard-section__head {
   display: flex;
   justify-content: space-between;
@@ -1408,6 +1449,9 @@ h6 {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--md-primary);
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
 }
 .dashboard-loading {
@@ -1468,7 +1512,7 @@ h6 {
   border-left-color: var(--brand-warning);
 }
 .doc-card--finalized {
-  border-left-color: var(--md-primary);
+  border-left-color: var(--md-secondary);
 }
 .doc-card--paid {
   border-left-color: var(--brand-success);
@@ -1546,7 +1590,10 @@ h6 {
 .doc-card__amount--draft {
   color: var(--md-on-surface-variant);
 }
-.doc-card__amount--active {
+.doc-card__amount--finalized {
+  color: var(--md-secondary);
+}
+.doc-card__amount--paid {
   color: var(--md-primary);
 }
 .doc-card__status {

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { DocumentEntity } from "../../types/document";
 import { formatCurrency } from "@utils/currency";
+import { formatIsoDate } from "@utils/date";
 
 type DocumentCardProps = {
   document: DocumentEntity & {
@@ -97,6 +98,7 @@ const DocumentCard = ({
   const iconName =
     document.type === "quotation" ? "request_quote" : "receipt_long";
   const docNumber = document.docNumber || "-";
+  const displayDate = document.date ? formatIsoDate(document.date) : "—";
 
   const handlePrimaryAction = () => {
     if (!document.id) return;
@@ -124,7 +126,7 @@ const DocumentCard = ({
           <p className="doc-card__meta">
             <span>{document.typeLabel}</span>
             <span>#{docNumber}</span>
-            <span>{document.date}</span>
+            <span>{displayDate}</span>
           </p>
         </div>
       </div>
@@ -132,7 +134,11 @@ const DocumentCard = ({
       <div className="doc-card-amount">
         <span
           className={`doc-card__amount ${
-            isDraft ? "doc-card__amount--draft" : "doc-card__amount--active"
+            isDraft
+              ? "doc-card__amount--draft"
+              : isFinalized
+                ? "doc-card__amount--finalized"
+                : "doc-card__amount--paid"
           }`}
         >
           {formatCurrency(document.total, document.currency || "USD")}

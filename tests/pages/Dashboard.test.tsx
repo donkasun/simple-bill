@@ -381,7 +381,7 @@ describe("Dashboard", () => {
 
   it("View all navigates to /documents", () => {
     renderDashboard();
-    fireEvent.click(screen.getAllByText("View all")[0]);
+    fireEvent.click(screen.getByText(/view all documents/i));
     expect(mockNavigate).toHaveBeenCalledWith("/documents");
   });
 
