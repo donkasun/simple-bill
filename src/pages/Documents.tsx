@@ -7,6 +7,7 @@ import PageHeader from "@components/layout/PageHeader";
 import PrimaryButton from "@components/core/PrimaryButton";
 import ErrorBanner from "@components/core/ErrorBanner";
 import ConfirmDialog from "@components/core/ConfirmDialog";
+import SegmentedToggle from "@components/core/SegmentedToggle";
 import type { DocumentEntity } from "../types/document";
 import { formatCurrency } from "@utils/currency";
 import { downloadBlob } from "@utils/download";
@@ -20,7 +21,7 @@ type DocumentRow = DocumentEntity & {
 };
 
 type TypeFilter = "all" | "invoice" | "quotation";
-type StatusFilter = "draft" | "finalized" | "paid" | null;
+type StatusFilter = "all" | "draft" | "finalized" | "paid";
 
 const Documents: React.FC = () => {
   usePageTitle("Documents");
@@ -28,7 +29,7 @@ const Documents: React.FC = () => {
   const { user } = useAuth();
 
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -64,7 +65,7 @@ const Documents: React.FC = () => {
     return documents.filter((d) => {
       const typeMatch = typeFilter === "all" || d.type === typeFilter;
       const statusMatch =
-        statusFilter === null ||
+        statusFilter === "all" ||
         d.status === statusFilter ||
         (!d.status && statusFilter === "draft");
       return typeMatch && statusMatch;
@@ -157,9 +158,6 @@ const Documents: React.FC = () => {
     }
   }, [confirmMarkUnpaid, update]);
 
-  const chipClass = (active: boolean) =>
-    `filter-chip${active ? " filter-chip--active" : ""}`;
-
   const badgeStyles: Record<
     string,
     { bg: string; color: string; label: string }
@@ -184,10 +182,8 @@ const Documents: React.FC = () => {
   return (
     <div className="app-page">
       <PageHeader
-        className="page-header--flush"
-        size="large"
         title="Documents"
-        subtitle={!loading && !error ? `${documents.length} total` : undefined}
+        subtitle="Your invoices and quotations."
         actions={
           <PrimaryButton
             type="button"
@@ -201,60 +197,30 @@ const Documents: React.FC = () => {
         }
       />
 
-      <div className="filter-chips">
-        <div className="filter-chips__group">
-          <button
-            type="button"
-            className={chipClass(typeFilter === "all")}
-            onClick={() => setTypeFilter("all")}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            className={chipClass(typeFilter === "invoice")}
-            onClick={() => setTypeFilter("invoice")}
-          >
-            Invoices
-          </button>
-          <button
-            type="button"
-            className={chipClass(typeFilter === "quotation")}
-            onClick={() => setTypeFilter("quotation")}
-          >
-            Quotations
-          </button>
-        </div>
-
-        <div className="filter-chips__group">
-          <button
-            type="button"
-            className={chipClass(statusFilter === "draft")}
-            onClick={() =>
-              setStatusFilter((s) => (s === "draft" ? null : "draft"))
-            }
-          >
-            Draft
-          </button>
-          <button
-            type="button"
-            className={chipClass(statusFilter === "finalized")}
-            onClick={() =>
-              setStatusFilter((s) => (s === "finalized" ? null : "finalized"))
-            }
-          >
-            Sent
-          </button>
-          <button
-            type="button"
-            className={chipClass(statusFilter === "paid")}
-            onClick={() =>
-              setStatusFilter((s) => (s === "paid" ? null : "paid"))
-            }
-          >
-            Paid
-          </button>
-        </div>
+      <div className="docs-filter-bar">
+        <SegmentedToggle
+          id="doc-type-filter"
+          ariaLabel="Filter by type"
+          value={typeFilter}
+          options={[
+            { value: "all", label: "All" },
+            { value: "invoice", label: "Invoices" },
+            { value: "quotation", label: "Quotations" },
+          ]}
+          onChange={setTypeFilter}
+        />
+        <SegmentedToggle
+          id="doc-status-filter"
+          ariaLabel="Filter by status"
+          value={statusFilter}
+          options={[
+            { value: "all", label: "All" },
+            { value: "draft", label: "Draft" },
+            { value: "finalized", label: "Sent" },
+            { value: "paid", label: "Paid" },
+          ]}
+          onChange={setStatusFilter}
+        />
       </div>
 
       <section className="dashboard-section">

@@ -125,35 +125,35 @@ describe("Documents page", () => {
     expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
   });
 
-  it("filters to invoices only when Invoices chip clicked", () => {
+  it("filters to invoices only when Invoices toggle clicked", () => {
     render(
       <BrowserRouter>
         <Documents />
       </BrowserRouter>,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Invoices" })[0]);
+    fireEvent.click(screen.getByRole("radio", { name: "Invoices" }));
     expect(screen.getAllByText("Don Kasun").length).toBeGreaterThan(0);
     expect(screen.queryByText("Finlays")).not.toBeInTheDocument();
   });
 
-  it("filters to quotations only when Quotations chip clicked", () => {
+  it("filters to quotations only when Quotations toggle clicked", () => {
     render(
       <BrowserRouter>
         <Documents />
       </BrowserRouter>,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Quotations" })[0]);
+    fireEvent.click(screen.getByRole("radio", { name: "Quotations" }));
     expect(screen.queryByText("Don Kasun")).not.toBeInTheDocument();
     expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
   });
 
-  it("shows empty state when filters produce no results", () => {
+  it("shows empty state when status filter produces no results", () => {
     render(
       <BrowserRouter>
         <Documents />
       </BrowserRouter>,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Paid" })[0]);
+    fireEvent.click(screen.getByRole("radio", { name: "Paid" }));
     expect(
       screen.getByText("No documents match your filters"),
     ).toBeInTheDocument();

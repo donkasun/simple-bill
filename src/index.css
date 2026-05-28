@@ -1020,43 +1020,74 @@ h6 {
   gap: 16px;
 }
 
-/* ── Filter chips ── */
-.filter-chips {
+/* ── SegmentedToggle ── */
+.SegmentedToggle {
   display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.filter-chips__group {
-  display: flex;
+  flex-direction: column;
   gap: 6px;
-  flex-wrap: wrap;
 }
-
-.filter-chip {
+.SegmentedToggle__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  letter-spacing: 0.02em;
+}
+.SegmentedToggle__group {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 3px;
   background: var(--md-surface-container);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 20px;
-  padding: 5px 14px;
-  font-size: var(--text-sm);
+  gap: 2px;
+  box-sizing: border-box;
+}
+.SegmentedToggle__option {
+  min-height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
   color: var(--md-on-surface-variant);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
   transition:
-    background 0.15s,
-    color 0.15s;
+    background-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 }
-
-.filter-chip:hover {
+.SegmentedToggle__option:hover:not(:disabled) {
   background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+}
+.SegmentedToggle__option.is-selected {
+  background: var(--md-primary);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.SegmentedToggle__option.is-selected:hover:not(:disabled) {
+  background: var(--md-primary-hover, var(--md-primary));
+}
+[data-theme="dark"] .SegmentedToggle__option.is-selected {
+  color: #000;
+}
+.SegmentedToggle__option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.filter-chip--active {
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
-  border-color: transparent;
-  font-weight: 600;
+/* ── Documents filter bar ── */
+.docs-filter-bar {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding-top: 20px;
+  margin-bottom: 24px;
+  border-top: 1px solid var(--md-outline-variant);
 }
 
 /* ── Dashboard quick actions ── */
