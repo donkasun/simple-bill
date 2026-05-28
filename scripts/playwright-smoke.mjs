@@ -14,7 +14,7 @@ async function run() {
   await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
 
   // Dashboard visible (or empty state) but should include the header copy.
-  await page.waitForSelector("text=Recent Documents", { timeout: 15_000 });
+  await page.waitForSelector("text=Recent documents", { timeout: 15_000 });
 
   // Navigate to document creation.
   await page.getByRole("button", { name: /new invoice/i }).click();
@@ -36,4 +36,3 @@ run().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ErrorBanner from "@components/core/ErrorBanner";
 import ConfirmDialog from "@components/core/ConfirmDialog";
 import { useNavigate } from "react-router-dom";
@@ -7,12 +7,19 @@ import { useFirestore } from "@hooks/useFirestore";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import PageHeader from "@components/layout/PageHeader";
 import Button from "@components/core/Button";
+import DocumentCard from "@components/documents/DocumentCard";
 import type { DocumentEntity } from "../../types/document";
-import { formatCurrency } from "@utils/currency";
 import { downloadBlob } from "@utils/download";
 import { buildDuplicatePayload, getDocumentFilename } from "@utils/documents";
 import { allocateNextDocumentNumber } from "@utils/docNumber";
 import { todayIso } from "@utils/date";
+import {
+  loadCustomerUsage,
+  recentCustomerIds,
+  formatLastBilled,
+  type CustomerUsageMap,
+} from "@utils/customerUsage";
+import type { Customer } from "../../types/customer";
 
 type DocumentRow = DocumentEntity & {
   typeLabel: string;
@@ -50,6 +57,92 @@ const Dashboard: React.FC = () => {
       customerName: doc.customerDetails?.name ?? "—",
     }),
   });
+
+  const { items: customers } = useFirestore<Customer>({
+    collectionName: "customers",
+    userId: user?.uid,
+    orderByField: "createdAt",
+  });
+
+  const [customerUsage, setCustomerUsage] = useState<CustomerUsageMap>({});
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    setCustomerUsage(loadCustomerUsage(user.uid));
+  }, [user?.uid]);
+
+  const quickActionCustomers = useMemo(() => {
+    const recentIds = recentCustomerIds(customerUsage, 2);
+    return recentIds
+      .map((id) => customers.find((c) => c.id === id))
+      .filter((c): c is Customer => c !== undefined);
+  }, [customerUsage, customers]);
+
+  const summaryCurrency = documents[0]?.currency || "LKR";
+  const formatSummaryCurrency = useCallback(
+    (value: number) => {
+      const safe = Number.isFinite(value) ? value : 0;
+      const fractionDigits = Number.isInteger(safe) ? 0 : 2;
+      try {
+        return new Intl.NumberFormat(
+          typeof navigator !== "undefined" ? navigator.language : "en-US",
+          {
+            style: "currency",
+            currency: summaryCurrency,
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
+          },
+        ).format(safe);
+      } catch {
+        const fixed = safe.toFixed(fractionDigits);
+        return `${summaryCurrency} ${fixed}`;
+      }
+    },
+    [summaryCurrency],
+  );
+  const financialSummary = useMemo(() => {
+    const now = new Date();
+    const outstanding = documents
+      .filter((doc) => doc.status === "finalized")
+      .reduce((sum, doc) => sum + doc.total, 0);
+    const paidThisMonth = documents
+      .filter((doc) => {
+        if (doc.status !== "paid") return false;
+        const paidDate =
+          doc.paidAt instanceof Date
+            ? doc.paidAt
+            : (doc.paidAt?.toDate?.() ?? doc.updatedAt?.toDate?.());
+        return (
+          paidDate &&
+          paidDate.getFullYear() === now.getFullYear() &&
+          paidDate.getMonth() === now.getMonth()
+        );
+      })
+      .reduce((sum, doc) => sum + doc.total, 0);
+    const drafts = documents.filter(
+      (doc) => !doc.status || doc.status === "draft",
+    ).length;
+
+    return { outstanding, paidThisMonth, drafts };
+  }, [documents]);
+
+  useEffect(() => {
+    // If there is no usage history yet, derive a best-effort recency map from
+    // existing documents so quick actions can still be personalized.
+    if (!user?.uid) return;
+    if (Object.keys(customerUsage).length > 0) return;
+    if (documents.length === 0) return;
+
+    const next: CustomerUsageMap = {};
+    for (const d of documents) {
+      if (!d.customerId) continue;
+      if (next[d.customerId]) continue;
+      const ts = d.date ? new Date(d.date).getTime() : 0;
+      next[d.customerId] = Number.isFinite(ts) && ts > 0 ? ts : Date.now();
+      if (Object.keys(next).length >= 6) break;
+    }
+    if (Object.keys(next).length > 0) setCustomerUsage(next);
+  }, [customerUsage, documents, user?.uid]);
 
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -90,7 +183,7 @@ const Dashboard: React.FC = () => {
   const handleDownload = useCallback(async (doc: DocumentEntity) => {
     setDownloadingId(doc.id ?? null);
     try {
-      const { generateDocumentPdf } = await import("../../utils/pdf");
+      const { generateDocumentPdf } = await import("@utils/pdf");
       const pdfBytes = await generateDocumentPdf({
         type: doc.type,
         docNumber: doc.docNumber,
@@ -124,7 +217,10 @@ const Dashboard: React.FC = () => {
     setMarkingPaidId(confirmMarkPaid);
     setConfirmMarkPaid(null);
     try {
-      await update(confirmMarkPaid, { status: "paid" });
+      await update(confirmMarkPaid, {
+        status: "paid",
+        paidAt: new Date(),
+      });
     } finally {
       setMarkingPaidId(null);
     }
@@ -135,7 +231,10 @@ const Dashboard: React.FC = () => {
     setMarkingUnpaidId(confirmMarkUnpaid);
     setConfirmMarkUnpaid(null);
     try {
-      await update(confirmMarkUnpaid, { status: "finalized" });
+      await update(confirmMarkUnpaid, {
+        status: "finalized",
+        paidAt: null,
+      });
     } finally {
       setMarkingUnpaidId(null);
     }
@@ -153,225 +252,142 @@ const Dashboard: React.FC = () => {
         size="large"
         eyebrow={firstName ? `${greeting}, ${firstName}` : undefined}
         title="Your business at a glance"
-        actions={
-          <Button
-            type="button"
-            onClick={() => navigate("/documents/new")}
-            style={{ borderRadius: 12, padding: "16px 32px" }}
-          >
-            <span className="material-symbols-outlined filled page-header-cta-icon">
-              add
-            </span>
-            New invoice
-          </Button>
-        }
       />
 
-      {/* Document list */}
+      <section
+        className="dashboard-summary-strip"
+        aria-label="Financial summary"
+      >
+        <div className="dashboard-summary-strip__item dashboard-summary-strip__item--primary">
+          <span>Awaiting payment</span>
+          <strong>{formatSummaryCurrency(financialSummary.outstanding)}</strong>
+        </div>
+        <div className="dashboard-summary-strip__item">
+          <span>Paid this month</span>
+          <strong>
+            {formatSummaryCurrency(financialSummary.paidThisMonth)}
+          </strong>
+        </div>
+        <button
+          type="button"
+          className="dashboard-summary-strip__item dashboard-summary-strip__item--link"
+          onClick={() => navigate("/documents?status=draft")}
+        >
+          <span>Drafts</span>
+          <strong>{financialSummary.drafts}</strong>
+        </button>
+      </section>
+
       <section className="dashboard-section">
         <div className="dashboard-section__head">
-          <h2 className="page-section-label">Recent documents</h2>
-          <span className="dashboard-view-all">View all</span>
+          <h2 className="page-section-label">Quick actions</h2>
+        </div>
+        <div className="dashboard-quick-actions">
+          {quickActionCustomers.length > 0 && (
+            <div className="quick-action-customers">
+              {quickActionCustomers.map((customer) => (
+                <button
+                  key={customer.id}
+                  type="button"
+                  className="quick-action-card quick-action-card--customer"
+                  onClick={() =>
+                    navigate("/documents/new", {
+                      state: { customerId: customer.id },
+                    })
+                  }
+                >
+                  <div className="quick-action-card__avatar">
+                    {(customer.name?.[0] ?? "?").toUpperCase()}
+                  </div>
+                  <div className="quick-action-card__body">
+                    <span className="quick-action-card__name">
+                      {customer.name}
+                    </span>
+                    <span className="quick-action-card__hint">
+                      {formatLastBilled(customerUsage[customer.id!] ?? 0)}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="quick-action-secondary">
+            <button
+              type="button"
+              className="quick-action-card quick-action-card--generic"
+              onClick={() => navigate("/documents/new")}
+            >
+              <span className="material-symbols-outlined quick-action-card__icon">
+                receipt_long
+              </span>
+              <div className="quick-action-card__body">
+                <span className="quick-action-card__name">New invoice</span>
+                <span className="quick-action-card__hint">
+                  Choose any customer
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="quick-action-card quick-action-card--generic"
+              onClick={() =>
+                navigate("/documents/new", {
+                  state: { documentType: "quotation" },
+                })
+              }
+            >
+              <span className="material-symbols-outlined quick-action-card__icon">
+                request_quote
+              </span>
+              <div className="quick-action-card__body">
+                <span className="quick-action-card__name">New quotation</span>
+                <span className="quick-action-card__hint">
+                  Choose any customer
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="dashboard-section">
+        <div className="dashboard-section__head">
+          <h2 className="page-section-label">Latest documents</h2>
+          {documents.length > 0 && (
+            <button
+              type="button"
+              className="dashboard-view-all"
+              onClick={() => navigate("/documents")}
+            >
+              View all →
+            </button>
+          )}
         </div>
 
         {loading && <div className="dashboard-loading">Loading documents…</div>}
         {error && <ErrorBanner>{error}</ErrorBanner>}
         {mutationError && <ErrorBanner>{mutationError}</ErrorBanner>}
 
-        {/* Cards */}
         {!loading && !error && documents.length > 0 && (
           <div className="doc-card-list">
-            {documents.map((d) => {
-              const isDraft = !d.status || d.status === "draft";
-              const isFinalized = d.status === "finalized";
-              const isPaid = d.status === "paid";
-              const isDeleting = deletingId === d.id;
-              const isDownloading = downloadingId === d.id;
-              const isMarkingPaid = markingPaidId === d.id;
-              const isMarkingUnpaid = markingUnpaidId === d.id;
-
-              // Icon + colors: shape tracks type, tint tracks status
-              const isQuotation = d.type === "quotation";
-              const iconName = isQuotation ? "request_quote" : "receipt_long";
-              const iconBg = isQuotation
-                ? isDraft
-                  ? "var(--orange-light)"
-                  : "var(--green-light)"
-                : isDraft
-                  ? "var(--md-surface-container-highest)"
-                  : "var(--md-secondary-container)";
-              const iconColor = isQuotation
-                ? isDraft
-                  ? "var(--brand-warning)"
-                  : "var(--brand-success)"
-                : isDraft
-                  ? "var(--md-on-surface-variant)"
-                  : "var(--md-on-secondary-container)";
-
-              // Status badge — handle legacy/unknown statuses gracefully
-              const badgeStyles: Record<
-                string,
-                { bg: string; color: string; label: string }
-              > = {
-                draft: {
-                  bg: "var(--md-surface-container-highest)",
-                  color: "var(--md-on-surface-variant)",
-                  label: "Draft",
-                },
-                finalized: {
-                  bg: "var(--md-secondary-container)",
-                  color: "var(--md-on-secondary-container)",
-                  label: "Sent",
-                },
-                paid: {
-                  bg: "var(--md-primary-container)",
-                  color: "var(--md-on-primary-container)",
-                  label: "Paid",
-                },
-              };
-              const badge =
-                badgeStyles[d.status ?? "draft"] ?? badgeStyles.draft;
-
-              return (
-                <div key={d.id} className="doc-card">
-                  <div className="doc-card__main">
-                    <div
-                      className="doc-card__icon"
-                      style={{ background: iconBg, color: iconColor }}
-                    >
-                      <span className="material-symbols-outlined icon-md">
-                        {iconName}
-                      </span>
-                    </div>
-                    <div className="doc-card__info">
-                      <h5 className="doc-card__title">{d.customerName}</h5>
-                      <p className="doc-card__subtitle">
-                        {d.typeLabel} #{d.docNumber || "—"}
-                      </p>
-                      <p className="doc-card__date">{d.date}</p>
-                    </div>
-                  </div>
-
-                  <div className="doc-card-amount">
-                    <span
-                      className={`doc-card__amount ${isDraft ? "doc-card__amount--draft" : "doc-card__amount--active"}`}
-                    >
-                      {formatCurrency(d.total, d.currency || "USD")}
-                    </span>
-                    <span
-                      className="doc-card__status"
-                      style={{ background: badge.bg, color: badge.color }}
-                    >
-                      {badge.label}
-                    </span>
-                  </div>
-
-                  <div
-                    className={`doc-card-actions${isDraft ? " doc-card-actions--draft" : ""}`}
-                  >
-                    {isDraft && (
-                      <>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--primary"
-                          onClick={() => navigate(`/documents/${d.id}/edit`)}
-                          disabled={!!duplicatingId}
-                        >
-                          Continue editing
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDuplicate(d)}
-                          disabled={!!duplicatingId}
-                        >
-                          {duplicatingId === d.id
-                            ? "Duplicating…"
-                            : "Duplicate"}
-                        </button>
-                        <button
-                          type="button"
-                          className="icon-btn icon-btn-danger"
-                          aria-label={
-                            isDeleting ? "Deleting document" : "Delete document"
-                          }
-                          title="Delete document"
-                          onClick={() => d.id && setConfirmDelete(d.id)}
-                          disabled={isDeleting}
-                        >
-                          <span
-                            className="material-symbols-outlined"
-                            aria-hidden
-                          >
-                            delete
-                          </span>
-                        </button>
-                      </>
-                    )}
-                    {isFinalized && (
-                      <>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--accent"
-                          onClick={() => d.id && setConfirmMarkPaid(d.id)}
-                          disabled={isMarkingPaid || !!duplicatingId}
-                        >
-                          {isMarkingPaid ? "Saving…" : "Mark as paid"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDuplicate(d)}
-                          disabled={!!duplicatingId}
-                        >
-                          {duplicatingId === d.id
-                            ? "Duplicating…"
-                            : "Duplicate"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDownload(d)}
-                          disabled={isDownloading || !!duplicatingId}
-                        >
-                          {isDownloading ? "Downloading…" : "Download PDF"}
-                        </button>
-                      </>
-                    )}
-                    {isPaid && (
-                      <>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDownload(d)}
-                          disabled={isDownloading || !!duplicatingId}
-                        >
-                          {isDownloading ? "Downloading…" : "Download PDF"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-btn doc-card-btn--outline"
-                          onClick={() => handleDuplicate(d)}
-                          disabled={!!duplicatingId}
-                        >
-                          {duplicatingId === d.id
-                            ? "Duplicating…"
-                            : "Duplicate"}
-                        </button>
-                        <button
-                          type="button"
-                          className="doc-card-link doc-card-link--muted"
-                          onClick={() => d.id && setConfirmMarkUnpaid(d.id)}
-                          disabled={isMarkingUnpaid || !!duplicatingId}
-                        >
-                          {isMarkingUnpaid ? "Saving…" : "Mark as unpaid"}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {documents.slice(0, 5).map((d) => (
+              <DocumentCard
+                key={d.id}
+                document={d}
+                duplicatingId={duplicatingId}
+                deletingId={deletingId}
+                downloadingId={downloadingId}
+                markingPaidId={markingPaidId}
+                markingUnpaidId={markingUnpaidId}
+                onDuplicate={handleDuplicate}
+                onDownload={handleDownload}
+                onDelete={setConfirmDelete}
+                onMarkPaid={setConfirmMarkPaid}
+                onMarkUnpaid={setConfirmMarkUnpaid}
+              />
+            ))}
           </div>
         )}
 
@@ -401,36 +417,6 @@ const Dashboard: React.FC = () => {
             </Button>
           </div>
         )}
-      </section>
-
-      {/* Helpful tips bento */}
-      <section className="dashboard-bento">
-        <div className="dashboard-bento__primary">
-          <div>
-            <h4 className="dashboard-bento__title">Setting up your brand</h4>
-            <p className="dashboard-bento__body">
-              Add your logo and business details to make your documents look
-              professional from day one.
-            </p>
-          </div>
-          <a href="/settings" className="dashboard-bento__link">
-            Personalize my bill
-            <span className="material-symbols-outlined icon-sm">
-              arrow_forward
-            </span>
-          </a>
-        </div>
-        <div className="dashboard-bento__secondary">
-          <span className="material-symbols-outlined icon-lg dashboard-bento__secondary-icon">
-            security
-          </span>
-          <p className="dashboard-bento__secondary-title">
-            Secure Cloud Storage
-          </p>
-          <p className="dashboard-bento__secondary-body">
-            All your documents are automatically backed up.
-          </p>
-        </div>
       </section>
 
       <ConfirmDialog

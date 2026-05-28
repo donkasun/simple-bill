@@ -7,7 +7,7 @@ import LineItemsTable from "@components/documents/LineItemsTable";
 import Button from "@components/core/Button";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -52,6 +52,7 @@ import {
   type ItemUsageMap,
 } from "@utils/itemUsage";
 import { SUPPORTED_CURRENCIES } from "@utils/currency";
+import { recordCustomerBilled } from "@utils/customerUsage";
 import OnboardingStepper from "@components/core/OnboardingStepper";
 import ItemModal from "@components/items/ItemModal";
 import CustomerModal from "@components/customers/CustomerModal";
@@ -60,6 +61,11 @@ import { useDocumentCatalogModals } from "@hooks/useDocumentCatalogModals";
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as {
+    customerId?: string;
+    documentType?: "invoice" | "quotation";
+  } | null;
   const { user } = useAuth();
   const { profile, updateUserProfile } = useUserProfile();
 
@@ -105,14 +111,28 @@ const DocumentCreation: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!state.customerId && customers.length > 0) {
+    if (customers.length === 0) return;
+    if (state.customerId) return; // already set
+
+    const preselected = locationState?.customerId;
+    const target =
+      preselected && customers.some((c) => c.id === preselected)
+        ? preselected
+        : customers[0].id;
+    dispatch({ type: "SET_FIELD", field: "customerId", value: target });
+  }, [customers, dispatch, locationState?.customerId, state.customerId]);
+
+  useEffect(() => {
+    if (locationState?.documentType) {
       dispatch({
         type: "SET_FIELD",
-        field: "customerId",
-        value: customers[0].id,
+        field: "documentType",
+        value: locationState.documentType,
       });
     }
-  }, [customers, state.customerId, dispatch]);
+    // Only run once on mount (locationState is stable for this nav)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddRow = () => addLine();
 
@@ -339,6 +359,9 @@ const DocumentCreation: React.FC = () => {
         currency,
       };
       const id = await addDocument(payload);
+      if (id && user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
       if (id) navigate("/dashboard");
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to save draft";
@@ -389,6 +412,10 @@ const DocumentCreation: React.FC = () => {
       };
 
       const id = await addDocument(payload);
+
+      if (user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
 
       const { generateDocumentPdf } = await import("../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
