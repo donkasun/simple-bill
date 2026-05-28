@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import StyledInput from "../core/StyledInput";
 import StyledTextarea from "../core/StyledTextarea";
-import PrimaryButton from "../core/PrimaryButton";
-import SecondaryButton from "../core/SecondaryButton";
+import Button from "../core/Button";
 
 export type CustomerFormData = {
   name: string;
@@ -46,21 +45,6 @@ const footerStyle: React.CSSProperties = {
   justifyContent: "flex-end",
   gap: 12,
   marginTop: 24,
-};
-
-const headerStyle: React.CSSProperties = {
-  fontFamily: "var(--font-heading)",
-  fontSize: 20,
-  fontWeight: 700,
-  marginBottom: 20,
-  color: "var(--brand-text-primary)",
-};
-
-const errorTextStyle: React.CSSProperties = {
-  color: "var(--brand-danger)",
-  fontSize: 13,
-  marginTop: 6,
-  fontWeight: 500,
 };
 
 const CustomerModal: React.FC<CustomerModalProps> = ({
@@ -130,7 +114,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   return (
     <div style={overlayStyle} role="dialog" aria-modal>
       <div style={modalStyle}>
-        <div style={headerStyle}>{title ?? "Customer"}</div>
+        <h2 className="modal-title">{title ?? "Customer"}</h2>
         <form onSubmit={handleSubmit}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
@@ -143,7 +127,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 required
                 error={errors.name}
               />
-              {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
+              {errors.name && <div className="modal-error">{errors.name}</div>}
             </div>
 
             <div>
@@ -155,7 +139,9 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 onChange={handleChange}
                 placeholder="billing@example.com"
               />
-              {errors.email && <div style={errorTextStyle}>{errors.email}</div>}
+              {errors.email && (
+                <div className="modal-error">{errors.email}</div>
+              )}
             </div>
 
             <StyledTextarea
@@ -173,7 +159,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 alignItems: "center",
                 gap: 8,
                 cursor: "pointer",
-                fontSize: "0.9375rem",
+                fontSize: "var(--text-label)",
                 color: "var(--brand-text-secondary)",
               }}
             >
@@ -193,16 +179,17 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
           </div>
 
           <div style={footerStyle}>
-            <SecondaryButton
+            <Button
               type="button"
+              variant="secondary"
               onClick={onCancel}
               disabled={submitting}
             >
               Cancel
-            </SecondaryButton>
-            <PrimaryButton type="submit" disabled={submitting}>
+            </Button>
+            <Button type="submit" disabled={submitting}>
               {submitting ? "Saving…" : "Save"}
-            </PrimaryButton>
+            </Button>
           </div>
         </form>
       </div>

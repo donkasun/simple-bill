@@ -12,34 +12,25 @@ const StyledDropdown: React.FC<StyledDropdownProps> = ({
   required,
   error,
   id,
+  className,
   style,
+  style: selectStyle,
   ...props
 }) => {
-  const inputWidth = "100%";
   return (
     <FieldWrapper label={label} required={required} error={error} style={style}>
-      <div
+      <select
+        id={id}
+        className={["field-select", className].filter(Boolean).join(" ")}
+        {...props}
         style={{
-          position: "relative",
-          width: inputWidth,
+          width: "100%",
           boxSizing: "border-box",
+          ...(selectStyle ?? {}),
         }}
       >
-        <select
-          id={id}
-          {...props}
-          style={{
-            border: "none",
-            outline: "none",
-            width: "100%",
-            boxSizing: "border-box",
-            paddingRight: "0px",
-            backgroundColor: "transparent",
-          }}
-        >
-          {children}
-        </select>
-      </div>
+        {children}
+      </select>
     </FieldWrapper>
   );
 };

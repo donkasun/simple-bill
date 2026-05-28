@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import StyledDropdown from "@components/core/StyledDropdown";
 import StyledInput from "@components/core/StyledInput";
 import StyledTextarea from "@components/core/StyledTextarea";
+import SegmentedToggle from "@components/core/SegmentedToggle";
 import LineItemsTable from "@components/documents/LineItemsTable";
-import PrimaryButton from "@components/core/PrimaryButton";
-import SecondaryButton from "@components/core/SecondaryButton";
+import Button from "@components/core/Button";
 import ErrorBanner from "@components/core/ErrorBanner";
 
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type {
@@ -53,6 +53,10 @@ import {
   validateFinalize as validateFinalizeShared,
 } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import PageHeader from "@components/layout/PageHeader";
+import CustomerModal from "@components/customers/CustomerModal";
+import ItemModal from "@components/items/ItemModal";
+import { useDocumentCatalogModals } from "@hooks/useDocumentCatalogModals";
 import {
   incrementItemUsage,
   loadItemUsage,
@@ -61,19 +65,28 @@ import {
   type ItemUsageMap,
 } from "@utils/itemUsage";
 import { SUPPORTED_CURRENCIES } from "@utils/currency";
+import { recordCustomerBilled } from "@utils/customerUsage";
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
 
-  const { items: customers, loading: loadingCustomers } =
-    useFirestore<Customer>({
-      collectionName: "customers",
-      userId: user?.uid,
-      orderByField: "createdAt",
-    });
-  const { items: itemCatalog, loading: loadingItems } = useFirestore<Item>({
+  const {
+    items: customers,
+    loading: loadingCustomers,
+    add: addCustomer,
+  } = useFirestore<Customer>({
+    collectionName: "customers",
+    userId: user?.uid,
+    orderByField: "createdAt",
+  });
+  const {
+    items: itemCatalog,
+    loading: loadingItems,
+    add: addItem,
+  } = useFirestore<Item>({
     collectionName: "items",
     userId: user?.uid,
     orderByField: "createdAt",
@@ -90,9 +103,11 @@ const DocumentEdit: React.FC = () => {
   });
 
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>("draft");
-  const [isEditMode, setIsEditMode] = useState(false);
+  // Auto-enter edit mode when arriving from a duplicate/copy action
+  const [isEditMode, setIsEditMode] = useState(
+    () => !!(location.state as { autoEdit?: boolean } | null)?.autoEdit,
+  );
   const [currency, setCurrency] = useState("USD");
-  const [customerQuery, setCustomerQuery] = useState("");
   const [itemUsage, setItemUsage] = useState<ItemUsageMap>({});
 
   const { state, dispatch, subtotal, total } = useDocumentForm({
@@ -137,8 +152,8 @@ const DocumentEdit: React.FC = () => {
         if (!mounted) return;
         setDocumentStatus(data.status);
         setCurrency(data.currency || "USD");
-        // Always start in view mode, regardless of document status
-        setIsEditMode(false);
+        // Auto-enter edit mode for drafts on /edit URL; finalized docs stay view-only
+        setIsEditMode(data.status === "draft");
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -209,26 +224,37 @@ const DocumentEdit: React.FC = () => {
   >({});
 
   const visibleCustomers = useMemo(() => {
-    const q = customerQuery.trim().toLowerCase();
-    if (!q) return customers;
-    const filtered = customers.filter((c) =>
-      String(c.name ?? "")
-        .toLowerCase()
-        .includes(q),
-    );
-    const selected = state.customerId
-      ? customers.find((c) => c.id === state.customerId)
-      : undefined;
-    if (selected && !filtered.some((c) => c.id === selected.id))
-      return [selected, ...filtered];
-    return filtered;
-  }, [customers, customerQuery, state.customerId]);
+    if (!state.customerId) return customers;
+    const selected = customers.find((c) => c.id === state.customerId);
+    if (!selected) return customers;
+    return [selected, ...customers.filter((c) => c.id !== selected.id)];
+  }, [customers, state.customerId]);
 
   const sortedCatalog = useMemo(
     () => sortCatalogByUsage(itemCatalog, itemUsage),
     [itemCatalog, itemUsage],
   );
   const recentIds = useMemo(() => recentItemIds(itemUsage, 5), [itemUsage]);
+
+  const catalogModals = useDocumentCatalogModals({
+    userId: user?.uid,
+    addCustomer,
+    addItem,
+    onCustomerCreated: (customerId) => {
+      dispatch({
+        type: "SET_FIELD",
+        field: "customerId",
+        value: customerId,
+      });
+    },
+    onItemCreated: (item, lineId) => {
+      if (!lineId) return;
+      if (user?.uid && item.id) {
+        setItemUsage(incrementItemUsage(user.uid, item.id));
+      }
+      dispatch({ type: "SET_ITEM_SELECTION", id: lineId, item });
+    },
+  });
 
   function validateDraft(s: DocumentFormState) {
     return validateDraftShared(s);
@@ -312,6 +338,9 @@ const DocumentEdit: React.FC = () => {
         { subtotal, total },
       );
       await setDocument(id, { ...payload, currency });
+      if (user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
       // Stay in edit mode after saving - don't navigate away
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to save changes";
@@ -427,6 +456,10 @@ const DocumentEdit: React.FC = () => {
 
       await setDocument(id, payload);
 
+      if (user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
+
       // Update local state to reflect the finalized status
       setDocumentStatus("finalized");
       setIsEditMode(false);
@@ -459,72 +492,84 @@ const DocumentEdit: React.FC = () => {
     }
   };
 
-  const headerTitle = canEdit ? "Edit Document" : "View Document";
+  const headerTitle = canEdit ? "Edit document" : "View document";
+  const headerSubtitle = canEdit
+    ? "Update details, then save or download a PDF."
+    : documentStatus === "draft"
+      ? "Draft — click Edit to start making changes."
+      : "This document is finalized and cannot be edited.";
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <div className="container-xl">
-        <div className="page-header">
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
-            {headerTitle}
-          </h2>
-          <div style={{ display: "flex", gap: 8 }}>
-            <SecondaryButton onClick={() => navigate("/dashboard")}>
+    <>
+      <div className="app-page">
+        <PageHeader
+          toolbar
+          title={headerTitle}
+          subtitle={headerSubtitle}
+          secondaryActions={
+            <Button variant="secondary" onClick={() => navigate("/dashboard")}>
               Cancel
-            </SecondaryButton>
-
-            {canEdit ? (
-              <>
-                <PrimaryButton
-                  onClick={handleSaveChanges}
-                  disabled={saving || finalizing || initializing}
-                >
-                  {saving ? "Saving…" : "Save Changes"}
-                </PrimaryButton>
-                <PrimaryButton
-                  onClick={handleFinalizeAndDownload}
-                  disabled={
-                    saving || finalizing || initializing || finalizeDisabled
-                  }
-                >
-                  {finalizing ? "Finishing…" : "Finish & Save PDF"}
-                </PrimaryButton>
-              </>
-            ) : (
-              <>
-                {documentStatus === "draft" && (
-                  <SecondaryButton
-                    onClick={() => setIsEditMode(true)}
-                    disabled={initializing}
+            </Button>
+          }
+          actions={
+            <>
+              {canEdit ? (
+                <>
+                  <Button
+                    onClick={handleSaveChanges}
+                    disabled={saving || finalizing || initializing}
                   >
-                    Edit Document
-                  </SecondaryButton>
-                )}
-                {state.documentType === "quotation" && (
-                  <PrimaryButton
-                    onClick={handleGenerateInvoice}
-                    disabled={generatingInvoice || initializing}
+                    {saving ? "Saving…" : "Save changes"}
+                  </Button>
+                  <Button
+                    onClick={handleFinalizeAndDownload}
+                    disabled={
+                      saving || finalizing || initializing || finalizeDisabled
+                    }
                   >
-                    {generatingInvoice ? "Generating…" : "Generate Invoice"}
-                  </PrimaryButton>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+                    {finalizing ? "Finishing…" : "Finish & download PDF"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {documentStatus === "draft" && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setIsEditMode(true)}
+                      disabled={initializing}
+                    >
+                      Edit document
+                    </Button>
+                  )}
+                  {state.documentType === "quotation" && (
+                    <Button
+                      onClick={handleGenerateInvoice}
+                      disabled={generatingInvoice || initializing}
+                    >
+                      {generatingInvoice ? "Generating…" : "Generate invoice"}
+                    </Button>
+                  )}
+                </>
+              )}
+            </>
+          }
+        />
 
         {initializing && <div>Loading document…</div>}
         {loadError && <ErrorBanner>{loadError}</ErrorBanner>}
-        {!canEdit && !initializing && !loadError && (
-          <ErrorBanner variant="warning">
-            This document has been finalized and cannot be edited.
-            {state.documentType === "quotation" && (
-              <div style={{ marginTop: 8 }}>
-                You can generate invoices from this finalized quotation.
-              </div>
-            )}
-          </ErrorBanner>
-        )}
+        {!canEdit &&
+          documentStatus !== "draft" &&
+          !initializing &&
+          !loadError && (
+            <ErrorBanner variant="warning">
+              This document has been finalized and cannot be edited.
+              {state.documentType === "quotation" && (
+                <div style={{ marginTop: 8 }}>
+                  You can generate invoices from this finalized quotation.
+                </div>
+              )}
+            </ErrorBanner>
+          )}
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
         {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
         {generateError && <ErrorBanner>{generateError}</ErrorBanner>}
@@ -539,24 +584,67 @@ const DocumentEdit: React.FC = () => {
                   gap: 16,
                 }}
               >
-                <StyledDropdown
-                  label="Document Type"
-                  id="doc-documentType"
-                  value={state.documentType}
-                  onChange={(e) =>
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "documentType",
-                      value: e.target.value as DocumentType,
-                    })
-                  }
-                  disabled={!canEdit}
-                  required
-                  error={headerErrors.documentType}
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-end",
+                    gap: 16,
+                    flexWrap: "wrap",
+                  }}
                 >
-                  <option value="invoice">Invoice</option>
-                  <option value="quotation">Quotation</option>
-                </StyledDropdown>
+                  {canEdit ? (
+                    <StyledDropdown
+                      id="doc-currency"
+                      aria-label="Currency"
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      style={{ maxWidth: 140 }}
+                    >
+                      {SUPPORTED_CURRENCIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </StyledDropdown>
+                  ) : (
+                    <StyledInput
+                      id="doc-currency"
+                      aria-label="Currency"
+                      value={currency}
+                      disabled
+                      style={{ maxWidth: 140 }}
+                    />
+                  )}
+
+                  <div
+                    style={{ marginLeft: "auto", minWidth: 260, maxWidth: 420 }}
+                  >
+                    <SegmentedToggle<DocumentType>
+                      ariaLabel="Document Type"
+                      id="doc-documentType"
+                      value={state.documentType}
+                      options={[
+                        { value: "invoice", label: "Invoice" },
+                        { value: "quotation", label: "Quotation" },
+                      ]}
+                      disabled={!canEdit}
+                      onChange={(next) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "documentType",
+                          value: next,
+                        })
+                      }
+                    />
+                    {headerErrors.documentType ? (
+                      <div className="modal-error">
+                        {headerErrors.documentType}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
 
                 <StyledInput
                   label="Document #"
@@ -589,61 +677,53 @@ const DocumentEdit: React.FC = () => {
                   error={headerErrors.date}
                 />
 
-                {canEdit ? (
-                  <StyledDropdown
-                    label="Currency"
-                    id="doc-currency"
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                  >
-                    {SUPPORTED_CURRENCIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </StyledDropdown>
-                ) : (
-                  <StyledInput
-                    label="Currency"
-                    id="doc-currency"
-                    value={currency}
-                    disabled
-                  />
-                )}
-
-                <StyledInput
-                  label="Find customer"
-                  placeholder="Start typing a name…"
-                  value={customerQuery}
-                  onChange={(e) => setCustomerQuery(e.target.value)}
-                  disabled={loadingCustomers}
-                />
-                <StyledDropdown
-                  label="Bill To"
-                  id="doc-customerId"
-                  value={state.customerId || ""}
-                  onChange={(e) =>
-                    dispatch({
-                      type: "SET_FIELD",
-                      field: "customerId",
-                      value: e.target.value || undefined,
-                    })
-                  }
-                  required
-                  disabled={loadingCustomers || !canEdit}
-                  error={headerErrors.customerId}
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "flex-end",
+                  }}
                 >
-                  <option value="">
-                    {loadingCustomers
-                      ? "Loading customers..."
-                      : "Select customer"}
-                  </option>
-                  {visibleCustomers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </StyledDropdown>
+                  <div style={{ flex: 1, minWidth: 220 }}>
+                    <StyledDropdown
+                      label="Bill To"
+                      id="doc-customerId"
+                      value={state.customerId || ""}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "SET_FIELD",
+                          field: "customerId",
+                          value: e.target.value || undefined,
+                        })
+                      }
+                      required
+                      disabled={loadingCustomers || !canEdit}
+                      error={headerErrors.customerId}
+                    >
+                      <option value="">
+                        {loadingCustomers
+                          ? "Loading customers..."
+                          : "Select customer"}
+                      </option>
+                      {visibleCustomers.map((customer) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </option>
+                      ))}
+                    </StyledDropdown>
+                  </div>
+                  {canEdit ? (
+                    <Button
+                      type="button"
+                      prominent
+                      onClick={catalogModals.openCustomerModal}
+                      disabled={loadingCustomers}
+                    >
+                      Add customer
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
 
@@ -672,35 +752,34 @@ const DocumentEdit: React.FC = () => {
                 onRemove={(lineId) =>
                   dispatch({ type: "REMOVE_LINE_ITEM", id: lineId })
                 }
+                onAddCatalogItem={
+                  canEdit ? catalogModals.openItemModal : undefined
+                }
               />
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   marginTop: 12,
-                  padding: "0 16px",
                 }}
               >
-                <SecondaryButton
+                <Button
+                  variant="secondary"
                   onClick={() => dispatch({ type: "ADD_LINE_ITEM" })}
                   disabled={!canEdit}
                 >
-                  Add Line Item
-                </SecondaryButton>
+                  Add line item
+                </Button>
                 <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
                   <div style={{ textAlign: "right" }}>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      Subtotal
-                    </div>
+                    <div className="muted">Subtotal</div>
                     <div className="td-strong">
                       {formatCurrency(subtotal, currency)}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      Total
-                    </div>
-                    <div className="td-strong" style={{ fontSize: 18 }}>
+                    <div className="muted">Total</div>
+                    <div className="td-strong text-total">
                       {formatCurrency(total, currency)}
                     </div>
                   </div>
@@ -726,7 +805,22 @@ const DocumentEdit: React.FC = () => {
           </>
         )}
       </div>
-    </div>
+
+      <CustomerModal
+        open={catalogModals.customerModalOpen}
+        title="Add customer"
+        submitting={catalogModals.customerSubmitting}
+        onSubmit={catalogModals.handleCustomerSubmit}
+        onCancel={catalogModals.closeCustomerModal}
+      />
+      <ItemModal
+        open={catalogModals.itemModalOpen}
+        title="Add product or service"
+        submitting={catalogModals.itemSubmitting}
+        onSubmit={catalogModals.handleItemSubmit}
+        onCancel={catalogModals.closeItemModal}
+      />
+    </>
   );
 };
 

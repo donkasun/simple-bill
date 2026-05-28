@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import StyledDropdown from "@components/core/StyledDropdown";
 import StyledInput from "@components/core/StyledInput";
 import StyledTextarea from "@components/core/StyledTextarea";
+import SegmentedToggle from "@components/core/SegmentedToggle";
 import LineItemsTable from "@components/documents/LineItemsTable";
-import PrimaryButton from "@components/core/PrimaryButton";
-import SecondaryButton from "@components/core/SecondaryButton";
+import Button from "@components/core/Button";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -39,6 +39,7 @@ import {
 } from "@hooks/useDocumentForm";
 import { validateDraft, validateFinalize } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import PageHeader from "@components/layout/PageHeader";
 import useUserProfile from "@hooks/useUserProfile";
 import { db } from "../firebase/config";
 import { todayIso } from "@utils/date";
@@ -51,21 +52,37 @@ import {
   type ItemUsageMap,
 } from "@utils/itemUsage";
 import { SUPPORTED_CURRENCIES } from "@utils/currency";
+import { recordCustomerBilled } from "@utils/customerUsage";
 import OnboardingStepper from "@components/core/OnboardingStepper";
+import ItemModal from "@components/items/ItemModal";
+import CustomerModal from "@components/customers/CustomerModal";
+import { useDocumentCatalogModals } from "@hooks/useDocumentCatalogModals";
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as {
+    customerId?: string;
+    documentType?: "invoice" | "quotation";
+  } | null;
   const { user } = useAuth();
   const { profile, updateUserProfile } = useUserProfile();
 
-  const { items: customers, loading: loadingCustomers } =
-    useFirestore<Customer>({
-      collectionName: "customers",
-      userId: user?.uid,
-      orderByField: "createdAt",
-    });
-  const { items: itemCatalog, loading: loadingItems } = useFirestore<Item>({
+  const {
+    items: customers,
+    loading: loadingCustomers,
+    add: addCustomer,
+  } = useFirestore<Customer>({
+    collectionName: "customers",
+    userId: user?.uid,
+    orderByField: "createdAt",
+  });
+  const {
+    items: itemCatalog,
+    loading: loadingItems,
+    add: addItem,
+  } = useFirestore<Item>({
     collectionName: "items",
     userId: user?.uid,
     orderByField: "createdAt",
@@ -94,14 +111,28 @@ const DocumentCreation: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!state.customerId && customers.length > 0) {
+    if (customers.length === 0) return;
+    if (state.customerId) return; // already set
+
+    const preselected = locationState?.customerId;
+    const target =
+      preselected && customers.some((c) => c.id === preselected)
+        ? preselected
+        : customers[0].id;
+    dispatch({ type: "SET_FIELD", field: "customerId", value: target });
+  }, [customers, dispatch, locationState?.customerId, state.customerId]);
+
+  useEffect(() => {
+    if (locationState?.documentType) {
       dispatch({
         type: "SET_FIELD",
-        field: "customerId",
-        value: customers[0].id,
+        field: "documentType",
+        value: locationState.documentType,
       });
     }
-  }, [customers, state.customerId, dispatch]);
+    // Only run once on mount (locationState is stable for this nav)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddRow = () => addLine();
 
@@ -114,7 +145,6 @@ const DocumentCreation: React.FC = () => {
     Record<string, LineItemFieldErrors>
   >({});
   const [prefilling, setPrefilling] = useState(false);
-  const [customerQuery, setCustomerQuery] = useState("");
   const [itemUsage, setItemUsage] = useState<ItemUsageMap>({});
   const [currency, setCurrency] = useState<string>("USD");
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
@@ -155,20 +185,11 @@ const DocumentCreation: React.FC = () => {
   }, [profile?.currency]);
 
   const visibleCustomers = useMemo(() => {
-    const q = customerQuery.trim().toLowerCase();
-    if (!q) return customers;
-    const filtered = customers.filter((c) =>
-      String(c.name ?? "")
-        .toLowerCase()
-        .includes(q),
-    );
-    const selected = state.customerId
-      ? customers.find((c) => c.id === state.customerId)
-      : undefined;
-    if (selected && !filtered.some((c) => c.id === selected.id))
-      return [selected, ...filtered];
-    return filtered;
-  }, [customers, customerQuery, state.customerId]);
+    if (!state.customerId) return customers;
+    const selected = customers.find((c) => c.id === state.customerId);
+    if (!selected) return customers;
+    return [selected, ...customers.filter((c) => c.id !== selected.id)];
+  }, [customers, state.customerId]);
 
   const sortedCatalog = useMemo(
     () => sortCatalogByUsage(itemCatalog, itemUsage),
@@ -180,6 +201,27 @@ const DocumentCreation: React.FC = () => {
     selectItemById(lineId, itemId);
     if (user?.uid && itemId) setItemUsage(incrementItemUsage(user.uid, itemId));
   };
+
+  const catalogModals = useDocumentCatalogModals({
+    userId: user?.uid,
+    addCustomer,
+    addItem,
+    onCustomerCreated: (customerId) => {
+      dispatch({
+        type: "SET_FIELD",
+        field: "customerId",
+        value: customerId,
+      });
+    },
+    onItemCreated: (item, lineId) => {
+      if (lineId) {
+        dispatch({ type: "SET_ITEM_SELECTION", id: lineId, item });
+        if (item.id && user?.uid) {
+          setItemUsage(incrementItemUsage(user.uid, item.id));
+        }
+      }
+    },
+  });
 
   const handleCopyFromPrevious = async () => {
     if (!user?.uid) return;
@@ -317,6 +359,9 @@ const DocumentCreation: React.FC = () => {
         currency,
       };
       const id = await addDocument(payload);
+      if (id && user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
       if (id) navigate("/dashboard");
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to save draft";
@@ -368,6 +413,10 @@ const DocumentCreation: React.FC = () => {
 
       const id = await addDocument(payload);
 
+      if (user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
+
       const { generateDocumentPdf } = await import("../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
         type: payload.type,
@@ -397,39 +446,49 @@ const DocumentCreation: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <div className="container-xl">
-        <div className="page-header">
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
-            Create Document
-          </h2>
-          <div style={{ display: "flex", gap: 8 }}>
-            <SecondaryButton onClick={() => navigate("/dashboard")}>
-              Cancel
-            </SecondaryButton>
-            <SecondaryButton
-              onClick={handleCopyFromPrevious}
-              disabled={prefilling || saving || finalizing}
-              aria-disabled={prefilling || saving || finalizing}
-            >
-              {prefilling ? "Copying…" : "Copy from previous"}
-            </SecondaryButton>
-            <PrimaryButton
-              onClick={handleSaveDraft}
-              disabled={saving || finalizing}
-              aria-disabled={saving || finalizing}
-            >
-              {saving ? "Saving…" : "Save Draft"}
-            </PrimaryButton>
-            <PrimaryButton
-              onClick={handleFinalizeAndDownload}
-              disabled={saving || finalizing || finalizeDisabled}
-              aria-disabled={saving || finalizing || finalizeDisabled}
-            >
-              {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
-            </PrimaryButton>
-          </div>
-        </div>
+    <>
+      <div className="app-page">
+        <PageHeader
+          toolbar
+          title="New invoice or quote"
+          subtitle="Fill in the details below, then save a draft or download a PDF."
+          secondaryActions={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => navigate("/dashboard")}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleCopyFromPrevious}
+                disabled={prefilling || saving || finalizing}
+                aria-disabled={prefilling || saving || finalizing}
+              >
+                {prefilling ? "Copying…" : "Copy from previous"}
+              </Button>
+            </>
+          }
+          actions={
+            <>
+              <Button
+                onClick={handleSaveDraft}
+                disabled={saving || finalizing}
+                aria-disabled={saving || finalizing}
+              >
+                {saving ? "Saving…" : "Save draft"}
+              </Button>
+              <Button
+                onClick={handleFinalizeAndDownload}
+                disabled={saving || finalizing || finalizeDisabled}
+                aria-disabled={saving || finalizing || finalizeDisabled}
+              >
+                {finalizing ? "Finalizing…" : "Finalize & download PDF"}
+              </Button>
+            </>
+          }
+        />
 
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
         {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
@@ -443,7 +502,7 @@ const DocumentCreation: React.FC = () => {
                 id: "billto",
                 title: "Who are you billing?",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     Pick the customer you’re billing in <strong>Bill To</strong>
                     . If you don’t see them yet, add them from the Customers
                     page first.
@@ -454,7 +513,7 @@ const DocumentCreation: React.FC = () => {
                 id: "items",
                 title: "What are you charging for?",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     Add line items for products or services. You can choose from
                     saved items or type a custom name.
                   </div>
@@ -464,7 +523,7 @@ const DocumentCreation: React.FC = () => {
                 id: "totals",
                 title: "Double-check currency and totals",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     Choose a currency for this document and quickly review the
                     subtotal and total before saving.
                   </div>
@@ -474,7 +533,7 @@ const DocumentCreation: React.FC = () => {
                 id: "save",
                 title: "Save draft vs finalize",
                 body: (
-                  <div style={{ color: "var(--md-on-surface-variant)" }}>
+                  <div>
                     <strong>Save Draft</strong> keeps it editable.{" "}
                     <strong>Finalize</strong> generates a PDF for sharing.
                   </div>
@@ -488,29 +547,56 @@ const DocumentCreation: React.FC = () => {
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
           >
-            <StyledDropdown
-              label="Document Type"
-              id="doc-documentType"
-              value={state.documentType}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_FIELD",
-                  field: "documentType",
-                  value: e.target.value as DocumentType,
-                })
-              }
-              required
-              error={headerErrors.documentType}
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                gap: 16,
+                flexWrap: "wrap",
+              }}
             >
-              <option value="invoice">Invoice</option>
-              <option value="quotation">Quotation</option>
-            </StyledDropdown>
+              <StyledDropdown
+                id="doc-currency"
+                aria-label="Currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                style={{ maxWidth: 140 }}
+              >
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </StyledDropdown>
+
+              <div style={{ marginLeft: "auto", minWidth: 260, maxWidth: 420 }}>
+                <SegmentedToggle<DocumentType>
+                  ariaLabel="Document Type"
+                  id="doc-documentType"
+                  value={state.documentType}
+                  options={[
+                    { value: "invoice", label: "Invoice" },
+                    { value: "quotation", label: "Quotation" },
+                  ]}
+                  onChange={(next) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "documentType",
+                      value: next,
+                    })
+                  }
+                />
+                {headerErrors.documentType ? (
+                  <div className="modal-error">{headerErrors.documentType}</div>
+                ) : null}
+              </div>
+            </div>
             <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
               <div
-                style={{
-                  fontSize: 13,
-                  color: "var(--md-on-surface-variant)",
-                }}
+                className="text-xs"
+                style={{ color: "var(--md-on-surface-variant)" }}
               >
                 Use <strong>Quotation</strong> when you’re proposing work. Use{" "}
                 <strong>Invoice</strong> when you’re billing for payment.
@@ -546,56 +632,55 @@ const DocumentCreation: React.FC = () => {
               error={headerErrors.date}
             />
 
-            <StyledDropdown
-              label="Currency"
-              id="doc-currency"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                display: "flex",
+                gap: 12,
+                alignItems: "flex-end",
+              }}
             >
-              {SUPPORTED_CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </StyledDropdown>
-
-            <StyledInput
-              label="Find customer"
-              placeholder="Start typing a name…"
-              value={customerQuery}
-              onChange={(e) => setCustomerQuery(e.target.value)}
-              disabled={loadingCustomers}
-            />
-            <StyledDropdown
-              label="Bill To"
-              id="doc-customerId"
-              value={state.customerId || ""}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_FIELD",
-                  field: "customerId",
-                  value: e.target.value || undefined,
-                })
-              }
-              required
-              disabled={loadingCustomers}
-              error={headerErrors.customerId}
-            >
-              <option value="">
-                {loadingCustomers ? "Loading customers..." : "Select customer"}
-              </option>
-              {visibleCustomers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </StyledDropdown>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <StyledDropdown
+                  label="Bill To"
+                  id="doc-customerId"
+                  value={state.customerId || ""}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_FIELD",
+                      field: "customerId",
+                      value: e.target.value || undefined,
+                    })
+                  }
+                  required
+                  disabled={loadingCustomers}
+                  error={headerErrors.customerId}
+                >
+                  <option value="">
+                    {loadingCustomers
+                      ? "Loading customers..."
+                      : "Select customer"}
+                  </option>
+                  {visibleCustomers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </option>
+                  ))}
+                </StyledDropdown>
+              </div>
+              <Button
+                type="button"
+                prominent
+                onClick={catalogModals.openCustomerModal}
+                disabled={loadingCustomers}
+              >
+                Add customer
+              </Button>
+            </div>
             <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
               <div
-                style={{
-                  fontSize: 13,
-                  color: "var(--md-on-surface-variant)",
-                }}
+                className="text-xs"
+                style={{ color: "var(--md-on-surface-variant)" }}
               >
                 Drafts stay editable. Finalized documents generate a PDF for
                 sharing.
@@ -616,32 +701,28 @@ const DocumentCreation: React.FC = () => {
             onSelectItem={handleSelectItem}
             onChange={changeLine}
             onRemove={removeLine}
+            onAddCatalogItem={catalogModals.openItemModal}
           />
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               marginTop: 12,
-              padding: "0 16px",
             }}
           >
-            <SecondaryButton onClick={handleAddRow}>
-              Add Line Item
-            </SecondaryButton>
+            <Button variant="secondary" onClick={handleAddRow}>
+              Add line item
+            </Button>
             <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
               <div style={{ textAlign: "right" }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Subtotal
-                </div>
+                <div className="muted">Subtotal</div>
                 <div className="td-strong">
                   {formatCurrency(subtotal, currency)}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Total
-                </div>
-                <div className="td-strong" style={{ fontSize: 18 }}>
+                <div className="muted">Total</div>
+                <div className="td-strong text-total">
                   {formatCurrency(total, currency)}
                 </div>
               </div>
@@ -664,7 +745,22 @@ const DocumentCreation: React.FC = () => {
           />
         </div>
       </div>
-    </div>
+
+      <CustomerModal
+        open={catalogModals.customerModalOpen}
+        title="Add customer"
+        submitting={catalogModals.customerSubmitting}
+        onSubmit={catalogModals.handleCustomerSubmit}
+        onCancel={catalogModals.closeCustomerModal}
+      />
+      <ItemModal
+        open={catalogModals.itemModalOpen}
+        title="Add product or service"
+        submitting={catalogModals.itemSubmitting}
+        onSubmit={catalogModals.handleItemSubmit}
+        onCancel={catalogModals.closeItemModal}
+      />
+    </>
   );
 };
 

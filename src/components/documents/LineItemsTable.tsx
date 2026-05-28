@@ -21,6 +21,7 @@ type LineItemsTableProps = {
   onSelectItem: (lineId: string, itemId?: string) => void;
   onChange: (lineId: string, changes: Partial<FormLineItem>) => void;
   onRemove: (lineId: string) => void;
+  onAddCatalogItem?: (lineId: string) => void;
 };
 
 const LineItemsTable: React.FC<LineItemsTableProps> = ({
@@ -34,9 +35,30 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onSelectItem,
   onChange,
   onRemove,
+  onAddCatalogItem,
 }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<string | null>(null);
+  // Tracks which rows are in "custom name" mode (text input) vs catalog mode (dropdown).
+  // A row starts in custom mode if it already has a typed name but no catalog item.
+  const [customModeIds, setCustomModeIds] = useState<Set<string>>(
+    () =>
+      new Set(
+        items.filter((li) => !li.itemId && li.name?.trim()).map((li) => li.id),
+      ),
+  );
+
+  const enterCustomMode = (id: string) =>
+    setCustomModeIds((prev) => new Set([...prev, id]));
+
+  const exitCustomMode = (id: string, lineId: string) => {
+    setCustomModeIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    onChange(lineId, { name: "" });
+  };
 
   const handleRemoveClick = (id: string) => {
     setItemToRemove(id);
@@ -64,75 +86,131 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
 
   return (
     <>
-      <StyledTable>
+      <StyledTable className="line-items-table">
         <thead>
           <tr>
-            <th style={{ width: "22%" }}>Item</th>
+            <th className="line-items-table__item" style={{ width: "28%" }}>
+              Item
+            </th>
             <th>Description</th>
-            <th className="td-right" style={{ width: 140 }}>
+            <th className="td-right" style={{ width: 120 }}>
               Unit Price
             </th>
-            <th className="td-right" style={{ width: 120 }}>
+            <th className="td-right" style={{ width: 88 }}>
               Qty
             </th>
-            <th className="td-right" style={{ width: 140 }}>
+            <th className="td-right" style={{ width: 120 }}>
               Amount
             </th>
-            <th className="td-right" style={{ width: 90 }}>
-              Actions
-            </th>
+            <th className="td-right line-items-table__actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           {items.map((li) => (
             <tr key={li.id}>
-              <td>
-                <StyledDropdown
-                  value={li.itemId ?? ""}
-                  onChange={(e) =>
-                    onSelectItem(li.id, e.target.value || undefined)
-                  }
-                  disabled={loadingCatalog || !canEdit}
-                >
-                  <option value="">
-                    {loadingCatalog ? "Loading…" : "Select item"}
-                  </option>
-                  {recent.length > 0 ? (
-                    <>
-                      <optgroup label="Recently used">
-                        {recent.map((it) => (
-                          <option key={it.id} value={it.id}>
-                            {it.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="All items">
-                        {rest.map((it) => (
-                          <option key={it.id} value={it.id}>
-                            {it.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </>
-                  ) : (
-                    rest.map((it) => (
-                      <option key={it.id} value={it.id}>
-                        {it.name}
+              <td className="line-items-table__item" data-label="Item">
+                {li.itemId || !customModeIds.has(li.id) ? (
+                  /* ── Catalog mode: dropdown ── */
+                  <>
+                    <StyledDropdown
+                      value={li.itemId ?? ""}
+                      onChange={(e) =>
+                        onSelectItem(li.id, e.target.value || undefined)
+                      }
+                      disabled={loadingCatalog || !canEdit}
+                    >
+                      <option value="">
+                        {loadingCatalog ? "Loading…" : "Select item"}
                       </option>
-                    ))
-                  )}
-                </StyledDropdown>
-                <StyledInput
-                  placeholder="Custom item name"
-                  id={`li-${li.id}-name`}
-                  value={li.name}
-                  onChange={(e) => onChange(li.id, { name: e.target.value })}
-                  style={{ marginTop: 8 }}
-                  disabled={!canEdit}
-                  error={itemErrors[li.id]?.name}
-                />
+                      {recent.length > 0 ? (
+                        <>
+                          <optgroup label="Recently used">
+                            {recent.map((it) => (
+                              <option key={it.id} value={it.id}>
+                                {it.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="All items">
+                            {rest.map((it) => (
+                              <option key={it.id} value={it.id}>
+                                {it.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </>
+                      ) : (
+                        rest.map((it) => (
+                          <option key={it.id} value={it.id}>
+                            {it.name}
+                          </option>
+                        ))
+                      )}
+                    </StyledDropdown>
+                    {canEdit && !li.itemId && (
+                      <button
+                        type="button"
+                        className="link-btn"
+                        style={{ marginTop: 6 }}
+                        onClick={() => enterCustomMode(li.id)}
+                      >
+                        Or enter custom name
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  /* ── Custom mode: text input ── */
+                  <>
+                    <StyledInput
+                      placeholder="Custom item name"
+                      id={`li-${li.id}-name`}
+                      value={li.name}
+                      onChange={(e) =>
+                        onChange(li.id, { name: e.target.value })
+                      }
+                      disabled={!canEdit}
+                      error={itemErrors[li.id]?.name}
+                      autoFocus
+                    />
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="link-btn"
+                        style={{ marginTop: 6 }}
+                        onClick={() => exitCustomMode(li.id, li.id)}
+                      >
+                        ← Pick from catalog
+                      </button>
+                    )}
+                  </>
+                )}
+                {canEdit && onAddCatalogItem ? (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    style={{
+                      marginTop: 6,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                    onClick={() => onAddCatalogItem(li.id)}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      aria-hidden
+                      style={{ fontSize: 14 }}
+                    >
+                      add
+                    </span>
+                    New product or service
+                  </button>
+                ) : null}
               </td>
-              <td>
+              <td
+                className="line-items-table__description"
+                data-label="Description"
+              >
                 <StyledTextarea
                   placeholder="Description"
                   value={li.description}
@@ -142,7 +220,10 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   disabled={!canEdit}
                 />
               </td>
-              <td className="td-right">
+              <td
+                className="td-right line-items-table__numeric"
+                data-label="Unit Price"
+              >
                 <StyledInput
                   type="number"
                   inputMode="decimal"
@@ -162,7 +243,10 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   style={{ textAlign: "right" }}
                 />
               </td>
-              <td className="td-right">
+              <td
+                className="td-right line-items-table__numeric line-items-table__numeric--qty"
+                data-label="Qty"
+              >
                 <StyledInput
                   type="number"
                   inputMode="numeric"
@@ -182,19 +266,29 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   style={{ textAlign: "right" }}
                 />
               </td>
-              <td className="td-right">
-                <span className="td-strong">
+              <td
+                className="td-right line-items-table__amount"
+                data-label="Amount"
+              >
+                <span className="line-items-table__amount-value">
                   {formatCurrency(li.amount, currency)}
                 </span>
               </td>
-              <td className="td-right">
+              <td
+                className="td-right line-items-table__actions"
+                data-label="Actions"
+              >
                 <button
-                  className="link-btn link-danger"
-                  style={{ minHeight: "44px" }}
+                  type="button"
+                  className="icon-btn icon-btn-danger"
+                  aria-label="Remove line item"
+                  title="Remove line item"
                   onClick={() => handleRemoveClick(li.id)}
                   disabled={items.length <= 1 || !canEdit}
                 >
-                  Remove item
+                  <span className="material-symbols-outlined" aria-hidden>
+                    delete
+                  </span>
                 </button>
               </td>
             </tr>

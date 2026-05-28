@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
-import PrimaryButton from "./PrimaryButton";
-import SecondaryButton from "./SecondaryButton";
+import Button from "./Button";
 
 export type OnboardingStep = {
   id: string;
@@ -30,54 +29,24 @@ const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
   const canNext = idx < safeSteps.length - 1;
 
   return (
-    <div
-      className="card"
-      style={{
-        padding: 16,
-        marginBottom: 16,
-        border: "1px solid var(--md-outline-variant)",
-      }}
-      aria-label="First invoice guide"
-    >
-      <div
-        style={{ display: "flex", justifyContent: "space-between", gap: 12 }}
-      >
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: 18,
-              fontWeight: 700,
-              marginBottom: 4,
-              color: "var(--md-on-surface)",
-            }}
+    <div className="onboarding-guide" aria-label="First invoice guide">
+      <div className="onboarding-guide__header">
+        <div className="onboarding-guide__header-top">
+          <div className="onboarding-guide__title">{title}</div>
+          <button
+            type="button"
+            onClick={onDismissForever}
+            className="link-btn onboarding-guide__dismiss"
           >
-            {title}
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 14,
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--md-on-surface-variant)",
-            }}
-          >
-            Step {idx + 1} of {safeSteps.length}: {step.title}
-          </div>
+            {dismissLabel}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onDismissForever}
-          className="link-btn"
-          style={{ minHeight: 44, alignSelf: "flex-start" }}
-        >
-          {dismissLabel}
-        </button>
+        <div className="onboarding-guide__step-label">
+          Step {idx + 1} of {safeSteps.length}: {step.title}
+        </div>
       </div>
 
-      <div style={{ marginTop: 12 }}>{step.body}</div>
+      <div className="onboarding-guide__body">{step.body}</div>
 
       <div
         style={{
@@ -87,26 +56,27 @@ const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
           marginTop: 16,
         }}
       >
-        <SecondaryButton
+        <Button
           type="button"
+          variant="secondary"
           onClick={() => setIdx((v) => Math.max(0, v - 1))}
           disabled={!canPrev}
           aria-disabled={!canPrev}
         >
           Back
-        </SecondaryButton>
+        </Button>
         <div style={{ display: "flex", gap: 8 }}>
-          <SecondaryButton type="button" onClick={() => setIdx(0)}>
+          <Button type="button" variant="secondary" onClick={() => setIdx(0)}>
             Restart
-          </SecondaryButton>
-          <PrimaryButton
+          </Button>
+          <Button
             type="button"
             onClick={() => setIdx((v) => Math.min(safeSteps.length - 1, v + 1))}
             disabled={!canNext}
             aria-disabled={!canNext}
           >
             {canNext ? "Next" : "Done"}
-          </PrimaryButton>
+          </Button>
         </div>
       </div>
     </div>

@@ -26,6 +26,7 @@ export type DocumentEntity = BaseEntity & {
   notes?: string;
   status: DocumentStatus;
   finalizedAt?: Timestamp;
+  paidAt?: Timestamp | Date | null;
   currency?: string;
   // Relationship tracking
   sourceDocumentId?: string; // ID of the quotation this invoice was generated from

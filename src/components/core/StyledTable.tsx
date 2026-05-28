@@ -7,6 +7,7 @@ type StyledTableProps = React.TableHTMLAttributes<HTMLTableElement> & {
 const StyledTable: React.FC<StyledTableProps> = ({
   children,
   style,
+  className,
   ...props
 }) => {
   return (
@@ -23,7 +24,7 @@ const StyledTable: React.FC<StyledTableProps> = ({
     >
       <table
         {...props}
-        className="table"
+        className={["table", className].filter(Boolean).join(" ")}
         style={{
           position: "relative",
           zIndex: 1,
