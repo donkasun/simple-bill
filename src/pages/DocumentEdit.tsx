@@ -149,8 +149,8 @@ const DocumentEdit: React.FC = () => {
         if (!mounted) return;
         setDocumentStatus(data.status);
         setCurrency(data.currency || "USD");
-        // Always start in view mode, regardless of document status
-        setIsEditMode(false);
+        // Auto-enter edit mode for drafts on /edit URL; finalized docs stay view-only
+        setIsEditMode(data.status === "draft");
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -559,16 +559,19 @@ const DocumentEdit: React.FC = () => {
 
         {initializing && <div>Loading document…</div>}
         {loadError && <ErrorBanner>{loadError}</ErrorBanner>}
-        {!canEdit && !initializing && !loadError && (
-          <ErrorBanner variant="warning">
-            This document has been finalized and cannot be edited.
-            {state.documentType === "quotation" && (
-              <div style={{ marginTop: 8 }}>
-                You can generate invoices from this finalized quotation.
-              </div>
-            )}
-          </ErrorBanner>
-        )}
+        {!canEdit &&
+          documentStatus !== "draft" &&
+          !initializing &&
+          !loadError && (
+            <ErrorBanner variant="warning">
+              This document has been finalized and cannot be edited.
+              {state.documentType === "quotation" && (
+                <div style={{ marginTop: 8 }}>
+                  You can generate invoices from this finalized quotation.
+                </div>
+              )}
+            </ErrorBanner>
+          )}
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
         {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
         {generateError && <ErrorBanner>{generateError}</ErrorBanner>}
