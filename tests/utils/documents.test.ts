@@ -4,7 +4,9 @@ import {
   getDocumentFilename,
   selectCustomerDetails,
   buildDocumentPayload,
+  buildDuplicatePayload,
 } from "../../src/utils/documents";
+import type { DocumentEntity } from "../../src/types/document";
 
 describe("documents utils", () => {
   it("getDocNumberPlaceholder", () => {
@@ -69,5 +71,53 @@ describe("documents utils", () => {
     expect(payload.userId).toBe("uid");
     expect(payload.items[0].amount).toBe(6);
     expect(payload.status).toBe("draft");
+  });
+
+  it("buildDuplicatePayload omits relationships and resets draft fields", () => {
+    const source: DocumentEntity = {
+      id: "source-id",
+      userId: "old-uid",
+      type: "invoice",
+      docNumber: "INV-2024-001",
+      date: "2024-01-01",
+      customerId: "cust-123",
+      customerDetails: { name: "Acme Corp" },
+      items: [{ name: "Item 1", unitPrice: 10, quantity: 2, amount: 20 }],
+      subtotal: 20,
+      total: 20,
+      notes: "Some notes",
+      status: "finalized",
+      currency: "EUR",
+      // @ts-expect-error test-only timestamp shape
+      finalizedAt: { seconds: 123, nanoseconds: 0 },
+      sourceDocumentId: "quotation-123",
+      sourceDocumentType: "quotation",
+      relatedInvoices: ["inv-1"],
+      originalQuantity: 10,
+      invoicedQuantity: 5,
+      remainingQuantity: 5,
+    };
+
+    const payload = buildDuplicatePayload(
+      "new-uid",
+      source,
+      "INV-2024-002",
+      "2024-02-02",
+    );
+
+    expect(payload.userId).toBe("new-uid");
+    expect(payload.docNumber).toBe("INV-2024-002");
+    expect(payload.date).toBe("2024-02-02");
+    expect(payload.status).toBe("draft");
+    expect(payload.items).toEqual(source.items);
+    expect(payload.currency).toBe("EUR");
+
+    expect("finalizedAt" in payload).toBe(false);
+    expect("sourceDocumentId" in payload).toBe(false);
+    expect("sourceDocumentType" in payload).toBe(false);
+    expect("relatedInvoices" in payload).toBe(false);
+    expect("originalQuantity" in payload).toBe(false);
+    expect("invoicedQuantity" in payload).toBe(false);
+    expect("remainingQuantity" in payload).toBe(false);
   });
 });

@@ -48,10 +48,29 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     if (theme === "system") {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+      // Fires when the OS theme changes while the tab is active
       const handleChange = () => updateResolvedTheme("system");
 
+      // Re-check when the tab becomes visible or the window regains focus —
+      // browsers often skip the mediaQuery change event while the page is
+      // backgrounded (e.g. switching macOS appearance via Control Center)
+      const handleVisibility = () => {
+        if (document.visibilityState === "visible") {
+          updateResolvedTheme("system");
+        }
+      };
+      const handleFocus = () => updateResolvedTheme("system");
+
       mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
+      document.addEventListener("visibilitychange", handleVisibility);
+      window.addEventListener("focus", handleFocus);
+
+      return () => {
+        mediaQuery.removeEventListener("change", handleChange);
+        document.removeEventListener("visibilitychange", handleVisibility);
+        window.removeEventListener("focus", handleFocus);
+      };
     }
   }, [theme, updateResolvedTheme]);
 

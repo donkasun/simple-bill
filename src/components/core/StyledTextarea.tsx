@@ -20,12 +20,9 @@ const StyledTextarea: React.FC<StyledTextareaProps> = ({
         id={id}
         {...props}
         style={{
-          border: "none",
-          outline: "none",
           width: "100%",
-          backgroundColor: "transparent",
+          boxSizing: "border-box",
           resize: "vertical",
-          minHeight: "80px",
           fontFamily: "inherit",
           fontSize: "inherit",
           lineHeight: "1.5",

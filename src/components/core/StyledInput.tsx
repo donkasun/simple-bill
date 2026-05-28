@@ -20,10 +20,8 @@ const StyledInput: React.FC<StyledInputProps> = ({
         id={id}
         {...props}
         style={{
-          border: "none",
-          outline: "none",
           width: "100%",
-          backgroundColor: "transparent",
+          boxSizing: "border-box",
           ...(style || {}),
         }}
       />

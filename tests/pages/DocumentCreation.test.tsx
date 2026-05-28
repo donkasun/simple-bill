@@ -1,0 +1,155 @@
+import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
+
+import DocumentCreation from "../../src/pages/DocumentCreation";
+import { useAuth } from "@auth/useAuth";
+import { useFirestore } from "@hooks/useFirestore";
+import useUserProfile from "@hooks/useUserProfile";
+
+vi.mock("@auth/useAuth");
+vi.mock("@hooks/useFirestore");
+vi.mock("@hooks/useUserProfile", () => ({ default: vi.fn() }));
+vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
+
+let capturedDismiss: undefined | (() => void);
+vi.mock("@components/core/OnboardingStepper", () => ({
+  default: ({ onDismissForever }: { onDismissForever?: () => void }) => {
+    capturedDismiss = onDismissForever;
+    return (
+      <button type="button" data-has-dismiss={String(!!onDismissForever)}>
+        DismissGuide
+      </button>
+    );
+  },
+}));
+
+const mockUseAuth = useAuth as vi.MockedFunction<typeof useAuth>;
+const mockUseFirestore = useFirestore as vi.MockedFunction<typeof useFirestore>;
+const mockUseUserProfile = useUserProfile as unknown as vi.MockedFunction<
+  typeof useUserProfile
+>;
+
+type MockUser = { uid: string };
+type MockAuthReturn = {
+  user: MockUser | null;
+  loading: boolean;
+  signInWithGoogle: () => Promise<void> | void;
+  signOut: () => Promise<void> | void;
+};
+
+// Mock firestore query helpers used by the onboarding gate (first-run check)
+vi.mock("firebase/firestore", async () => {
+  const actual =
+    await vi.importActual<typeof import("firebase/firestore")>(
+      "firebase/firestore",
+    );
+  return {
+    ...actual,
+    collection: vi.fn(),
+    where: vi.fn(),
+    orderBy: vi.fn(),
+    limit: vi.fn(),
+    query: vi.fn(),
+    getDocs: vi.fn(),
+  };
+});
+
+describe("DocumentCreation onboarding", () => {
+  let updateUserProfileSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    updateUserProfileSpy = vi.fn().mockResolvedValue(undefined);
+    expect(vi.isMockFunction(useUserProfile)).toBe(true);
+    const authValue: MockAuthReturn = {
+      user: { uid: "uid-1" },
+      loading: false,
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+    };
+    mockUseAuth.mockReturnValue(
+      authValue as unknown as ReturnType<typeof useAuth>,
+    );
+
+    const addDocument = vi.fn().mockResolvedValue("new-doc-id");
+    mockUseFirestore.mockImplementation((opts: unknown) => {
+      const collectionName =
+        typeof opts === "object" && opts && "collectionName" in opts
+          ? (opts as { collectionName?: string }).collectionName
+          : undefined;
+
+      if (collectionName === "documents") {
+        return {
+          items: [],
+          loading: false,
+          error: null,
+          add: addDocument,
+          update: vi.fn(),
+          remove: vi.fn(),
+          set: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as unknown as ReturnType<typeof useFirestore>;
+      }
+      // customers/items collections
+      return {
+        items: [],
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        set: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as unknown as ReturnType<typeof useFirestore>;
+    });
+
+    mockUseUserProfile.mockReturnValue({
+      profile: { userId: "uid-1", currency: "USD", onboarding: {} } as unknown,
+      loading: false,
+      error: null,
+      updateUserProfile: updateUserProfileSpy,
+    } as unknown as ReturnType<typeof useUserProfile>);
+
+    const { getDocs } = await import("firebase/firestore");
+    (getDocs as unknown as vi.Mock).mockResolvedValue({ docs: [] }); // no documents
+  });
+
+  it("shows first-invoice guide when user has no documents and not dismissed", async () => {
+    render(
+      <BrowserRouter>
+        <DocumentCreation />
+      </BrowserRouter>,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "DismissGuide" }),
+    ).toBeTruthy();
+  });
+
+  it("dismisses guide and persists via updateUserProfile", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    render(
+      <BrowserRouter>
+        <DocumentCreation />
+      </BrowserRouter>,
+    );
+
+    const dismiss = await screen.findByRole("button", { name: "DismissGuide" });
+    expect(dismiss.getAttribute("data-has-dismiss")).toBe("true");
+    expect(typeof capturedDismiss).toBe("function");
+    capturedDismiss?.();
+    await waitFor(() => {
+      expect(updateUserProfileSpy).toHaveBeenCalledWith({
+        onboarding: { createInvoiceDismissed: true },
+      });
+    });
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+});

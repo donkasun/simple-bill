@@ -26,14 +26,16 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
     required,
     style: {
       width: "100%",
-      padding: "12px 16px",
+      boxSizing: "border-box",
+      padding: "var(--field-padding, 12px 16px)",
       border: error
         ? "1px solid var(--brand-danger)"
-        : "1px solid var(--brand-border)",
+        : "1px solid var(--md-outline-variant)",
       borderRadius: "8px",
       outline: "none",
-      background: "var(--white)",
-      fontSize: "1rem",
+      backgroundColor: "var(--white)",
+      fontSize: "var(--text-base)",
+      fontFamily: "inherit",
       transition: "border-color 0.2s ease, box-shadow 0.2s ease",
       ...(children.props?.style || {}),
     },
@@ -41,11 +43,24 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", gap: "8px", ...style }}
+      className="FieldWrapper"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
+        ...style,
+      }}
     >
       {label && (
         <label
-          style={{ fontWeight: "600", color: "var(--brand-text-primary)" }}
+          style={{
+            fontWeight: "600",
+            color: "var(--brand-text-primary)",
+            fontSize: "var(--text-label)",
+          }}
         >
           {label}
           {required && <span style={{ color: "var(--brand-danger)" }}> *</span>}
@@ -57,8 +72,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           id={errorId}
           style={{
             color: "var(--brand-danger)",
-            fontSize: "0.875rem",
+            fontSize: "var(--text-sm)",
             fontWeight: "500",
+            marginTop: "4px",
           }}
         >
           {error}

@@ -1,0 +1,71 @@
+import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+
+import Items from "../../src/pages/Items";
+import { useAuth } from "@auth/useAuth";
+import { useFirestore } from "@hooks/useFirestore";
+import useUserProfile from "@hooks/useUserProfile";
+
+vi.mock("@auth/useAuth");
+vi.mock("@hooks/useFirestore");
+vi.mock("@hooks/useUserProfile", () => ({ default: vi.fn() }));
+vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
+
+const mockUseAuth = useAuth as vi.MockedFunction<typeof useAuth>;
+const mockUseFirestore = useFirestore as vi.MockedFunction<typeof useFirestore>;
+const mockUseUserProfile = useUserProfile as unknown as vi.MockedFunction<
+  typeof useUserProfile
+>;
+
+type MockUser = { uid: string };
+type MockAuthReturn = {
+  user: MockUser | null;
+  loading: boolean;
+  signInWithGoogle: () => Promise<void> | void;
+  signOut: () => Promise<void> | void;
+};
+
+describe("Items empty state", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const authValue: MockAuthReturn = {
+      user: { uid: "uid-1" },
+      loading: false,
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+    };
+    mockUseAuth.mockReturnValue(
+      authValue as unknown as ReturnType<typeof useAuth>,
+    );
+    mockUseUserProfile.mockReturnValue({
+      profile: { userId: "uid-1", currency: "USD" } as unknown,
+      loading: false,
+      error: null,
+      updateUserProfile: vi.fn(),
+    } as unknown as ReturnType<typeof useUserProfile>);
+    mockUseFirestore.mockReturnValue({
+      items: [],
+      loading: false,
+      error: null,
+      add: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+      set: vi.fn(),
+      getById: vi.fn(),
+      getOnce: vi.fn(),
+    } as unknown as ReturnType<typeof useFirestore>);
+  });
+
+  it("shows CTA and opens modal on click", () => {
+    render(<Items />);
+
+    expect(screen.getByText("No items saved yet.")).toBeTruthy();
+
+    const cta = screen.getByRole("button", { name: "Add your first item" });
+    fireEvent.click(cta);
+
+    // ItemModal should open and show its title.
+    expect(screen.getByText("Add Item")).toBeTruthy();
+  });
+});

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import StyledInput from "../core/StyledInput";
 import StyledTextarea from "../core/StyledTextarea";
-import PrimaryButton from "../core/PrimaryButton";
+import Button from "../core/Button";
 
 export type CustomerFormData = {
   name: string;
@@ -27,35 +27,24 @@ const overlayStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   zIndex: 1000,
+  backdropFilter: "blur(2px)",
 };
 
 const modalStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: 480,
-  background: "#fff",
-  border: "1px solid rgba(52,58,64,0.2)",
-  borderRadius: 12,
-  padding: 16,
-  boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+  background: "var(--white)",
+  border: "1px solid var(--brand-border)",
+  borderRadius: 16,
+  padding: 24,
+  boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
 };
 
 const footerStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "flex-end",
-  gap: 8,
-  marginTop: 16,
-};
-
-const headerStyle: React.CSSProperties = {
-  fontSize: 18,
-  fontWeight: 700,
-  marginBottom: 12,
-};
-
-const errorTextStyle: React.CSSProperties = {
-  color: "crimson",
-  fontSize: 13,
-  marginTop: 6,
+  gap: 12,
+  marginTop: 24,
 };
 
 const CustomerModal: React.FC<CustomerModalProps> = ({
@@ -125,29 +114,35 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   return (
     <div style={overlayStyle} role="dialog" aria-modal>
       <div style={modalStyle}>
-        <div style={headerStyle}>{title ?? "Customer"}</div>
+        <h2 className="modal-title">{title ?? "Customer"}</h2>
         <form onSubmit={handleSubmit}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <StyledInput
-              label="Name"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Jane Doe / Acme Corp"
-              required
-              error={errors.name}
-            />
-            {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <StyledInput
+                label="Name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Jane Doe / Acme Corp"
+                required
+                error={errors.name}
+              />
+              {errors.name && <div className="modal-error">{errors.name}</div>}
+            </div>
 
-            <StyledInput
-              label="Email (optional)"
-              type="email"
-              name="email"
-              value={form.email ?? ""}
-              onChange={handleChange}
-              placeholder="billing@example.com"
-            />
-            {errors.email && <div style={errorTextStyle}>{errors.email}</div>}
+            <div>
+              <StyledInput
+                label="Email (optional)"
+                type="email"
+                name="email"
+                value={form.email ?? ""}
+                onChange={handleChange}
+                placeholder="billing@example.com"
+              />
+              {errors.email && (
+                <div className="modal-error">{errors.email}</div>
+              )}
+            </div>
 
             <StyledTextarea
               label="Address"
@@ -158,24 +153,43 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               rows={4}
             />
 
-            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                fontSize: "var(--text-label)",
+                color: "var(--brand-text-secondary)",
+              }}
+            >
               <input
                 type="checkbox"
                 name="showEmail"
                 checked={!!form.showEmail}
                 onChange={handleChange}
+                style={{
+                  width: 16,
+                  height: 16,
+                  accentColor: "var(--brand-primary)",
+                }}
               />
               <span>Show email on invoices/receipts</span>
             </label>
           </div>
 
           <div style={footerStyle}>
-            <button type="button" onClick={onCancel} disabled={submitting}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onCancel}
+              disabled={submitting}
+            >
               Cancel
-            </button>
-            <PrimaryButton type="submit" disabled={submitting}>
+            </Button>
+            <Button type="submit" disabled={submitting}>
               {submitting ? "Saving…" : "Save"}
-            </PrimaryButton>
+            </Button>
           </div>
         </form>
       </div>
