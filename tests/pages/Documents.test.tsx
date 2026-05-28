@@ -1,0 +1,171 @@
+import React from "react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
+import Documents from "../../src/pages/Documents";
+import { useAuth } from "@auth/useAuth";
+import { useFirestore } from "@hooks/useFirestore";
+import { usePageTitle } from "@components/layout/PageTitleContext";
+
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+vi.mock("@firebase/config", () => ({ db: {}, auth: {} }));
+vi.mock("firebase/app", () => ({ initializeApp: vi.fn() }));
+vi.mock("firebase/auth", () => ({
+  initializeAuth: vi.fn(),
+  browserPopupRedirectResolver: {},
+  indexedDBLocalPersistence: {},
+  browserLocalPersistence: {},
+  inMemoryPersistence: {},
+}));
+vi.mock("firebase/firestore", () => ({
+  initializeFirestore: vi.fn(),
+}));
+
+vi.mock("@auth/useAuth");
+vi.mock("@hooks/useFirestore");
+vi.mock("@components/layout/PageTitleContext");
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
+const mockDocuments = [
+  {
+    id: "doc1",
+    type: "invoice",
+    typeLabel: "Invoice",
+    docNumber: "INV-2026-001",
+    date: "2026-05-28",
+    status: "draft",
+    total: 1500,
+    currency: "LKR",
+    customerName: "Don Kasun",
+    customerId: "cust1",
+    items: [],
+    subtotal: 1500,
+    userId: "user1",
+    notes: "",
+    customerDetails: { name: "Don Kasun" },
+    relatedCount: 0,
+    sourceInfo: undefined,
+  },
+  {
+    id: "doc2",
+    type: "quotation",
+    typeLabel: "Quotation",
+    docNumber: "QUO-2026-001",
+    date: "2026-05-27",
+    status: "finalized",
+    total: 6000,
+    currency: "LKR",
+    customerName: "Finlays",
+    customerId: "cust2",
+    items: [],
+    subtotal: 6000,
+    userId: "user1",
+    notes: "",
+    customerDetails: { name: "Finlays" },
+    relatedCount: 0,
+    sourceInfo: undefined,
+  },
+];
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(useAuth).mockReturnValue({
+    user: { uid: "user1", displayName: "Don", email: "d@test.com" } as never,
+    signOut: vi.fn(),
+    loading: false,
+  });
+
+  vi.mocked(useFirestore).mockReturnValue({
+    items: mockDocuments as never,
+    loading: false,
+    error: null,
+    add: vi.fn(),
+    set: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn(),
+    getById: vi.fn(),
+    getOnce: vi.fn(),
+  } as never);
+
+  vi.mocked(usePageTitle).mockImplementation(() => {});
+  mockNavigate.mockReset();
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+describe("Documents page", () => {
+  it("renders page title", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    expect(screen.getByText("Documents")).toBeInTheDocument();
+  });
+
+  it("renders all documents by default", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    expect(screen.getAllByText("Don Kasun").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
+  });
+
+  it("filters to invoices only when Invoices chip clicked", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Invoices" })[0]);
+    expect(screen.getAllByText("Don Kasun").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Finlays")).not.toBeInTheDocument();
+  });
+
+  it("filters to quotations only when Quotations chip clicked", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Quotations" })[0]);
+    expect(screen.queryByText("Don Kasun")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
+  });
+
+  it("shows empty state when filters produce no results", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Paid" })[0]);
+    expect(
+      screen.getByText("No documents match your filters"),
+    ).toBeInTheDocument();
+  });
+
+  it("New invoice button navigates to /documents/new", () => {
+    render(
+      <BrowserRouter>
+        <Documents />
+      </BrowserRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /new invoice/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/documents/new");
+  });
+});
