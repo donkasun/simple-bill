@@ -16,6 +16,7 @@ const Customers = lazy(() => import("./pages/Customers"));
 const Items = lazy(() => import("./pages/Items"));
 const DocumentCreation = lazy(() => import("./pages/DocumentCreation"));
 const DocumentEdit = lazy(() => import("./pages/DocumentEdit"));
+const Documents = lazy(() => import("./pages/Documents"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Settings = lazy(() => import("./pages/Settings"));
 
@@ -43,6 +44,7 @@ function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="documents">
+                  <Route index element={<Documents />} />
                   <Route path="new" element={<DocumentCreation />} />
                   <Route path=":id/edit" element={<DocumentEdit />} />
                 </Route>

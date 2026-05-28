@@ -146,6 +146,7 @@ const AppShell: React.FC = () => {
             {/* Main nav */}
             <nav className="sidebar-nav">
               {navLink("/dashboard", "home", "Home", true)}
+              {navLink("/documents", "receipt_long", "Documents")}
               {navLink("/customers", "group", "Customers")}
               {navLink("/items", "inventory_2", "Products & services")}
               {navLink("/settings", "settings", "Settings")}
