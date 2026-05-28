@@ -243,46 +243,6 @@ const Dashboard: React.FC = () => {
             ),
           )}
 
-          {!quickActionCustomers[0] ? (
-            <button
-              type="button"
-              className="quick-action-card quick-action-card--generic"
-              onClick={() => navigate("/documents/new")}
-            >
-              <span className="material-symbols-outlined quick-action-card__icon">
-                receipt_long
-              </span>
-              <div className="quick-action-card__body">
-                <span className="quick-action-card__name">New invoice</span>
-                <span className="quick-action-card__hint">
-                  Choose any customer
-                </span>
-              </div>
-            </button>
-          ) : null}
-
-          {!quickActionCustomers[1] ? (
-            <button
-              type="button"
-              className="quick-action-card quick-action-card--generic"
-              onClick={() =>
-                navigate("/documents/new", {
-                  state: { documentType: "quotation" },
-                })
-              }
-            >
-              <span className="material-symbols-outlined quick-action-card__icon">
-                request_quote
-              </span>
-              <div className="quick-action-card__body">
-                <span className="quick-action-card__name">New quotation</span>
-                <span className="quick-action-card__hint">
-                  Choose any customer
-                </span>
-              </div>
-            </button>
-          ) : null}
-
           <button
             type="button"
             className="quick-action-card quick-action-card--generic"

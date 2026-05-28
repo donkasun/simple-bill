@@ -152,7 +152,7 @@ const DocumentEdit: React.FC = () => {
         if (!mounted) return;
         setDocumentStatus(data.status);
         setCurrency(data.currency || "USD");
-        // Auto-enter edit mode for drafts; finalized docs are always view-only
+        // Auto-enter edit mode for drafts on /edit URL; finalized docs stay view-only
         setIsEditMode(data.status === "draft");
         const items: LineItem[] = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
