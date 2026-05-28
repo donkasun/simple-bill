@@ -65,6 +65,7 @@ import {
   type ItemUsageMap,
 } from "@utils/itemUsage";
 import { SUPPORTED_CURRENCIES } from "@utils/currency";
+import { recordCustomerBilled } from "@utils/customerUsage";
 
 const DocumentEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -337,6 +338,9 @@ const DocumentEdit: React.FC = () => {
         { subtotal, total },
       );
       await setDocument(id, { ...payload, currency });
+      if (user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
       // Stay in edit mode after saving - don't navigate away
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to save changes";
@@ -451,6 +455,10 @@ const DocumentEdit: React.FC = () => {
       };
 
       await setDocument(id, payload);
+
+      if (user?.uid && state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
 
       // Update local state to reflect the finalized status
       setDocumentStatus("finalized");
