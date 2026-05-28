@@ -106,15 +106,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           color: "var(--brand-text-primary)",
         }}
       >
-        <h3
-          id="confirm-dialog-title"
-          style={{
-            marginTop: 0,
-            marginBottom: "0.5rem",
-            fontSize: "1.25rem",
-            fontWeight: "700",
-          }}
-        >
+        <h3 id="confirm-dialog-title" className="modal-title">
           {title}
         </h3>
         <p

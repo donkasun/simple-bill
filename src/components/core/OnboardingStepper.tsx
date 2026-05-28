@@ -46,7 +46,7 @@ const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
           <div
             style={{
               fontFamily: "var(--font-heading)",
-              fontSize: 18,
+              fontSize: "var(--text-lg)",
               fontWeight: 700,
               marginBottom: 4,
               color: "var(--md-on-surface)",
@@ -57,7 +57,7 @@ const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
           <div
             style={{
               fontFamily: "var(--font-body)",
-              fontSize: 14,
+              fontSize: "var(--text-sm)",
               fontWeight: 700,
               letterSpacing: "0.06em",
               textTransform: "uppercase",

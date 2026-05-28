@@ -21,6 +21,7 @@ type LineItemsTableProps = {
   onSelectItem: (lineId: string, itemId?: string) => void;
   onChange: (lineId: string, changes: Partial<FormLineItem>) => void;
   onRemove: (lineId: string) => void;
+  onAddCatalogItem?: (lineId: string) => void;
 };
 
 const LineItemsTable: React.FC<LineItemsTableProps> = ({
@@ -34,6 +35,7 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onSelectItem,
   onChange,
   onRemove,
+  onAddCatalogItem,
 }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<string | null>(null);
@@ -64,29 +66,29 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
 
   return (
     <>
-      <StyledTable>
+      <StyledTable className="line-items-table">
         <thead>
           <tr>
-            <th style={{ width: "22%" }}>Item</th>
+            <th className="line-items-table__item" style={{ width: "28%" }}>
+              Item
+            </th>
             <th>Description</th>
-            <th className="td-right" style={{ width: 140 }}>
+            <th className="td-right" style={{ width: 120 }}>
               Unit Price
             </th>
-            <th className="td-right" style={{ width: 120 }}>
+            <th className="td-right" style={{ width: 88 }}>
               Qty
             </th>
-            <th className="td-right" style={{ width: 140 }}>
+            <th className="td-right" style={{ width: 120 }}>
               Amount
             </th>
-            <th className="td-right" style={{ width: 90 }}>
-              Actions
-            </th>
+            <th className="td-right line-items-table__actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           {items.map((li) => (
             <tr key={li.id}>
-              <td>
+              <td className="line-items-table__item" data-label="Item">
                 <StyledDropdown
                   value={li.itemId ?? ""}
                   onChange={(e) =>
@@ -131,8 +133,21 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   disabled={!canEdit}
                   error={itemErrors[li.id]?.name}
                 />
+                {canEdit && onAddCatalogItem ? (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    style={{ marginTop: 6 }}
+                    onClick={() => onAddCatalogItem(li.id)}
+                  >
+                    Add new product or service…
+                  </button>
+                ) : null}
               </td>
-              <td>
+              <td
+                className="line-items-table__description"
+                data-label="Description"
+              >
                 <StyledTextarea
                   placeholder="Description"
                   value={li.description}
@@ -142,7 +157,10 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   disabled={!canEdit}
                 />
               </td>
-              <td className="td-right">
+              <td
+                className="td-right line-items-table__numeric"
+                data-label="Unit Price"
+              >
                 <StyledInput
                   type="number"
                   inputMode="decimal"
@@ -162,7 +180,10 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   style={{ textAlign: "right" }}
                 />
               </td>
-              <td className="td-right">
+              <td
+                className="td-right line-items-table__numeric line-items-table__numeric--qty"
+                data-label="Qty"
+              >
                 <StyledInput
                   type="number"
                   inputMode="numeric"
@@ -182,19 +203,29 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   style={{ textAlign: "right" }}
                 />
               </td>
-              <td className="td-right">
-                <span className="td-strong">
+              <td
+                className="td-right line-items-table__amount"
+                data-label="Amount"
+              >
+                <span className="line-items-table__amount-value">
                   {formatCurrency(li.amount, currency)}
                 </span>
               </td>
-              <td className="td-right">
+              <td
+                className="td-right line-items-table__actions"
+                data-label="Actions"
+              >
                 <button
-                  className="link-btn link-danger"
-                  style={{ minHeight: "44px" }}
+                  type="button"
+                  className="icon-btn icon-btn-danger"
+                  aria-label="Remove line item"
+                  title="Remove line item"
                   onClick={() => handleRemoveClick(li.id)}
                   disabled={items.length <= 1 || !canEdit}
                 >
-                  Remove item
+                  <span className="material-symbols-outlined" aria-hidden>
+                    delete
+                  </span>
                 </button>
               </td>
             </tr>

@@ -117,10 +117,7 @@ const AppShell: React.FC = () => {
               style={{ cursor: "pointer" }}
             >
               <div className="brand-logo-box">
-                <span
-                  className="material-symbols-outlined filled"
-                  style={{ fontSize: 22 }}
-                >
+                <span className="material-symbols-outlined filled icon-md">
                   account_balance_wallet
                 </span>
               </div>
@@ -154,16 +151,32 @@ const AppShell: React.FC = () => {
               {navLink("/settings", "settings", "Settings")}
             </nav>
 
-            {/* Collapse (icon + short label on desktop; icon-only when collapsed) */}
+            {/* Collapse: explain in plain language when expanded; icon-only when collapsed */}
             <div className="sidebar-panel-toggle">
               <button
                 type="button"
                 className="sidebar-panel-toggle-btn"
                 onClick={toggleCollapse}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={
+                  collapsed
+                    ? "Show full sidebar with names"
+                    : "Use a smaller sidebar with icons only"
+                }
+                title={
+                  collapsed
+                    ? "Show the full sidebar again with names next to each item"
+                    : "Use a narrow sidebar with icons only so your pages have more room"
+                }
               >
                 <span className="material-symbols-outlined">chevron_left</span>
+                <span className="sidebar-panel-toggle-copy">
+                  <span className="sidebar-panel-toggle-label">
+                    Smaller sidebar
+                  </span>
+                  <span className="sidebar-panel-toggle-sublabel">
+                    Icons only — more room for your work
+                  </span>
+                </span>
               </button>
             </div>
 

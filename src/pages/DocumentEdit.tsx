@@ -53,6 +53,10 @@ import {
   validateFinalize as validateFinalizeShared,
 } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import PageHeader from "@components/layout/PageHeader";
+import CustomerModal from "@components/customers/CustomerModal";
+import ItemModal from "@components/items/ItemModal";
+import { useDocumentCatalogModals } from "@hooks/useDocumentCatalogModals";
 import {
   incrementItemUsage,
   loadItemUsage,
@@ -67,13 +71,20 @@ const DocumentEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
 
-  const { items: customers, loading: loadingCustomers } =
-    useFirestore<Customer>({
-      collectionName: "customers",
-      userId: user?.uid,
-      orderByField: "createdAt",
-    });
-  const { items: itemCatalog, loading: loadingItems } = useFirestore<Item>({
+  const {
+    items: customers,
+    loading: loadingCustomers,
+    add: addCustomer,
+  } = useFirestore<Customer>({
+    collectionName: "customers",
+    userId: user?.uid,
+    orderByField: "createdAt",
+  });
+  const {
+    items: itemCatalog,
+    loading: loadingItems,
+    add: addItem,
+  } = useFirestore<Item>({
     collectionName: "items",
     userId: user?.uid,
     orderByField: "createdAt",
@@ -229,6 +240,26 @@ const DocumentEdit: React.FC = () => {
     [itemCatalog, itemUsage],
   );
   const recentIds = useMemo(() => recentItemIds(itemUsage, 5), [itemUsage]);
+
+  const catalogModals = useDocumentCatalogModals({
+    userId: user?.uid,
+    addCustomer,
+    addItem,
+    onCustomerCreated: (customerId) => {
+      dispatch({
+        type: "SET_FIELD",
+        field: "customerId",
+        value: customerId,
+      });
+    },
+    onItemCreated: (item, lineId) => {
+      if (!lineId) return;
+      if (user?.uid && item.id) {
+        setItemUsage(incrementItemUsage(user.uid, item.id));
+      }
+      dispatch({ type: "SET_ITEM_SELECTION", id: lineId, item });
+    },
+  });
 
   function validateDraft(s: DocumentFormState) {
     return validateDraftShared(s);
@@ -459,59 +490,64 @@ const DocumentEdit: React.FC = () => {
     }
   };
 
-  const headerTitle = canEdit ? "Edit Document" : "View Document";
+  const headerTitle = canEdit ? "Edit document" : "View document";
+  const headerSubtitle = canEdit
+    ? "Update details, then save or download a PDF."
+    : "This document is finalized. Open edit mode to make changes.";
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <div className="container-xl">
-        <div className="page-header">
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
-            {headerTitle}
-          </h2>
-          <div style={{ display: "flex", gap: 8 }}>
-            <SecondaryButton onClick={() => navigate("/dashboard")}>
-              Cancel
-            </SecondaryButton>
+    <>
+      <div className="app-page">
+        <PageHeader
+          toolbar
+          title={headerTitle}
+          subtitle={headerSubtitle}
+          actions={
+            <>
+              <SecondaryButton onClick={() => navigate("/dashboard")}>
+                Cancel
+              </SecondaryButton>
 
-            {canEdit ? (
-              <>
-                <PrimaryButton
-                  onClick={handleSaveChanges}
-                  disabled={saving || finalizing || initializing}
-                >
-                  {saving ? "Saving…" : "Save Changes"}
-                </PrimaryButton>
-                <PrimaryButton
-                  onClick={handleFinalizeAndDownload}
-                  disabled={
-                    saving || finalizing || initializing || finalizeDisabled
-                  }
-                >
-                  {finalizing ? "Finishing…" : "Finish & Save PDF"}
-                </PrimaryButton>
-              </>
-            ) : (
-              <>
-                {documentStatus === "draft" && (
-                  <SecondaryButton
-                    onClick={() => setIsEditMode(true)}
-                    disabled={initializing}
-                  >
-                    Edit Document
-                  </SecondaryButton>
-                )}
-                {state.documentType === "quotation" && (
+              {canEdit ? (
+                <>
                   <PrimaryButton
-                    onClick={handleGenerateInvoice}
-                    disabled={generatingInvoice || initializing}
+                    onClick={handleSaveChanges}
+                    disabled={saving || finalizing || initializing}
                   >
-                    {generatingInvoice ? "Generating…" : "Generate Invoice"}
+                    {saving ? "Saving…" : "Save changes"}
                   </PrimaryButton>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+                  <PrimaryButton
+                    onClick={handleFinalizeAndDownload}
+                    disabled={
+                      saving || finalizing || initializing || finalizeDisabled
+                    }
+                  >
+                    {finalizing ? "Finishing…" : "Finish & download PDF"}
+                  </PrimaryButton>
+                </>
+              ) : (
+                <>
+                  {documentStatus === "draft" && (
+                    <SecondaryButton
+                      onClick={() => setIsEditMode(true)}
+                      disabled={initializing}
+                    >
+                      Edit document
+                    </SecondaryButton>
+                  )}
+                  {state.documentType === "quotation" && (
+                    <PrimaryButton
+                      onClick={handleGenerateInvoice}
+                      disabled={generatingInvoice || initializing}
+                    >
+                      {generatingInvoice ? "Generating…" : "Generate invoice"}
+                    </PrimaryButton>
+                  )}
+                </>
+              )}
+            </>
+          }
+        />
 
         {initializing && <div>Loading document…</div>}
         {loadError && <ErrorBanner>{loadError}</ErrorBanner>}
@@ -644,6 +680,18 @@ const DocumentEdit: React.FC = () => {
                     </option>
                   ))}
                 </StyledDropdown>
+                {canEdit ? (
+                  <div style={{ gridColumn: "1 / -1", marginTop: -4 }}>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={catalogModals.openCustomerModal}
+                      disabled={loadingCustomers}
+                    >
+                      Add new customer…
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -672,6 +720,9 @@ const DocumentEdit: React.FC = () => {
                 onRemove={(lineId) =>
                   dispatch({ type: "REMOVE_LINE_ITEM", id: lineId })
                 }
+                onAddCatalogItem={
+                  canEdit ? catalogModals.openItemModal : undefined
+                }
               />
               <div
                 style={{
@@ -685,22 +736,27 @@ const DocumentEdit: React.FC = () => {
                   onClick={() => dispatch({ type: "ADD_LINE_ITEM" })}
                   disabled={!canEdit}
                 >
-                  Add Line Item
+                  Add line item
                 </SecondaryButton>
+                {canEdit ? (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => catalogModals.openItemModal()}
+                  >
+                    Add product or service…
+                  </button>
+                ) : null}
                 <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
                   <div style={{ textAlign: "right" }}>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      Subtotal
-                    </div>
+                    <div className="muted">Subtotal</div>
                     <div className="td-strong">
                       {formatCurrency(subtotal, currency)}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      Total
-                    </div>
-                    <div className="td-strong" style={{ fontSize: 18 }}>
+                    <div className="muted">Total</div>
+                    <div className="td-strong text-total">
                       {formatCurrency(total, currency)}
                     </div>
                   </div>
@@ -726,7 +782,22 @@ const DocumentEdit: React.FC = () => {
           </>
         )}
       </div>
-    </div>
+
+      <CustomerModal
+        open={catalogModals.customerModalOpen}
+        title="Add customer"
+        submitting={catalogModals.customerSubmitting}
+        onSubmit={catalogModals.handleCustomerSubmit}
+        onCancel={catalogModals.closeCustomerModal}
+      />
+      <ItemModal
+        open={catalogModals.itemModalOpen}
+        title="Add product or service"
+        submitting={catalogModals.itemSubmitting}
+        onSubmit={catalogModals.handleItemSubmit}
+        onCancel={catalogModals.closeItemModal}
+      />
+    </>
   );
 };
 

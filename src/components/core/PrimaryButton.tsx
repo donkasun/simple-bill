@@ -16,7 +16,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       className={`btn-primary ${className || ""}`}
       style={{
         padding: "0 24px",
-        fontSize: "1rem",
+        fontSize: "var(--text-base)",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

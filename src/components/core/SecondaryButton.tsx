@@ -16,7 +16,7 @@ const SecondaryButton: React.FC<SecondaryButtonProps> = ({
       className={`btn-secondary ${className || ""}`}
       style={{
         padding: "0 24px",
-        fontSize: "1rem",
+        fontSize: "var(--text-base)",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

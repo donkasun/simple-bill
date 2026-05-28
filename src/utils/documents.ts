@@ -14,13 +14,13 @@ export function selectCustomerDetails(
   customerId?: string,
 ): DocumentEntity["customerDetails"] {
   const selected = customers.find((c) => c.id === customerId);
-  return selected
-    ? {
-        name: selected.name,
-        email: selected.email || undefined,
-        address: selected.address || undefined,
-      }
-    : undefined;
+  if (!selected) return undefined;
+  const details: NonNullable<DocumentEntity["customerDetails"]> = {
+    name: selected.name,
+  };
+  if (selected.email) details.email = selected.email;
+  if (selected.address) details.address = selected.address;
+  return details;
 }
 
 export function buildDuplicatePayload(

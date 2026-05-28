@@ -275,7 +275,7 @@ describe("Dashboard", () => {
           "Let's create your first one! It only takes a minute to get started.",
         ),
       ).toBeTruthy();
-      expect(screen.getByText("Create First Invoice")).toBeTruthy();
+      expect(screen.getByText("Create first invoice")).toBeTruthy();
     });
 
     it("should navigate to document creation when clicking CTA button in empty state", () => {
@@ -292,7 +292,7 @@ describe("Dashboard", () => {
       renderDashboard();
 
       const ctaButtons = screen.getAllByRole("button", {
-        name: "Create First Invoice",
+        name: "Create first invoice",
       });
       fireEvent.click(ctaButtons[0]);
 

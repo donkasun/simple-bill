@@ -39,6 +39,7 @@ import {
 } from "@hooks/useDocumentForm";
 import { validateDraft, validateFinalize } from "@utils/documentValidation";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import PageHeader from "@components/layout/PageHeader";
 import useUserProfile from "@hooks/useUserProfile";
 import { db } from "../firebase/config";
 import { todayIso } from "@utils/date";
@@ -52,6 +53,9 @@ import {
 } from "@utils/itemUsage";
 import { SUPPORTED_CURRENCIES } from "@utils/currency";
 import OnboardingStepper from "@components/core/OnboardingStepper";
+import ItemModal from "@components/items/ItemModal";
+import CustomerModal from "@components/customers/CustomerModal";
+import { useDocumentCatalogModals } from "@hooks/useDocumentCatalogModals";
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
@@ -59,13 +63,20 @@ const DocumentCreation: React.FC = () => {
   const { user } = useAuth();
   const { profile, updateUserProfile } = useUserProfile();
 
-  const { items: customers, loading: loadingCustomers } =
-    useFirestore<Customer>({
-      collectionName: "customers",
-      userId: user?.uid,
-      orderByField: "createdAt",
-    });
-  const { items: itemCatalog, loading: loadingItems } = useFirestore<Item>({
+  const {
+    items: customers,
+    loading: loadingCustomers,
+    add: addCustomer,
+  } = useFirestore<Customer>({
+    collectionName: "customers",
+    userId: user?.uid,
+    orderByField: "createdAt",
+  });
+  const {
+    items: itemCatalog,
+    loading: loadingItems,
+    add: addItem,
+  } = useFirestore<Item>({
     collectionName: "items",
     userId: user?.uid,
     orderByField: "createdAt",
@@ -180,6 +191,27 @@ const DocumentCreation: React.FC = () => {
     selectItemById(lineId, itemId);
     if (user?.uid && itemId) setItemUsage(incrementItemUsage(user.uid, itemId));
   };
+
+  const catalogModals = useDocumentCatalogModals({
+    userId: user?.uid,
+    addCustomer,
+    addItem,
+    onCustomerCreated: (customerId) => {
+      dispatch({
+        type: "SET_FIELD",
+        field: "customerId",
+        value: customerId,
+      });
+    },
+    onItemCreated: (item, lineId) => {
+      if (lineId) {
+        dispatch({ type: "SET_ITEM_SELECTION", id: lineId, item });
+        if (item.id && user?.uid) {
+          setItemUsage(incrementItemUsage(user.uid, item.id));
+        }
+      }
+    },
+  });
 
   const handleCopyFromPrevious = async () => {
     if (!user?.uid) return;
@@ -397,39 +429,41 @@ const DocumentCreation: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <div className="container-xl">
-        <div className="page-header">
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>
-            Create Document
-          </h2>
-          <div style={{ display: "flex", gap: 8 }}>
-            <SecondaryButton onClick={() => navigate("/dashboard")}>
-              Cancel
-            </SecondaryButton>
-            <SecondaryButton
-              onClick={handleCopyFromPrevious}
-              disabled={prefilling || saving || finalizing}
-              aria-disabled={prefilling || saving || finalizing}
-            >
-              {prefilling ? "Copying…" : "Copy from previous"}
-            </SecondaryButton>
-            <PrimaryButton
-              onClick={handleSaveDraft}
-              disabled={saving || finalizing}
-              aria-disabled={saving || finalizing}
-            >
-              {saving ? "Saving…" : "Save Draft"}
-            </PrimaryButton>
-            <PrimaryButton
-              onClick={handleFinalizeAndDownload}
-              disabled={saving || finalizing || finalizeDisabled}
-              aria-disabled={saving || finalizing || finalizeDisabled}
-            >
-              {finalizing ? "Finalizing…" : "Finalize & Download PDF"}
-            </PrimaryButton>
-          </div>
-        </div>
+    <>
+      <div className="app-page">
+        <PageHeader
+          toolbar
+          title="New invoice or quote"
+          subtitle="Fill in the details below, then save a draft or download a PDF."
+          actions={
+            <>
+              <SecondaryButton onClick={() => navigate("/dashboard")}>
+                Cancel
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={handleCopyFromPrevious}
+                disabled={prefilling || saving || finalizing}
+                aria-disabled={prefilling || saving || finalizing}
+              >
+                {prefilling ? "Copying…" : "Copy from previous"}
+              </SecondaryButton>
+              <PrimaryButton
+                onClick={handleSaveDraft}
+                disabled={saving || finalizing}
+                aria-disabled={saving || finalizing}
+              >
+                {saving ? "Saving…" : "Save draft"}
+              </PrimaryButton>
+              <PrimaryButton
+                onClick={handleFinalizeAndDownload}
+                disabled={saving || finalizing || finalizeDisabled}
+                aria-disabled={saving || finalizing || finalizeDisabled}
+              >
+                {finalizing ? "Finalizing…" : "Finalize & download PDF"}
+              </PrimaryButton>
+            </>
+          }
+        />
 
         {saveError && <ErrorBanner>{saveError}</ErrorBanner>}
         {finalizeError && <ErrorBanner>{finalizeError}</ErrorBanner>}
@@ -507,10 +541,8 @@ const DocumentCreation: React.FC = () => {
             </StyledDropdown>
             <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
               <div
-                style={{
-                  fontSize: 13,
-                  color: "var(--md-on-surface-variant)",
-                }}
+                className="text-xs"
+                style={{ color: "var(--md-on-surface-variant)" }}
               >
                 Use <strong>Quotation</strong> when you’re proposing work. Use{" "}
                 <strong>Invoice</strong> when you’re billing for payment.
@@ -590,12 +622,20 @@ const DocumentCreation: React.FC = () => {
                 </option>
               ))}
             </StyledDropdown>
+            <div style={{ gridColumn: "1 / -1", marginTop: -4 }}>
+              <button
+                type="button"
+                className="link-btn"
+                onClick={catalogModals.openCustomerModal}
+                disabled={loadingCustomers}
+              >
+                Add new customer…
+              </button>
+            </div>
             <div style={{ marginTop: -8, gridColumn: "1 / -1" }}>
               <div
-                style={{
-                  fontSize: 13,
-                  color: "var(--md-on-surface-variant)",
-                }}
+                className="text-xs"
+                style={{ color: "var(--md-on-surface-variant)" }}
               >
                 Drafts stay editable. Finalized documents generate a PDF for
                 sharing.
@@ -616,6 +656,7 @@ const DocumentCreation: React.FC = () => {
             onSelectItem={handleSelectItem}
             onChange={changeLine}
             onRemove={removeLine}
+            onAddCatalogItem={catalogModals.openItemModal}
           />
           <div
             style={{
@@ -626,22 +667,25 @@ const DocumentCreation: React.FC = () => {
             }}
           >
             <SecondaryButton onClick={handleAddRow}>
-              Add Line Item
+              Add line item
             </SecondaryButton>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => catalogModals.openItemModal()}
+            >
+              Add product or service…
+            </button>
             <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
               <div style={{ textAlign: "right" }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Subtotal
-                </div>
+                <div className="muted">Subtotal</div>
                 <div className="td-strong">
                   {formatCurrency(subtotal, currency)}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Total
-                </div>
-                <div className="td-strong" style={{ fontSize: 18 }}>
+                <div className="muted">Total</div>
+                <div className="td-strong text-total">
                   {formatCurrency(total, currency)}
                 </div>
               </div>
@@ -664,7 +708,22 @@ const DocumentCreation: React.FC = () => {
           />
         </div>
       </div>
-    </div>
+
+      <CustomerModal
+        open={catalogModals.customerModalOpen}
+        title="Add customer"
+        submitting={catalogModals.customerSubmitting}
+        onSubmit={catalogModals.handleCustomerSubmit}
+        onCancel={catalogModals.closeCustomerModal}
+      />
+      <ItemModal
+        open={catalogModals.itemModalOpen}
+        title="Add product or service"
+        submitting={catalogModals.itemSubmitting}
+        onSubmit={catalogModals.handleItemSubmit}
+        onCancel={catalogModals.closeItemModal}
+      />
+    </>
   );
 };
 

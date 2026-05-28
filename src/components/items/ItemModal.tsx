@@ -47,21 +47,6 @@ const footerStyle: React.CSSProperties = {
   marginTop: 24,
 };
 
-const headerStyle: React.CSSProperties = {
-  fontFamily: "var(--font-heading)",
-  fontSize: 20,
-  fontWeight: 700,
-  marginBottom: 20,
-  color: "var(--brand-text-primary)",
-};
-
-const errorTextStyle: React.CSSProperties = {
-  color: "var(--brand-danger)",
-  fontSize: 13,
-  marginTop: 6,
-  fontWeight: 500,
-};
-
 const ItemModal: React.FC<ItemModalProps> = ({
   open,
   title,
@@ -126,7 +111,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
   return (
     <div style={overlayStyle} role="dialog" aria-modal>
       <div style={modalStyle}>
-        <div style={headerStyle}>{title ?? "Item"}</div>
+        <h2 className="modal-title">{title ?? "Item"}</h2>
         <form onSubmit={handleSubmit}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
@@ -138,7 +123,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 placeholder="Service or product name"
                 required
               />
-              {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
+              {errors.name && <div className="modal-error">{errors.name}</div>}
             </div>
 
             <div>
@@ -154,7 +139,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 required
               />
               {errors.unitPrice && (
-                <div style={errorTextStyle}>{errors.unitPrice}</div>
+                <div className="modal-error">{errors.unitPrice}</div>
               )}
             </div>
 

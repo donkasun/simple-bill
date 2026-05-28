@@ -8,6 +8,7 @@ import CustomerModal, {
 import ConfirmDialog from "@components/core/ConfirmDialog";
 import type { Customer } from "../types/customer";
 import { usePageTitle } from "@components/layout/PageTitleContext";
+import PageHeader from "@components/layout/PageHeader";
 
 const Customers: React.FC = () => {
   usePageTitle("Customers");
@@ -95,213 +96,194 @@ const Customers: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <div className="container-xl">
+    <div className="app-page">
+      <PageHeader
+        title="Customers"
+        subtitle="The people and businesses you bill."
+        actions={
+          <PrimaryButton onClick={handleAddClick}>Add customer</PrimaryButton>
+        }
+      />
+
+      {loading && (
         <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            marginBottom: "1.5rem",
-          }}
+          style={{ color: "var(--brand-text-secondary)", padding: "2rem 0" }}
         >
-          <div>
-            <h1
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "1.75rem",
-                fontWeight: 700,
-                color: "var(--brand-text-primary)",
-                margin: "0 0 4px",
-              }}
-            >
-              Your customers
-            </h1>
-            <p
-              style={{
-                color: "var(--brand-text-secondary)",
-                margin: 0,
-                fontSize: "0.9rem",
-              }}
-            >
-              The people and businesses you bill.
-            </p>
-          </div>
-          <PrimaryButton onClick={handleAddClick}>+ Add customer</PrimaryButton>
+          Loading customers…
         </div>
+      )}
+      {(error || pageError) && (
+        <div
+          role="alert"
+          style={{ color: "var(--brand-danger)", marginBottom: "1rem" }}
+        >
+          {error || pageError}
+        </div>
+      )}
 
-        {loading && (
-          <div
-            style={{ color: "var(--brand-text-secondary)", padding: "2rem 0" }}
-          >
-            Loading customers…
-          </div>
-        )}
-        {(error || pageError) && (
-          <div
-            role="alert"
-            style={{ color: "var(--brand-danger)", marginBottom: "1rem" }}
-          >
-            {error || pageError}
-          </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            {items.length > 0 ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.5rem",
-                }}
-              >
-                {items.map((c) => (
+      {!loading && !error && (
+        <>
+          {items.length > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
+              {items.map((c) => (
+                <div
+                  key={c.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem",
+                    background: "var(--white)",
+                    border: "1px solid var(--brand-border)",
+                    borderRadius: "12px",
+                    padding: "0.875rem 1.25rem",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  }}
+                >
+                  {/* Avatar */}
                   <div
-                    key={c.id}
                     style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      background: "var(--brand-background)",
+                      color: "var(--brand-primary)",
                       display: "flex",
                       alignItems: "center",
-                      gap: "1rem",
-                      background: "var(--white)",
-                      border: "1px solid var(--brand-border)",
-                      borderRadius: "12px",
-                      padding: "0.875rem 1.25rem",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                      flexShrink: 0,
                     }}
                   >
-                    {/* Avatar */}
+                    {c.name[0]?.toUpperCase() ?? "?"}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "50%",
-                        background: "var(--brand-background)",
-                        color: "var(--brand-primary)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 700,
-                        fontSize: "1rem",
-                        flexShrink: 0,
+                        fontWeight: 600,
+                        color: "var(--brand-text-primary)",
+                        fontSize: "0.95rem",
                       }}
                     >
-                      {c.name[0]?.toUpperCase() ?? "?"}
+                      {c.name}
                     </div>
-
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    {c.addressDisplay && c.addressDisplay !== "-" && (
                       <div
                         style={{
-                          fontWeight: 600,
-                          color: "var(--brand-text-primary)",
-                          fontSize: "0.95rem",
+                          fontSize: "0.8rem",
+                          color: "var(--brand-text-muted)",
+                          marginTop: 2,
                         }}
                       >
-                        {c.name}
+                        {c.addressDisplay}
                       </div>
-                      {c.addressDisplay && c.addressDisplay !== "-" && (
-                        <div
-                          style={{
-                            fontSize: "0.8rem",
-                            color: "var(--brand-text-muted)",
-                            marginTop: 2,
-                          }}
-                        >
-                          {c.addressDisplay}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="actions" style={{ flexShrink: 0 }}>
-                      <button
-                        className="link-btn"
-                        style={{ minHeight: "44px" }}
-                        onClick={() => handleEditClick(c)}
-                      >
-                        Edit
-                      </button>
-                      <span style={{ color: "var(--brand-border)" }}>|</span>
-                      <button
-                        className="link-btn link-danger"
-                        style={{ minHeight: "44px" }}
-                        disabled={deletingId === c.id}
-                        onClick={() => c.id && handleDeleteClick(c.id)}
-                      >
-                        {deletingId === c.id ? "Deleting…" : "Delete"}
-                      </button>
-                    </div>
+                    )}
                   </div>
-                ))}
+
+                  {/* Actions */}
+                  <div className="list-row-actions">
+                    <button
+                      type="button"
+                      className="link-btn"
+                      style={{ minHeight: "44px" }}
+                      onClick={() => handleEditClick(c)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn-danger"
+                      aria-label={
+                        deletingId === c.id
+                          ? "Deleting customer"
+                          : "Delete customer"
+                      }
+                      title="Delete customer"
+                      disabled={deletingId === c.id}
+                      onClick={() => c.id && handleDeleteClick(c.id)}
+                    >
+                      <span className="material-symbols-outlined" aria-hidden>
+                        delete
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: "3rem 2rem",
+                textAlign: "center",
+                border: "2px dashed var(--brand-border)",
+                borderRadius: "12px",
+              }}
+            >
+              <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>
+                👥
               </div>
-            ) : (
               <div
                 style={{
-                  padding: "3rem 2rem",
-                  textAlign: "center",
-                  border: "2px dashed var(--brand-border)",
-                  borderRadius: "12px",
+                  fontWeight: 700,
+                  fontSize: "1.1rem",
+                  color: "var(--brand-text-primary)",
+                  marginBottom: "0.5rem",
                 }}
               >
-                <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>
-                  👥
-                </div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "1.1rem",
-                    color: "var(--brand-text-primary)",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  Grow your list
-                </div>
-                <div
-                  style={{
-                    color: "var(--brand-text-secondary)",
-                    fontSize: "0.9rem",
-                    marginBottom: "1.25rem",
-                  }}
-                >
-                  Every great business starts with a customer. Add your first
-                  one to begin invoicing.
-                </div>
-                <PrimaryButton onClick={handleAddClick}>
-                  Add your first customer
-                </PrimaryButton>
+                Grow your list
               </div>
-            )}
-          </>
-        )}
-        <ConfirmDialog
-          isOpen={confirmOpen}
-          title="Delete Customer"
-          message="Are you sure you want to delete this customer? This action cannot be undone."
-          confirmLabel="Delete"
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setConfirmOpen(false)}
-          danger
-        />
+              <div
+                style={{
+                  color: "var(--brand-text-secondary)",
+                  fontSize: "0.9rem",
+                  marginBottom: "1.25rem",
+                }}
+              >
+                Every great business starts with a customer. Add your first one
+                to begin invoicing.
+              </div>
+              <PrimaryButton onClick={handleAddClick}>
+                Add your first customer
+              </PrimaryButton>
+            </div>
+          )}
+        </>
+      )}
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title="Delete Customer"
+        message="Are you sure you want to delete this customer? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmOpen(false)}
+        danger
+      />
 
-        <CustomerModal
-          open={modalOpen}
-          title={editingCustomer ? "Edit Customer" : "Add Customer"}
-          initial={
-            editingCustomer
-              ? {
-                  name: editingCustomer.name,
-                  email: editingCustomer.email,
-                  address: editingCustomer.address,
-                  showEmail: editingCustomer.showEmail,
-                }
-              : undefined
-          }
-          submitting={modalSubmitting}
-          onSubmit={handleSubmit}
-          onCancel={() => setModalOpen(false)}
-        />
-      </div>
+      <CustomerModal
+        open={modalOpen}
+        title={editingCustomer ? "Edit Customer" : "Add Customer"}
+        initial={
+          editingCustomer
+            ? {
+                name: editingCustomer.name,
+                email: editingCustomer.email,
+                address: editingCustomer.address,
+                showEmail: editingCustomer.showEmail,
+              }
+            : undefined
+        }
+        submitting={modalSubmitting}
+        onSubmit={handleSubmit}
+        onCancel={() => setModalOpen(false)}
+      />
     </div>
   );
 };
