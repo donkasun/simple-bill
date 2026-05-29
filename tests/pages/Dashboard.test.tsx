@@ -54,6 +54,13 @@ vi.mock("@utils/pdf", () => ({
 vi.mock("@utils/download", () => ({
   downloadBlob: vi.fn(),
 }));
+vi.mock("@utils/docNumber", () => ({
+  allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-002"),
+}));
+vi.mock("@utils/documents", () => ({
+  buildDuplicatePayload: vi.fn().mockReturnValue({ type: "invoice" }),
+  getDocumentFilename: vi.fn().mockReturnValue("invoice"),
+}));
 
 const mockUseAuth = useAuth as vi.MockedFunction<typeof useAuth>;
 const mockUseFirestore = useFirestore as vi.MockedFunction<typeof useFirestore>;
@@ -463,6 +470,138 @@ describe("Dashboard", () => {
       renderDashboard();
 
       expect(mockUsePageTitle).toHaveBeenCalledWith("Home");
+    });
+  });
+
+  describe("Financial summary strip", () => {
+    it("shows outstanding, paid this month, and draft count", () => {
+      renderDashboard();
+
+      const strip = screen.getByRole("region", { name: "Financial summary" });
+      expect(within(strip).getByText("Awaiting payment")).toBeTruthy();
+      expect(within(strip).getByText(/\$5,500/)).toBeTruthy();
+      expect(within(strip).getByText("Paid this month")).toBeTruthy();
+      expect(within(strip).getByText(/\$0/)).toBeTruthy();
+      expect(within(strip).getByText("Drafts")).toBeTruthy();
+      expect(within(strip).getByText("1")).toBeTruthy();
+    });
+
+    it("navigates to draft documents when clicking drafts summary", () => {
+      renderDashboard();
+
+      const strip = screen.getByRole("region", { name: "Financial summary" });
+      fireEvent.click(within(strip).getByRole("button", { name: /drafts/i }));
+
+      expect(mockNavigate).toHaveBeenCalledWith("/documents?status=draft");
+    });
+  });
+
+  describe("Recent documents list", () => {
+    it("shows at most five document cards when more exist", () => {
+      const manyDocs = Array.from({ length: 10 }, (_, i) => ({
+        id: `doc-${i}`,
+        type: "invoice" as const,
+        typeLabel: "Invoice",
+        docNumber: `INV-2024-${String(i).padStart(3, "0")}`,
+        date: "2024-01-15",
+        customerName: `Customer ${i}`,
+        total: 100,
+        currency: "USD",
+        status: "draft" as const,
+        relatedCount: 0,
+        sourceInfo: undefined,
+      }));
+
+      mockUseFirestore.mockImplementation(() => {
+        firestoreCallCount++;
+        if (firestoreCallCount === 2) {
+          return {
+            items: [] as never,
+            loading: false,
+            error: null,
+            add: vi.fn(),
+            set: vi.fn(),
+            update: vi.fn(),
+            remove: vi.fn(),
+            getById: vi.fn(),
+            getOnce: vi.fn(),
+          } as never;
+        }
+        return {
+          items: manyDocs as never,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          set: vi.fn(),
+          update: updateSpy as never,
+          remove: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as never;
+      });
+
+      const { container } = renderDashboard();
+
+      expect(container.querySelectorAll(".doc-card")).toHaveLength(5);
+    });
+  });
+
+  describe("Duplicate error handling", () => {
+    it("shows mutation error banner when duplicate fails", async () => {
+      const addReject = vi
+        .fn()
+        .mockRejectedValue(new Error("Duplicate failed"));
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      mockUseFirestore.mockImplementation(() => {
+        firestoreCallCount++;
+        if (firestoreCallCount === 2) {
+          return {
+            items: [] as never,
+            loading: false,
+            error: null,
+            add: vi.fn(),
+            set: vi.fn(),
+            update: vi.fn(),
+            remove: vi.fn(),
+            getById: vi.fn(),
+            getOnce: vi.fn(),
+          } as never;
+        }
+        return {
+          items: mockDocuments as never,
+          loading: false,
+          error: null,
+          add: addReject,
+          set: vi.fn(),
+          update: updateSpy as never,
+          remove: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as never;
+      });
+
+      renderDashboard();
+
+      const acmeCard = screen.getByText("Acme Corp").closest(".doc-card");
+      const menu = (acmeCard as HTMLElement).querySelector(
+        'summary[aria-label="More document actions"]',
+      );
+      fireEvent.click(menu as Element);
+      fireEvent.click(
+        within(acmeCard as HTMLElement).getByRole("button", {
+          name: "Duplicate",
+        }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("Duplicate failed")).toBeTruthy();
+        expect(consoleError).toHaveBeenCalled();
+      });
+
+      consoleError.mockRestore();
     });
   });
 });

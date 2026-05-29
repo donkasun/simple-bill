@@ -17,4 +17,4 @@
 - Supported document currencies: USD, LKR, EUR, GBP, AUD, CAD (`SUPPORTED_CURRENCIES` in `src/utils/currency.ts`).
 - In-app pages use a shared layout: `.app-page` (1024px centered column) and `PageHeader` for titles.
 - Sidebar follows invoice-first Layout A: New invoice CTA, then Home, Customers, Products & services, and Settings.
-- Dashboard route orchestration uses `src/hooks/pages/use<Route>Page.ts` with thin views in `src/pages/`; Customers pilot is `useCustomersPage` (rollout: Items, Documents, Dashboard, then document create/edit).
+- Dashboard route orchestration uses `src/hooks/pages/use<Route>Page.ts` with thin views in `src/pages/`; list routes use `useCustomersPage`, `useItemsPage`, `useDocumentsPage`, and `useDashboardPage` with shared `useDocumentMutations` for document card actions; next rollout target is document create/edit (`useDocumentPage`).
