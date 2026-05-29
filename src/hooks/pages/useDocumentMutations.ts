@@ -111,6 +111,7 @@ export function useDocumentMutations({
   );
 
   const download = useCallback(async (doc: DocumentEntity) => {
+    setMutationError(null);
     setDownloadingId(doc.id ?? null);
     try {
       const { generateDocumentPdf } = await import("../../utils/pdf");
@@ -126,6 +127,10 @@ export function useDocumentMutations({
       });
       const filename = `${getDocumentFilename(doc.type, doc.docNumber, doc.date)}.pdf`;
       downloadBlob(filename, pdfBytes, "application/pdf");
+    } catch (e: unknown) {
+      setMutationError(
+        e instanceof Error ? e.message : "Failed to download PDF",
+      );
     } finally {
       setDownloadingId(null);
     }
@@ -133,10 +138,15 @@ export function useDocumentMutations({
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirmId) return;
+    setMutationError(null);
     setDeletingId(deleteConfirmId);
     setDeleteConfirmId(null);
     try {
       await remove(deleteConfirmId);
+    } catch (e: unknown) {
+      setMutationError(
+        e instanceof Error ? e.message : "Failed to delete document",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -144,6 +154,7 @@ export function useDocumentMutations({
 
   const handleConfirmMarkPaid = useCallback(async () => {
     if (!markPaidConfirmId) return;
+    setMutationError(null);
     setMarkingPaidId(markPaidConfirmId);
     setMarkPaidConfirmId(null);
     try {
@@ -151,6 +162,10 @@ export function useDocumentMutations({
         status: "paid",
         paidAt: new Date(),
       });
+    } catch (e: unknown) {
+      setMutationError(
+        e instanceof Error ? e.message : "Failed to mark as paid",
+      );
     } finally {
       setMarkingPaidId(null);
     }
@@ -158,6 +173,7 @@ export function useDocumentMutations({
 
   const handleConfirmMarkUnpaid = useCallback(async () => {
     if (!markUnpaidConfirmId) return;
+    setMutationError(null);
     setMarkingUnpaidId(markUnpaidConfirmId);
     setMarkUnpaidConfirmId(null);
     try {
@@ -165,6 +181,10 @@ export function useDocumentMutations({
         status: "finalized",
         paidAt: null,
       });
+    } catch (e: unknown) {
+      setMutationError(
+        e instanceof Error ? e.message : "Failed to mark as unpaid",
+      );
     } finally {
       setMarkingUnpaidId(null);
     }
@@ -185,13 +205,13 @@ export function useDocumentMutations({
       markUnpaidId: markUnpaidConfirmId,
     },
     actions: {
-      requestDelete: setDeleteConfirmId,
+      requestDelete: (id: string) => setDeleteConfirmId(id),
       confirmDelete: handleConfirmDelete,
       cancelDelete: () => setDeleteConfirmId(null),
-      requestMarkPaid: setMarkPaidConfirmId,
+      requestMarkPaid: (id: string) => setMarkPaidConfirmId(id),
       confirmMarkPaid: handleConfirmMarkPaid,
       cancelMarkPaid: () => setMarkPaidConfirmId(null),
-      requestMarkUnpaid: setMarkUnpaidConfirmId,
+      requestMarkUnpaid: (id: string) => setMarkUnpaidConfirmId(id),
       confirmMarkUnpaid: handleConfirmMarkUnpaid,
       cancelMarkUnpaid: () => setMarkUnpaidConfirmId(null),
       duplicate,
