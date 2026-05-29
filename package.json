@@ -13,6 +13,7 @@
   },
   "homepage": "https://github.com/donkasun/simple-bill#readme",
   "type": "module",
+  "packageManager": "pnpm@10.11.1",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -55,6 +56,13 @@
     "typescript-eslint": "^8.39.0",
     "vite": "^7.1.0",
     "vitest": "^2.0.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@firebase/util",
+      "esbuild",
+      "protobufjs"
+    ]
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

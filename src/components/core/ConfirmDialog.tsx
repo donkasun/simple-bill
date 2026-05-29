@@ -152,7 +152,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               backgroundColor: danger
                 ? "var(--brand-danger)"
                 : "var(--brand-primary)",
-              color: "white",
+              color: danger ? "white" : "var(--md-on-primary)",
               fontWeight: "600",
               cursor: "pointer",
               minHeight: "44px",
