@@ -1,6 +1,13 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+  cleanup,
+} from "@testing-library/react";
 
 import Items from "../../src/pages/Items";
 import { useAuth } from "@auth/useAuth";
@@ -26,7 +33,13 @@ type MockAuthReturn = {
   signOut: () => Promise<void> | void;
 };
 
-describe("Items empty state", () => {
+describe("Items", () => {
+  const remove = vi.fn().mockResolvedValue(undefined);
+
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     const authValue: MockAuthReturn = {
@@ -50,7 +63,7 @@ describe("Items empty state", () => {
       error: null,
       add: vi.fn(),
       update: vi.fn(),
-      remove: vi.fn(),
+      remove,
       set: vi.fn(),
       getById: vi.fn(),
       getOnce: vi.fn(),
@@ -67,5 +80,152 @@ describe("Items empty state", () => {
 
     // ItemModal should open and show its title.
     expect(screen.getByText("Add Item")).toBeTruthy();
+  });
+
+  it("renders items table", () => {
+    mockUseFirestore.mockReturnValue({
+      items: [
+        {
+          id: "it-1",
+          userId: "uid-1",
+          name: "Design work",
+          unitPrice: 1200,
+          unitPriceLabel: "$1,200.00",
+          description: "Per hour",
+        },
+      ],
+      loading: false,
+      error: null,
+      add: vi.fn(),
+      update: vi.fn(),
+      remove,
+      set: vi.fn(),
+      getById: vi.fn(),
+      getOnce: vi.fn(),
+    } as unknown as ReturnType<typeof useFirestore>);
+
+    render(<Items />);
+
+    expect(screen.getByRole("columnheader", { name: "Name" })).toBeTruthy();
+    expect(
+      screen.getByRole("columnheader", { name: "Unit Price" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("columnheader", { name: "Description" }),
+    ).toBeTruthy();
+
+    expect(screen.getByText("Design work")).toBeTruthy();
+    expect(screen.getByText("$1,200.00")).toBeTruthy();
+    expect(screen.getByText("Per hour")).toBeTruthy();
+  });
+
+  it("opens add modal from header CTA", () => {
+    render(<Items />);
+
+    const headerActions = document.querySelector(".page-header__actions");
+    expect(headerActions).toBeTruthy();
+    fireEvent.click(
+      within(headerActions as HTMLElement).getByRole("button", {
+        name: "Add item",
+      }),
+    );
+
+    expect(screen.getByText("Add Item")).toBeTruthy();
+  });
+
+  it("opens delete confirm and calls remove on confirm", async () => {
+    mockUseFirestore.mockReturnValue({
+      items: [
+        {
+          id: "it-1",
+          userId: "uid-1",
+          name: "Design work",
+          unitPrice: 1200,
+          unitPriceLabel: "$1,200.00",
+          description: "Per hour",
+        },
+      ],
+      loading: false,
+      error: null,
+      add: vi.fn(),
+      update: vi.fn(),
+      remove,
+      set: vi.fn(),
+      getById: vi.fn(),
+      getOnce: vi.fn(),
+    } as unknown as ReturnType<typeof useFirestore>);
+
+    render(<Items />);
+
+    const row = screen.getByText("Design work").closest("tr");
+    expect(row).toBeTruthy();
+    fireEvent.click(
+      within(row as HTMLElement).getByRole("button", { name: "Delete item" }),
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Delete Item" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(remove).toHaveBeenCalledWith("it-1");
+    });
+  });
+
+  it("shows firestore error in alert", () => {
+    mockUseFirestore.mockReturnValue({
+      items: [],
+      loading: false,
+      error: "Failed to load items",
+      add: vi.fn(),
+      update: vi.fn(),
+      remove,
+      set: vi.fn(),
+      getById: vi.fn(),
+      getOnce: vi.fn(),
+    } as unknown as ReturnType<typeof useFirestore>);
+
+    render(<Items />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Failed to load items");
+  });
+
+  it("shows page error after failed delete", async () => {
+    remove.mockRejectedValueOnce(new Error("Network down"));
+
+    mockUseFirestore.mockReturnValue({
+      items: [
+        {
+          id: "it-1",
+          userId: "uid-1",
+          name: "Design work",
+          unitPrice: 1200,
+          unitPriceLabel: "$1,200.00",
+          description: "Per hour",
+        },
+      ],
+      loading: false,
+      error: null,
+      add: vi.fn(),
+      update: vi.fn(),
+      remove,
+      set: vi.fn(),
+      getById: vi.fn(),
+      getOnce: vi.fn(),
+    } as unknown as ReturnType<typeof useFirestore>);
+
+    render(<Items />);
+
+    fireEvent.click(
+      within(
+        screen.getByText("Design work").closest("tr") as HTMLElement,
+      ).getByRole("button", { name: "Delete item" }),
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Delete Item" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Network down");
+    });
   });
 });
