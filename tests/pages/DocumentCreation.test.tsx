@@ -1,6 +1,7 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { cleanup } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 
 import DocumentCreation from "../../src/pages/DocumentCreation";
@@ -12,6 +13,15 @@ vi.mock("@auth/useAuth");
 vi.mock("@hooks/useFirestore");
 vi.mock("@hooks/useUserProfile", () => ({ default: vi.fn() }));
 vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+vi.mock("@utils/docNumber", () => ({
+  allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-001"),
+}));
 
 let capturedDismiss: undefined | (() => void);
 vi.mock("@components/core/OnboardingStepper", () => ({
@@ -58,6 +68,10 @@ vi.mock("firebase/firestore", async () => {
 
 describe("DocumentCreation onboarding", () => {
   let updateUserProfileSpy: ReturnType<typeof vi.fn>;
+
+  afterEach(() => {
+    cleanup();
+  });
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -151,5 +165,81 @@ describe("DocumentCreation onboarding", () => {
     });
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+});
+
+describe("DocumentCreation actions", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+
+    mockUseAuth.mockReturnValue({
+      user: { uid: "uid-1" },
+      loading: false,
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+    } as unknown as ReturnType<typeof useAuth>);
+
+    const addDocument = vi.fn().mockResolvedValue("new-doc-id");
+    mockUseFirestore.mockImplementation((opts: unknown) => {
+      const collectionName =
+        typeof opts === "object" && opts && "collectionName" in opts
+          ? (opts as { collectionName?: string }).collectionName
+          : undefined;
+      if (collectionName === "documents") {
+        return {
+          items: [],
+          loading: false,
+          error: null,
+          add: addDocument,
+          update: vi.fn(),
+          remove: vi.fn(),
+          set: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as unknown as ReturnType<typeof useFirestore>;
+      }
+      return {
+        items: [{ id: "c1", name: "Acme", userId: "uid-1" }],
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        set: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as unknown as ReturnType<typeof useFirestore>;
+    });
+
+    mockUseUserProfile.mockReturnValue({
+      profile: { userId: "uid-1", currency: "USD", onboarding: {} } as unknown,
+      loading: false,
+      error: null,
+      updateUserProfile: vi.fn(),
+    } as unknown as ReturnType<typeof useUserProfile>);
+
+    const { getDocs } = await import("firebase/firestore");
+    (getDocs as unknown as vi.Mock).mockResolvedValue({
+      docs: [{ id: "prev" }],
+    });
+  });
+
+  it("save draft navigates to dashboard after add", async () => {
+    render(
+      <BrowserRouter>
+        <DocumentCreation />
+      </BrowserRouter>,
+    );
+
+    await screen.findByRole("button", { name: "Save draft" });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    });
   });
 });

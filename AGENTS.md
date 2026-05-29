@@ -5,7 +5,8 @@
 - When executing milestone plans, do not edit the plan file; use the existing todos and mark progress there.
 - Prefer Playwright with mock user mode for local UI smoke verification.
 - Delegate narrow, spec-driven work to Jules using handoff docs under `docs/jules/`; keep design-system and ambiguous UX work in Cursor.
-- When refactoring dashboard routes, pilot one route with a reusable pattern before rolling out; prefer custom page hooks over parallel logic/UI file pairs.
+- When refactoring dashboard routes, pilot one route with a reusable pattern before rolling out; prefer custom page hooks over parallel logic/UI file pairs; extract shared hooks only after a second route needs the same behavior.
+- For diff-tab commit-and-push actions, commit only the explicitly listed staged files; treat that list as authoritative and do not stage additional files.
 - For route refactors, add characterization page tests before changing behavior when page coverage is missing.
 
 ## Learned Workspace Facts
@@ -17,4 +18,4 @@
 - Supported document currencies: USD, LKR, EUR, GBP, AUD, CAD (`SUPPORTED_CURRENCIES` in `src/utils/currency.ts`).
 - In-app pages use a shared layout: `.app-page` (1024px centered column) and `PageHeader` for titles.
 - Sidebar follows invoice-first Layout A: New invoice CTA, then Home, Customers, Products & services, and Settings.
-- Dashboard route orchestration uses `src/hooks/pages/use<Route>Page.ts` with thin views in `src/pages/`; list routes use `useCustomersPage`, `useItemsPage`, `useDocumentsPage`, and `useDashboardPage` with shared `useDocumentMutations` for document card actions; next rollout target is document create/edit (`useDocumentPage`).
+- Dashboard route orchestration uses `src/hooks/pages/use<Route>Page.ts` with thin views in `src/pages/`; list routes use `useCustomersPage`, `useItemsPage`, `useDocumentsPage`, and `useDashboardPage` with shared `useDocumentMutations` for document card actions; document create/edit use shared `useDocumentPage` with `DocumentEditorForm`; Settings uses `useSettingsPage`.

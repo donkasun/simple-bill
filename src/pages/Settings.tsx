@@ -1,23 +1,13 @@
 import React from "react";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import PageHeader from "@components/layout/PageHeader";
-import useUserProfile from "../hooks/useUserProfile";
-import StyledDropdown from "../components/core/StyledDropdown";
-import { useTheme } from "../hooks/useTheme";
-import { SUPPORTED_CURRENCIES } from "@utils/currency";
+import SettingsCurrencyCard from "@components/settings/SettingsCurrencyCard";
+import SettingsThemeCard from "@components/settings/SettingsThemeCard";
+import { useSettingsPage } from "@hooks/pages/useSettingsPage";
 
 const Settings: React.FC = () => {
   usePageTitle("Settings");
-  const { profile, loading, error, updateUserProfile } = useUserProfile();
-  const { theme, setTheme, resolvedTheme } = useTheme();
-
-  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    updateUserProfile({ currency: e.target.value });
-  };
-
-  const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setTheme(e.target.value as "light" | "dark" | "system");
-  };
+  const vm = useSettingsPage();
 
   return (
     <div className="app-page">
@@ -26,10 +16,10 @@ const Settings: React.FC = () => {
         subtitle="Currency, appearance, and other defaults."
       />
 
-      {loading && <p>Loading settings...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {vm.loading && <p>Loading settings...</p>}
+      {vm.error && <p style={{ color: "red" }}>{vm.error}</p>}
 
-      {profile && (
+      {vm.profile && (
         <div
           style={{
             display: "grid",
@@ -38,85 +28,15 @@ const Settings: React.FC = () => {
             marginTop: "1rem",
           }}
         >
-          {/* First Column - Currency Settings */}
-          <div
-            style={{
-              padding: "1.5rem",
-              backgroundColor: "var(--white)",
-              borderRadius: "8px",
-              border: "1px solid var(--brand-border)",
-            }}
-          >
-            <h2 className="page-card-title">Currency</h2>
-            <div>
-              <label
-                htmlFor="currency-select"
-                style={{
-                  display: "block",
-                  marginBottom: "0.5rem",
-                  fontWeight: "500",
-                }}
-              >
-                Global Currency:
-              </label>
-              <StyledDropdown
-                id="currency-select"
-                value={profile.currency}
-                onChange={handleCurrencyChange}
-                style={{ width: "100%" }}
-              >
-                {SUPPORTED_CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </StyledDropdown>
-            </div>
-          </div>
-
-          {/* Second Column - Theme Settings */}
-          <div
-            style={{
-              padding: "1.5rem",
-              backgroundColor: "var(--white)",
-              borderRadius: "8px",
-              border: "1px solid var(--brand-border)",
-            }}
-          >
-            <h2 className="page-card-title">Appearance</h2>
-            <div>
-              <label
-                htmlFor="theme-select"
-                style={{
-                  display: "block",
-                  marginBottom: "0.5rem",
-                  fontWeight: "500",
-                }}
-              >
-                Theme:
-              </label>
-              <StyledDropdown
-                id="theme-select"
-                value={theme}
-                onChange={handleThemeChange}
-                style={{ width: "100%" }}
-              >
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="system">System</option>
-              </StyledDropdown>
-              <p
-                style={{
-                  color: "var(--brand-text-secondary)",
-                  margin: "0.5rem 0 0 0",
-                  fontSize: "0.875rem",
-                }}
-              >
-                Current:{" "}
-                {theme === "system" ? `${resolvedTheme} (system)` : theme}
-              </p>
-            </div>
-          </div>
+          <SettingsCurrencyCard
+            currency={vm.profile.currency ?? "USD"}
+            onChange={vm.actions.setCurrency}
+          />
+          <SettingsThemeCard
+            theme={vm.theme}
+            resolvedTheme={vm.resolvedTheme}
+            onChange={vm.actions.setTheme}
+          />
         </div>
       )}
     </div>
