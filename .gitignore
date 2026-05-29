@@ -31,3 +31,6 @@ dist-ssr
 # Claude Code tooling
 .claude/
 .superpowers/
+
+# Superpowers agent plans and specs (local)
+docs/superpowers/
