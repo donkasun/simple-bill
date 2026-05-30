@@ -508,7 +508,7 @@ const Landing = () => {
             <div
               className="bento-card-narrow"
               style={{
-                backgroundColor: "var(--md-primary-container)",
+                backgroundColor: "var(--md-surface-container-highest)",
                 borderRadius: "1.5rem",
                 padding: "2rem",
                 display: "flex",
@@ -521,7 +521,7 @@ const Landing = () => {
                 style={{
                   width: "48px",
                   height: "48px",
-                  backgroundColor: "rgba(255,255,255,0.3)",
+                  backgroundColor: "var(--md-surface-container-high)",
                   borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
@@ -530,7 +530,10 @@ const Landing = () => {
               >
                 <span
                   className="material-symbols-outlined"
-                  style={{ color: "#ffffff", fontSize: "26px" }}
+                  style={{
+                    color: "var(--md-on-surface-variant)",
+                    fontSize: "26px",
+                  }}
                 >
                   group
                 </span>
@@ -541,7 +544,7 @@ const Landing = () => {
                     fontFamily: "var(--font-heading)",
                     fontSize: "var(--text-lg)",
                     fontWeight: 700,
-                    color: "#ffffff",
+                    color: "var(--md-on-surface)",
                     margin: "0 0 0.5rem",
                   }}
                 >
@@ -550,8 +553,7 @@ const Landing = () => {
                 <p
                   style={{
                     fontSize: "var(--text-sm)",
-                    color: "#ffffff",
-                    opacity: 0.8,
+                    color: "var(--md-on-surface-variant)",
                     lineHeight: 1.6,
                     margin: 0,
                   }}
