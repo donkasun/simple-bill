@@ -1,15 +1,10 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import AppShell from "@components/layout/AppShell";
 import ProtectedRoute from "@components/core/ProtectedRoute";
 import ErrorBoundary from "@components/core/ErrorBoundary";
 import { ThemeProvider } from "./contexts";
-const Login = lazy(() => import("./pages/Login"));
+const Landing = lazy(() => import("./pages/Landing"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Dashboard = lazy(() => import("./pages/dashboard"));
 const Customers = lazy(() => import("./pages/Customers"));
@@ -27,17 +22,15 @@ function App() {
         <ErrorBoundary>
           <Suspense fallback={<div style={{ padding: "1rem" }}>Loading…</div>}>
             <Routes>
-              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<Landing />} />
               <Route path="/terms" element={<Terms />} />
               <Route
-                path="/"
                 element={
                   <ProtectedRoute>
                     <AppShell />
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="customers" element={<Customers />} />
                 <Route path="items" element={<Items />} />
