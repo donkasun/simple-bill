@@ -1,18 +1,18 @@
 :root {
   /* Simple Humanist Design System Tokens */
-  --brand-primary: #0f5238;
-  --brand-primary-hover: #0a3d29;
+  --brand-primary: #0e5138;
+  --brand-primary-hover: #002114;
   --brand-background: #f5f5f0;
   --white: #ffffff;
   --brand-border: #d4d4c8;
   --brand-text-primary: #1a1a1a;
   --brand-text-secondary: #6b6b6b;
   --brand-text-muted: #9b9b9b;
-  --brand-danger: #c0392b;
-  --brand-success: #27ae60;
+  --brand-danger: #ba1a1a;
+  --brand-success: #309860;
   --brand-warning: #f39c12;
 
-  /* MD3 Design tokens (from Stitch export) */
+  /* MD3 Design tokens (from Stitch export — Emerald Green Update) */
   --md-surface: #f8f9fa;
   --md-surface-container-low: #f3f4f5;
   --md-surface-container: #edeeef;
@@ -23,26 +23,29 @@
   --md-on-surface-variant: #404943;
   --md-outline: #707973;
   --md-outline-variant: #bfc9c1;
-  --md-primary: #0f5238;
-  --md-primary-hover: #0a3d29;
+  --md-primary: #0e5138;
+  --md-primary-hover: #002114;
   --md-on-primary: #ffffff;
-  --md-primary-container: #2d6a4f;
-  --md-on-primary-container: #a8e7c5;
+  --md-primary-container: #309860;
+  --md-on-primary-container: #002114;
   --md-secondary-container: #a3d8fe;
   --md-on-secondary-container: #255f80;
   --md-secondary: #2b6485;
+  --md-secondary-mid: #5ba3cc;
 
   /* Legacy aliases */
   --brand-bg: var(--brand-background);
-  --green-light: #e6f7f1;
+  --green-light: #dff5ea;
+  --green-mid: #95d4b3;
   --green-dark: var(--brand-success);
+  --features-glow: rgba(123, 209, 167, 0.7);
   --orange-light: #fff4e5;
   --orange-dark: var(--brand-warning);
 
   /* Quick-action customer card hover — light green bg, dark text (light theme) */
-  --quick-action-customer-hover-bg: #d4f0e5;
-  --quick-action-customer-hover-text: #0d2b1c;
-  --quick-action-customer-hover-text-muted: #1e4d35;
+  --quick-action-customer-hover-bg: #b1f0ce;
+  --quick-action-customer-hover-text: #002114;
+  --quick-action-customer-hover-text-muted: #0e5138;
 
   --avatar-size: 36px;
   --round-button-size: 36px;
@@ -128,12 +131,17 @@
   --md-outline: #8a9388;
   --md-outline-variant: #3f4945;
 
+  /* Legacy aliases (dark mode) */
+  --green-light: #0d2b1e;
+  --green-mid: #2d5a3d;
+  --features-glow: rgba(90, 206, 164, 0.22);
+
   /* MD3 primary tokens */
   --md-primary: #5acea4;
   --md-primary-hover: #4ab88f;
-  --md-on-primary: #003828;
-  --md-primary-container: #1a4f3a;
-  --md-on-primary-container: #78deb6;
+  --md-on-primary: #002114;
+  --md-primary-container: #1e5d3b;
+  --md-on-primary-container: #95d4b3;
 
   /* Keep legacy brand aliases in sync for links and accents */
   --brand-primary: var(--md-primary);
@@ -143,11 +151,12 @@
   --md-secondary-container: #1b3d52;
   --md-on-secondary-container: #9ecff0;
   --md-secondary: #7bbcdc;
+  --md-secondary-mid: #4a8fb5;
 
   /* Quick-action customer card hover — lighter green bg, dark text (dark theme) */
-  --quick-action-customer-hover-bg: #3d8a5e;
-  --quick-action-customer-hover-text: #0d2b1c;
-  --quick-action-customer-hover-text-muted: #1a3d28;
+  --quick-action-customer-hover-bg: #2d7a4f;
+  --quick-action-customer-hover-text: #dff5ea;
+  --quick-action-customer-hover-text-muted: #95d4b3;
 }
 
 /* Native form controls respect dark mode */
@@ -2102,7 +2111,7 @@ textarea {
   font-weight: 600;
 }
 .status-finalized {
-  background: #e6f7f1;
+  background: #dff5ea;
   color: var(--brand-success);
 }
 .status-draft {

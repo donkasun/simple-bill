@@ -8,6 +8,8 @@
 - When refactoring dashboard routes, pilot one route with a reusable pattern before rolling out; prefer custom page hooks over parallel logic/UI file pairs; extract shared hooks only after a second route needs the same behavior.
 - For diff-tab commit-and-push actions, commit only the explicitly listed staged files; treat that list as authoritative and do not stage additional files.
 - For route refactors, add characterization page tests before changing behavior when page coverage is missing.
+- On the public landing page, avoid empty section placeholders; defer a Product showcase until real screenshots exist.
+- Landing page visual work should follow Stitch design references in `docs/landing-page-stitch-brief.md` and `screenshots/stitch-*.png`.
 
 ## Learned Workspace Facts
 
@@ -19,3 +21,5 @@
 - In-app pages use a shared layout: `.app-page` (1024px centered column) and `PageHeader` for titles.
 - Sidebar follows invoice-first Layout A: New invoice CTA, then Home, Customers, Products & services, and Settings.
 - Dashboard route orchestration uses `src/hooks/pages/use<Route>Page.ts` with thin views in `src/pages/`; list routes use `useCustomersPage`, `useItemsPage`, `useDocumentsPage`, and `useDashboardPage` with shared `useDocumentMutations` for document card actions; document create/edit use shared `useDocumentPage` with `DocumentEditorForm`; Settings uses `useSettingsPage`.
+- App defines 10 routable screens in `App.tsx` (Login, Terms, and eight authenticated routes under `AppShell`); `/` redirects to `/dashboard` with no separate document view route.
+- Public landing page is `src/pages/Landing.tsx` (outside `AppShell`): hero, marquee, features bento, how-it-works, and closing CTA.
