@@ -184,9 +184,9 @@ export default function DisintegratingText({
     const evaluate = () => {
       const y = window.scrollY || window.pageYOffset || 0;
       let want = targetRef.current;
-      if (y > 8)
-        want = 1; // dissolve as soon as the user scrolls
-      else if (y <= 2) want = 0; // reform only back at the very top
+      if (y > 40)
+        want = 1; // dissolve after scrolling ~40px
+      else if (y <= 10) want = 0; // reform near the top
       if (want !== targetRef.current) setTarget(want as 0 | 1);
     };
 
