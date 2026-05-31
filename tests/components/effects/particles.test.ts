@@ -40,9 +40,12 @@ describe("createParticles", () => {
   });
 
   it("places home positions in CSS pixels (device / dpr)", () => {
-    const data = row([255, 0, 0, 0]);
+    // dpr=2, gap=1 -> stepDevice = round(1*2) = 2, so x=0 and x=2 are sampled.
+    // Only x=2 is opaque; its CSS home must be 2/2 = 1 (not 2).
+    const data = row([0, 0, 255, 0]);
     const ps = createParticles(data, 4, 1, { ...opts, dpr: 2 });
-    expect(ps[0].homeX).toBe(0);
+    expect(ps).toHaveLength(1);
+    expect(ps[0].homeX).toBe(1);
     expect(ps[0].homeY).toBe(0);
   });
 
