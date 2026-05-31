@@ -123,7 +123,7 @@ const Landing = () => {
         flexDirection: "column",
       }}
     >
-      {/* Cursor-following glow (page-wide overlay) */}
+      {/* Cursor-following glow (behind page content) */}
       <div
         aria-hidden
         style={{
@@ -139,208 +139,218 @@ const Landing = () => {
           transform: `translate(${glow.x - 250}px, ${glow.y - 250}px)`,
           transition: "transform 0.15s ease-out, opacity 0.3s ease",
           pointerEvents: "none",
-          zIndex: 90,
+          zIndex: 0,
           willChange: "transform",
         }}
       />
 
-      {/* ── Nav ─────────────────────────────────────── */}
-      <nav
+      <div
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          alignItems: "center",
-          padding: "0 2rem",
-          height: "64px",
-          backgroundColor: scrolled ? "rgba(248,249,250,0.88)" : "transparent",
-          backdropFilter: scrolled ? "blur(12px)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
-          borderBottom: scrolled
-            ? "1px solid var(--md-outline-variant)"
-            : "1px solid transparent",
-          transition:
-            "background-color 0.25s ease, border-color 0.25s ease, backdrop-filter 0.25s ease",
-        }}
-      >
-        {/* Logo */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            justifySelf: "start",
-          }}
-        >
-          <span
-            className="material-symbols-outlined filled"
-            style={{ fontSize: "24px", color: "var(--md-primary-container)" }}
-          >
-            account_balance_wallet
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontWeight: 800,
-              fontSize: "var(--text-lg)",
-              color: "var(--md-primary-container)",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            SimpleBill
-          </span>
-        </div>
-
-        {/* Centre nav links */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.25rem",
-            justifySelf: "center",
-          }}
-        >
-          {NAV_LINKS.map(({ label, href, id }) => {
-            const isActive = activeSection === id;
-            return (
-              <a
-                key={href}
-                href={href}
-                style={{
-                  padding: "0.375rem 0.875rem",
-                  fontSize: "var(--text-base)",
-                  fontWeight: isActive ? 700 : 400,
-                  color: isActive
-                    ? "var(--md-primary-container)"
-                    : "var(--md-on-surface-variant)",
-                  textDecoration: "none",
-                  borderBottom: isActive
-                    ? "2px solid var(--md-primary-container)"
-                    : "2px solid transparent",
-                  lineHeight: "1.5",
-                }}
-              >
-                {label}
-              </a>
-            );
-          })}
-        </div>
-
-        {/* Right CTA */}
-        <div style={{ justifySelf: "end" }}>
-          {user ? (
-            <Link to="/dashboard" style={ctaBtnStyle("sm")}>
-              Go to app
-            </Link>
-          ) : (
-            <button onClick={signInWithGoogle} style={ctaBtnStyle("sm")}>
-              <GoogleIcon />
-              Sign in with Google
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* ── Hero ────────────────────────────────────── */}
-      <main
-        style={{
+          position: "relative",
+          zIndex: 1,
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "5rem 1.5rem",
-          textAlign: "center",
-          gap: "1.75rem",
-          maxWidth: "760px",
-          margin: "0 auto",
-          width: "100%",
+          minHeight: "100dvh",
         }}
       >
-        {/* Eyebrow */}
-        <p
+        {/* ── Nav ─────────────────────────────────────── */}
+        <nav
           style={{
-            margin: 0,
-            fontSize: "var(--text-sm)",
-            fontWeight: 500,
-            color: "var(--md-on-surface-variant)",
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
+            position: "sticky",
+            top: 0,
+            zIndex: 100,
+            display: "grid",
+            gridTemplateColumns: "1fr auto 1fr",
+            alignItems: "center",
+            padding: "0 2rem",
+            height: "64px",
+            backgroundColor: scrolled
+              ? "rgba(248,249,250,0.88)"
+              : "transparent",
+            backdropFilter: scrolled ? "blur(12px)" : "none",
+            WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
+            borderBottom: scrolled
+              ? "1px solid var(--md-outline-variant)"
+              : "1px solid transparent",
+            transition:
+              "background-color 0.25s ease, border-color 0.25s ease, backdrop-filter 0.25s ease",
           }}
         >
-          Originally built for my dad, who'd never call himself a "computer
-          person."
-        </p>
+          {/* Logo */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              justifySelf: "start",
+            }}
+          >
+            <span
+              className="material-symbols-outlined filled"
+              style={{ fontSize: "24px", color: "var(--md-primary-container)" }}
+            >
+              account_balance_wallet
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 800,
+                fontSize: "var(--text-lg)",
+                color: "var(--md-primary-container)",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              SimpleBill
+            </span>
+          </div>
 
-        <h1
-          ref={heroRef}
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "clamp(2.25rem, 6vw, 3.75rem)",
-            fontWeight: 800,
-            lineHeight: 1.1,
-            margin: 0,
-            color: "var(--md-on-surface)",
-          }}
-        >
-          Make an invoice.{" "}
-          <DisintegratingText
-            text="Then forget about it."
-            color="var(--md-primary-container)"
-            triggerRef={heroRef}
-          />
-        </h1>
+          {/* Centre nav links */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25rem",
+              justifySelf: "center",
+            }}
+          >
+            {NAV_LINKS.map(({ label, href, id }) => {
+              const isActive = activeSection === id;
+              return (
+                <a
+                  key={href}
+                  href={href}
+                  style={{
+                    padding: "0.375rem 0.875rem",
+                    fontSize: "var(--text-base)",
+                    fontWeight: isActive ? 700 : 400,
+                    color: isActive
+                      ? "var(--md-primary-container)"
+                      : "var(--md-on-surface-variant)",
+                    textDecoration: "none",
+                    borderBottom: isActive
+                      ? "2px solid var(--md-primary-container)"
+                      : "2px solid transparent",
+                    lineHeight: "1.5",
+                  }}
+                >
+                  {label}
+                </a>
+              );
+            })}
+          </div>
 
-        <p
-          style={{
-            fontSize: "var(--text-lg)",
-            color: "var(--md-on-surface-variant)",
-            maxWidth: "540px",
-            lineHeight: 1.65,
-            margin: 0,
-          }}
-        >
-          SimpleBill helps you bill your regular clients in a few calm taps.
-          Create an invoice or quote, add your items, send a clean PDF.
-        </p>
+          {/* Right CTA */}
+          <div style={{ justifySelf: "end" }}>
+            {user ? (
+              <Link to="/dashboard" style={ctaBtnStyle("sm")}>
+                Go to app
+              </Link>
+            ) : (
+              <button onClick={signInWithGoogle} style={ctaBtnStyle("sm")}>
+                <GoogleIcon />
+                Sign in with Google
+              </button>
+            )}
+          </div>
+        </nav>
 
-        <div
+        {/* ── Hero ────────────────────────────────────── */}
+        <main
           style={{
+            flex: 1,
             display: "flex",
-            gap: "0.75rem",
-            flexWrap: "wrap",
+            flexDirection: "column",
+            alignItems: "center",
             justifyContent: "center",
+            padding: "5rem 1.5rem",
+            textAlign: "center",
+            gap: "1.75rem",
+            maxWidth: "760px",
+            margin: "0 auto",
+            width: "100%",
           }}
         >
-          {user ? (
-            <Link to="/dashboard" style={ctaBtnStyle("md")}>
-              Go to app
-            </Link>
-          ) : (
-            <button onClick={signInWithGoogle} style={ctaBtnStyle("md")}>
-              <GoogleIcon />
-              Sign in with Google
-            </button>
-          )}
-          <a href="#how-it-works" style={outlineBtnStyle("md")}>
-            See how it works
-          </a>
-        </div>
-      </main>
+          {/* Eyebrow */}
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--text-sm)",
+              fontWeight: 500,
+              color: "var(--md-on-surface-variant)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            Originally built for my dad, who'd never call himself a "computer
+            person."
+          </p>
 
-      {/* ── Features bento grid ──────────────────── */}
-      <section
-        id="features"
-        style={{
-          padding: "5rem 1.5rem",
-          backgroundColor: "var(--green-light)",
-          position: "relative",
-          zIndex: 91,
-        }}
-      >
-        <style>{`
+          <h1
+            ref={heroRef}
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "clamp(2.25rem, 6vw, 3.75rem)",
+              fontWeight: 800,
+              lineHeight: 1.1,
+              margin: 0,
+              color: "var(--md-on-surface)",
+            }}
+          >
+            Make an invoice.{" "}
+            <DisintegratingText
+              text="Then forget about it."
+              color="var(--md-primary-container)"
+              triggerRef={heroRef}
+            />
+          </h1>
+
+          <p
+            style={{
+              fontSize: "var(--text-lg)",
+              color: "var(--md-on-surface-variant)",
+              maxWidth: "540px",
+              lineHeight: 1.65,
+              margin: 0,
+            }}
+          >
+            SimpleBill helps you bill your regular clients in a few calm taps.
+            Create an invoice or quote, add your items, send a clean PDF.
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "0.75rem",
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            {user ? (
+              <Link to="/dashboard" style={ctaBtnStyle("md")}>
+                Go to app
+              </Link>
+            ) : (
+              <button onClick={signInWithGoogle} style={ctaBtnStyle("md")}>
+                <GoogleIcon />
+                Sign in with Google
+              </button>
+            )}
+            <a href="#how-it-works" style={outlineBtnStyle("md")}>
+              See how it works
+            </a>
+          </div>
+        </main>
+
+        {/* ── Features bento grid ──────────────────── */}
+        <section
+          id="features"
+          style={{
+            padding: "5rem 1.5rem",
+            backgroundColor: "var(--green-light)",
+          }}
+        >
+          <style>{`
           .bento-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
@@ -410,423 +420,426 @@ const Landing = () => {
           .bento-card-4:hover .bento-c4-body { color: var(--md-surface); }
         `}</style>
 
-        <div
-          style={{
-            maxWidth: "1100px",
-            margin: "0 auto",
-            width: "100%",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          {/* Section header */}
-          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-            <p
-              style={{
-                margin: "0 0 0.75rem",
-                fontSize: "var(--text-sm)",
-                fontWeight: 600,
-                color: "var(--md-primary-container)",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-              }}
-            >
-              Features
-            </p>
-            <h2
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
-                fontWeight: 800,
-                margin: "0 0 0.75rem",
-                color: "var(--md-on-surface)",
-              }}
-            >
-              Everything you need
-            </h2>
-            <p
-              style={{
-                fontSize: "var(--text-base)",
-                color: "var(--md-on-surface-variant)",
-                maxWidth: "440px",
-                margin: "0 auto",
-                lineHeight: 1.6,
-              }}
-            >
-              Simple tools built for how you actually work.
-            </p>
-          </div>
-
-          {/* Grid */}
-          <div className="bento-grid">
-            {/* Card 1 — Invoices & Quotations (wide) */}
-            <div
-              className="bento-card-wide bento-card-1"
-              style={{
-                borderRadius: "1.5rem",
-                padding: "2.5rem",
-                position: "relative",
-                overflow: "hidden",
-                minHeight: "280px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              <div style={{ maxWidth: "320px", zIndex: 1 }}>
-                <h3
-                  className="bento-c1-heading"
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "var(--text-xl)",
-                    fontWeight: 700,
-                    margin: "0 0 0.75rem",
-                  }}
-                >
-                  Invoices &amp; Quotations
-                </h3>
-                <p
-                  className="bento-c1-body"
-                  style={{
-                    fontSize: "var(--text-base)",
-                    lineHeight: 1.6,
-                    margin: "0 0 1.5rem",
-                  }}
-                >
-                  Convert quotes to professional invoices with one click. Custom
-                  branding included.
-                </p>
-                <button className="bento-c1-btn" style={ctaBtnStyle("sm")}>
-                  Explore features
-                </button>
-              </div>
-
-              {/* Mini invoice mockup */}
-              <div
-                className="bento-c1-mockup"
+          <div
+            style={{
+              maxWidth: "1100px",
+              margin: "0 auto",
+              width: "100%",
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            {/* Section header */}
+            <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+              <p
                 style={{
-                  position: "absolute",
-                  right: "2rem",
-                  top: "50%",
-                  width: "192px",
-                  backgroundColor: "var(--md-surface-container-lowest)",
-                  borderRadius: "12px",
-                  padding: "1.125rem",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.10)",
-                  border: "1px solid var(--md-outline-variant)",
+                  margin: "0 0 0.75rem",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 600,
+                  color: "var(--md-primary-container)",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "8px",
-                        fontWeight: 700,
-                        color: "var(--md-outline)",
-                        letterSpacing: "0.1em",
-                        textTransform: "uppercase",
-                        marginBottom: "2px",
-                      }}
-                    >
-                      Invoice
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        color: "var(--md-on-surface)",
-                      }}
-                    >
-                      #INV-0042
-                    </div>
-                  </div>
-                  <div
+                Features
+              </p>
+              <h2
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
+                  fontWeight: 800,
+                  margin: "0 0 0.75rem",
+                  color: "var(--md-on-surface)",
+                }}
+              >
+                Everything you need
+              </h2>
+              <p
+                style={{
+                  fontSize: "var(--text-base)",
+                  color: "var(--md-on-surface-variant)",
+                  maxWidth: "440px",
+                  margin: "0 auto",
+                  lineHeight: 1.6,
+                }}
+              >
+                Simple tools built for how you actually work.
+              </p>
+            </div>
+
+            {/* Grid */}
+            <div className="bento-grid">
+              {/* Card 1 — Invoices & Quotations (wide) */}
+              <div
+                className="bento-card-wide bento-card-1"
+                style={{
+                  borderRadius: "1.5rem",
+                  padding: "2.5rem",
+                  position: "relative",
+                  overflow: "hidden",
+                  minHeight: "280px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div style={{ maxWidth: "320px", zIndex: 1 }}>
+                  <h3
+                    className="bento-c1-heading"
                     style={{
-                      backgroundColor: "var(--md-primary-container)",
-                      color: "#fff",
-                      fontSize: "8px",
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "var(--text-xl)",
                       fontWeight: 700,
-                      padding: "2px 8px",
-                      borderRadius: "999px",
-                      letterSpacing: "0.04em",
+                      margin: "0 0 0.75rem",
                     }}
                   >
-                    PAID
-                  </div>
+                    Invoices &amp; Quotations
+                  </h3>
+                  <p
+                    className="bento-c1-body"
+                    style={{
+                      fontSize: "var(--text-base)",
+                      lineHeight: 1.6,
+                      margin: "0 0 1.5rem",
+                    }}
+                  >
+                    Convert quotes to professional invoices with one click.
+                    Custom branding included.
+                  </p>
+                  <button className="bento-c1-btn" style={ctaBtnStyle("sm")}>
+                    Explore features
+                  </button>
                 </div>
-                {[
-                  ["Design work", "LKR 45,000"],
-                  ["Dev hours × 8", "LKR 32,000"],
-                  ["Domain renewal", "LKR 3,500"],
-                ].map(([label, amount]) => (
+
+                {/* Mini invoice mockup */}
+                <div
+                  className="bento-c1-mockup"
+                  style={{
+                    position: "absolute",
+                    right: "2rem",
+                    top: "50%",
+                    width: "192px",
+                    backgroundColor: "var(--md-surface-container-lowest)",
+                    borderRadius: "12px",
+                    padding: "1.125rem",
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.10)",
+                    border: "1px solid var(--md-outline-variant)",
+                  }}
+                >
                   <div
-                    key={label}
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      marginBottom: "5px",
+                      alignItems: "flex-start",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "8px",
+                          fontWeight: 700,
+                          color: "var(--md-outline)",
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        Invoice
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          color: "var(--md-on-surface)",
+                        }}
+                      >
+                        #INV-0042
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        backgroundColor: "var(--md-primary-container)",
+                        color: "#fff",
+                        fontSize: "8px",
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: "999px",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      PAID
+                    </div>
+                  </div>
+                  {[
+                    ["Design work", "LKR 45,000"],
+                    ["Dev hours × 8", "LKR 32,000"],
+                    ["Domain renewal", "LKR 3,500"],
+                  ].map(([label, amount]) => (
+                    <div
+                      key={label}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "5px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          color: "var(--md-on-surface-variant)",
+                        }}
+                      >
+                        {label}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 600,
+                          color: "var(--md-on-surface)",
+                        }}
+                      >
+                        {amount}
+                      </span>
+                    </div>
+                  ))}
+                  <div
+                    style={{
+                      borderTop: "1px solid var(--md-outline-variant)",
+                      marginTop: "10px",
+                      paddingTop: "8px",
+                      display: "flex",
+                      justifyContent: "space-between",
                     }}
                   >
                     <span
                       style={{
-                        fontSize: "9px",
-                        color: "var(--md-on-surface-variant)",
-                      }}
-                    >
-                      {label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "9px",
-                        fontWeight: 600,
+                        fontSize: "10px",
+                        fontWeight: 700,
                         color: "var(--md-on-surface)",
                       }}
                     >
-                      {amount}
+                      Total
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        color: "var(--md-primary-container)",
+                      }}
+                    >
+                      LKR 80,500
                     </span>
                   </div>
-                ))}
-                <div
-                  style={{
-                    borderTop: "1px solid var(--md-outline-variant)",
-                    marginTop: "10px",
-                    paddingTop: "8px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      color: "var(--md-on-surface)",
-                    }}
-                  >
-                    Total
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      color: "var(--md-primary-container)",
-                    }}
-                  >
-                    LKR 80,500
-                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* Card 2 — CRM Simplified (narrow, dark) */}
-            <div
-              className="bento-card-narrow bento-card-2"
-              style={{
-                borderRadius: "1.5rem",
-                padding: "2rem",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: "280px",
-              }}
-            >
+              {/* Card 2 — CRM Simplified (narrow, dark) */}
               <div
-                className="bento-c2-icon-wrap"
+                className="bento-card-narrow bento-card-2"
                 style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
+                  borderRadius: "1.5rem",
+                  padding: "2rem",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  minHeight: "280px",
                 }}
               >
-                <span
-                  className="material-symbols-outlined bento-c2-icon"
-                  style={{ fontSize: "26px" }}
-                >
-                  group
-                </span>
-              </div>
-              <div>
-                <h3
-                  className="bento-c2-heading"
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "var(--text-lg)",
-                    fontWeight: 700,
-                    margin: "0 0 0.5rem",
-                  }}
-                >
-                  CRM Simplified
-                </h3>
-                <p
-                  className="bento-c2-body"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  Your clients, contacts, and billing history — all in one
-                  place.
-                </p>
-              </div>
-            </div>
-
-            {/* Card 3 — Multi-currency (narrow, blue) */}
-            <div
-              className="bento-card-narrow bento-card-3"
-              style={{
-                borderRadius: "1.5rem",
-                padding: "2rem",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: "240px",
-              }}
-            >
-              <div
-                className="bento-c3-icon-wrap"
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <span
-                  className="material-symbols-outlined bento-c3-icon"
-                  style={{ fontSize: "26px" }}
-                >
-                  currency_exchange
-                </span>
-              </div>
-              <div>
-                <h3
-                  className="bento-c3-heading"
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "var(--text-lg)",
-                    fontWeight: 700,
-                    margin: "0 0 0.5rem",
-                  }}
-                >
-                  Multi-currency
-                </h3>
-                <p
-                  className="bento-c3-body"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  LKR, USD, EUR, GBP. Bill anyone, anywhere, in their currency.
-                </p>
-              </div>
-            </div>
-
-            {/* Card 4 — One-tap PDF (wide) */}
-            <div
-              className="bento-card-wide bento-card-4"
-              style={{
-                borderRadius: "1.5rem",
-                padding: "2.5rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                overflow: "hidden",
-                minHeight: "240px",
-                gap: "2rem",
-              }}
-            >
-              <div style={{ maxWidth: "300px" }}>
-                <h3
-                  className="bento-c4-heading"
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "var(--text-xl)",
-                    fontWeight: 700,
-                    margin: "0 0 0.75rem",
-                  }}
-                >
-                  One-tap PDF
-                </h3>
-                <p
-                  className="bento-c4-body"
-                  style={{
-                    fontSize: "var(--text-base)",
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  Export beautiful, print-ready documents instantly. Works on
-                  any screen, every time.
-                </p>
-              </div>
-
-              {/* PDF mock */}
-              <div style={{ flexShrink: 0 }}>
                 <div
-                  className="bento-c4-mockup"
+                  className="bento-c2-icon-wrap"
                   style={{
-                    width: "116px",
-                    height: "152px",
-                    backgroundColor: "var(--md-surface-container-lowest)",
+                    width: "48px",
+                    height: "48px",
                     borderRadius: "12px",
-                    boxShadow: "0 8px 28px rgba(0,0,0,0.12)",
                     display: "flex",
-                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    border: "2px dashed var(--brand-warning)",
                   }}
                 >
                   <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: "44px", color: "var(--brand-warning)" }}
+                    className="material-symbols-outlined bento-c2-icon"
+                    style={{ fontSize: "26px" }}
                   >
-                    picture_as_pdf
+                    group
                   </span>
-                  <span
+                </div>
+                <div>
+                  <h3
+                    className="bento-c2-heading"
                     style={{
-                      fontSize: "9px",
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "var(--text-lg)",
                       fontWeight: 700,
-                      letterSpacing: "0.1em",
-                      color: "var(--brand-warning)",
-                      marginTop: "6px",
+                      margin: "0 0 0.5rem",
                     }}
                   >
-                    PDF EXPORT
+                    CRM Simplified
+                  </h3>
+                  <p
+                    className="bento-c2-body"
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    Your clients, contacts, and billing history — all in one
+                    place.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3 — Multi-currency (narrow, blue) */}
+              <div
+                className="bento-card-narrow bento-card-3"
+                style={{
+                  borderRadius: "1.5rem",
+                  padding: "2rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  minHeight: "240px",
+                }}
+              >
+                <div
+                  className="bento-c3-icon-wrap"
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <span
+                    className="material-symbols-outlined bento-c3-icon"
+                    style={{ fontSize: "26px" }}
+                  >
+                    currency_exchange
                   </span>
+                </div>
+                <div>
+                  <h3
+                    className="bento-c3-heading"
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "var(--text-lg)",
+                      fontWeight: 700,
+                      margin: "0 0 0.5rem",
+                    }}
+                  >
+                    Multi-currency
+                  </h3>
+                  <p
+                    className="bento-c3-body"
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    LKR, USD, EUR, GBP. Bill anyone, anywhere, in their
+                    currency.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 4 — One-tap PDF (wide) */}
+              <div
+                className="bento-card-wide bento-card-4"
+                style={{
+                  borderRadius: "1.5rem",
+                  padding: "2.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  overflow: "hidden",
+                  minHeight: "240px",
+                  gap: "2rem",
+                }}
+              >
+                <div style={{ maxWidth: "300px" }}>
+                  <h3
+                    className="bento-c4-heading"
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      fontSize: "var(--text-xl)",
+                      fontWeight: 700,
+                      margin: "0 0 0.75rem",
+                    }}
+                  >
+                    One-tap PDF
+                  </h3>
+                  <p
+                    className="bento-c4-body"
+                    style={{
+                      fontSize: "var(--text-base)",
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    Export beautiful, print-ready documents instantly. Works on
+                    any screen, every time.
+                  </p>
+                </div>
+
+                {/* PDF mock */}
+                <div style={{ flexShrink: 0 }}>
+                  <div
+                    className="bento-c4-mockup"
+                    style={{
+                      width: "116px",
+                      height: "152px",
+                      backgroundColor: "var(--md-surface-container-lowest)",
+                      borderRadius: "12px",
+                      boxShadow: "0 8px 28px rgba(0,0,0,0.12)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "2px dashed var(--brand-warning)",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontSize: "44px",
+                        color: "var(--brand-warning)",
+                      }}
+                    >
+                      picture_as_pdf
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                        color: "var(--brand-warning)",
+                        marginTop: "6px",
+                      }}
+                    >
+                      PDF EXPORT
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Marquee strip ──────────────────────────── */}
-      <section
-        style={{
-          overflow: "hidden",
-          backgroundColor: "var(--md-primary)",
-          padding: "1rem 0",
-          position: "relative",
-          zIndex: 91,
-        }}
-        aria-label="Feature highlights"
-      >
-        <style>{`
+        {/* ── Marquee strip ──────────────────────────── */}
+        <section
+          style={{
+            overflow: "hidden",
+            backgroundColor: "var(--md-primary)",
+            padding: "1rem 0",
+            position: "relative",
+          }}
+          aria-label="Feature highlights"
+        >
+          <style>{`
           @keyframes marquee {
             from { transform: translateX(0); }
             to   { transform: translateX(-50%); }
@@ -856,212 +869,214 @@ const Landing = () => {
             flex-shrink: 0;
           }
         `}</style>
-        <div className="marquee-track" aria-hidden="true">
-          {(() => {
-            const items = [
-              { label: "Invoices", icon: "receipt_long" },
-              { label: "Quotations", icon: "request_quote" },
-              { label: "Multi-currency", icon: "currency_exchange" },
-              { label: "One-tap PDF", icon: "picture_as_pdf" },
-              { label: "Repeat clients", icon: "group" },
-              { label: "LKR", icon: "payments" },
-              { label: "USD", icon: "attach_money" },
-              { label: "EUR", icon: "euro" },
-              { label: "GBP", icon: "currency_pound" },
-            ];
-            // Repeat the set enough times that one copy is wider than even
-            // ultra-wide viewports, so the -50% loop never reveals empty space.
-            const perCopy = Array.from({ length: 4 }).flatMap(() => items);
-            return [0, 1].map((copy) => (
-              <div key={copy} style={{ display: "flex", alignItems: "center" }}>
-                {perCopy.map(({ label, icon }, i) => (
-                  <div
-                    key={`${copy}-${i}`}
-                    style={{ display: "flex", alignItems: "center" }}
-                  >
-                    <span className="marquee-item">
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: "16px", opacity: 0.8 }}
-                      >
-                        {icon}
+          <div className="marquee-track" aria-hidden="true">
+            {(() => {
+              const items = [
+                { label: "Invoices", icon: "receipt_long" },
+                { label: "Quotations", icon: "request_quote" },
+                { label: "Multi-currency", icon: "currency_exchange" },
+                { label: "One-tap PDF", icon: "picture_as_pdf" },
+                { label: "Repeat clients", icon: "group" },
+                { label: "LKR", icon: "payments" },
+                { label: "USD", icon: "attach_money" },
+                { label: "EUR", icon: "euro" },
+                { label: "GBP", icon: "currency_pound" },
+              ];
+              // Repeat the set enough times that one copy is wider than even
+              // ultra-wide viewports, so the -50% loop never reveals empty space.
+              const perCopy = Array.from({ length: 4 }).flatMap(() => items);
+              return [0, 1].map((copy) => (
+                <div
+                  key={copy}
+                  style={{ display: "flex", alignItems: "center" }}
+                >
+                  {perCopy.map(({ label, icon }, i) => (
+                    <div
+                      key={`${copy}-${i}`}
+                      style={{ display: "flex", alignItems: "center" }}
+                    >
+                      <span className="marquee-item">
+                        <span
+                          className="material-symbols-outlined"
+                          style={{ fontSize: "16px", opacity: 0.8 }}
+                        >
+                          {icon}
+                        </span>
+                        {label}
                       </span>
-                      {label}
-                    </span>
-                    <span className="marquee-sep">◆</span>
-                  </div>
-                ))}
-              </div>
-            ));
-          })()}
-        </div>
-      </section>
-
-      <HowItWorksSection />
-
-      {/* ── Closing CTA band ─────────────────────── */}
-      <section
-        style={{
-          padding: "5rem 1.5rem",
-          backgroundColor: "var(--md-primary)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
-          overflow: "hidden",
-          zIndex: 91,
-        }}
-      >
-        {/* Coin illustration overlay */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            opacity: 0.2,
-            pointerEvents: "none",
-          }}
-        >
-          <img
-            src="/coins-zen.png"
-            alt=""
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        </div>
-        <div
-          style={{
-            maxWidth: "640px",
-            width: "100%",
-            backgroundColor: "var(--md-surface-container-lowest)",
-            borderRadius: "2rem",
-            padding: "4rem 3rem",
-            boxShadow: "0 8px 48px rgba(0,0,0,0.07)",
-            position: "relative",
-            zIndex: 1,
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "1.25rem",
-          }}
-        >
-          <h2
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
-              fontWeight: 800,
-              margin: 0,
-              color: "var(--md-on-surface)",
-            }}
-          >
-            Ready to send that invoice?
-          </h2>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "var(--text-base)",
-              color: "var(--md-on-surface-variant)",
-              maxWidth: "400px",
-              lineHeight: 1.65,
-            }}
-          >
-            A calmer way to bill your clients. Free to use, no credit card
-            required.
-          </p>
-          <div style={{ marginTop: "0.5rem" }}>
-            {user ? (
-              <Link to="/dashboard" style={ctaBtnStyle("lg")}>
-                Go to app
-              </Link>
-            ) : (
-              <button onClick={signInWithGoogle} style={ctaBtnStyle("lg")}>
-                <GoogleIcon />
-                Sign in with Google
-              </button>
-            )}
+                      <span className="marquee-sep">◆</span>
+                    </div>
+                  ))}
+                </div>
+              ));
+            })()}
           </div>
+        </section>
+
+        <HowItWorksSection />
+
+        {/* ── Closing CTA band ─────────────────────── */}
+        <section
+          style={{
+            padding: "5rem 1.5rem",
+            backgroundColor: "var(--md-primary)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Coin illustration overlay */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              opacity: 0.2,
+              pointerEvents: "none",
+            }}
+          >
+            <img
+              src="/coins-zen.png"
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </div>
+          <div
+            style={{
+              maxWidth: "640px",
+              width: "100%",
+              backgroundColor: "var(--md-surface-container-lowest)",
+              borderRadius: "2rem",
+              padding: "4rem 3rem",
+              boxShadow: "0 8px 48px rgba(0,0,0,0.07)",
+              position: "relative",
+              zIndex: 1,
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1.25rem",
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
+                fontWeight: 800,
+                margin: 0,
+                color: "var(--md-on-surface)",
+              }}
+            >
+              Ready to send that invoice?
+            </h2>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "var(--text-base)",
+                color: "var(--md-on-surface-variant)",
+                maxWidth: "400px",
+                lineHeight: 1.65,
+              }}
+            >
+              A calmer way to bill your clients. Free to use, no credit card
+              required.
+            </p>
+            <div style={{ marginTop: "0.5rem" }}>
+              {user ? (
+                <Link to="/dashboard" style={ctaBtnStyle("lg")}>
+                  Go to app
+                </Link>
+              ) : (
+                <button onClick={signInWithGoogle} style={ctaBtnStyle("lg")}>
+                  <GoogleIcon />
+                  Sign in with Google
+                </button>
+              )}
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "var(--text-xs)",
+                color: "var(--md-on-surface-variant)",
+                opacity: 0.7,
+              }}
+            >
+              Free to use. Sign in and start in under a minute.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Footer ───────────────────────────────── */}
+        <footer
+          style={{
+            padding: "2rem 2rem",
+            borderTop: "1px solid var(--md-outline-variant)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "1rem",
+            fontSize: "var(--text-sm)",
+            color: "var(--md-on-surface-variant)",
+            backgroundColor: "var(--md-surface)",
+            position: "relative",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span
+              className="material-symbols-outlined filled"
+              style={{ fontSize: "18px", color: "var(--md-primary-container)" }}
+            >
+              account_balance_wallet
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 700,
+                color: "var(--md-primary-container)",
+              }}
+            >
+              SimpleBill
+            </span>
+          </div>
+
           <p
             style={{
               margin: 0,
               fontSize: "var(--text-xs)",
               color: "var(--md-on-surface-variant)",
-              opacity: 0.7,
             }}
           >
-            Free to use. Sign in and start in under a minute.
+            Made for my dad, and anyone who'd rather not think about invoicing.
           </p>
-        </div>
-      </section>
 
-      {/* ── Footer ───────────────────────────────── */}
-      <footer
-        style={{
-          padding: "2rem 2rem",
-          borderTop: "1px solid var(--md-outline-variant)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "1rem",
-          fontSize: "var(--text-sm)",
-          color: "var(--md-on-surface-variant)",
-          backgroundColor: "var(--md-surface)",
-          position: "relative",
-          zIndex: 91,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span
-            className="material-symbols-outlined filled"
-            style={{ fontSize: "18px", color: "var(--md-primary-container)" }}
-          >
-            account_balance_wallet
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontWeight: 700,
-              color: "var(--md-primary-container)",
-            }}
-          >
-            SimpleBill
-          </span>
-        </div>
-
-        <p
-          style={{
-            margin: 0,
-            fontSize: "var(--text-xs)",
-            color: "var(--md-on-surface-variant)",
-          }}
-        >
-          Made for my dad, and anyone who'd rather not think about invoicing.
-        </p>
-
-        <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-          <Link
-            to="/terms"
-            style={{
-              color: "var(--md-on-surface-variant)",
-              textDecoration: "none",
-            }}
-          >
-            Terms
-          </Link>
-          <a
-            href="https://github.com/donkasun/simple-bill"
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              color: "var(--md-on-surface-variant)",
-              textDecoration: "none",
-            }}
-          >
-            GitHub
-          </a>
-          <span>© 2026 SimpleBill.</span>
-        </div>
-      </footer>
+          <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
+            <Link
+              to="/terms"
+              style={{
+                color: "var(--md-on-surface-variant)",
+                textDecoration: "none",
+              }}
+            >
+              Terms
+            </Link>
+            <a
+              href="https://github.com/donkasun/simple-bill"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                color: "var(--md-on-surface-variant)",
+                textDecoration: "none",
+              }}
+            >
+              GitHub
+            </a>
+            <span>© 2026 SimpleBill.</span>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 };

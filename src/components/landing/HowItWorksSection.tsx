@@ -21,8 +21,8 @@ const STEPS = [
     image: "/how-it-works/step-build.png",
     imageAlt: "Line items on an invoice in SimpleBill",
     rotate: 4.5,
-    offsetX: 18,
-    offsetY: -14,
+    offsetX: 22,
+    offsetY: -18,
   },
   {
     id: "send",
@@ -32,8 +32,8 @@ const STEPS = [
     image: "/how-it-works/step-send.png",
     imageAlt: "Dashboard showing invoice status in SimpleBill",
     rotate: -2.5,
-    offsetX: -14,
-    offsetY: -24,
+    offsetX: -18,
+    offsetY: -32,
   },
 ] as const;
 
@@ -87,16 +87,11 @@ export default function HowItWorksSection() {
   }, [activeStep]);
 
   return (
-    <section
-      id="how-it-works"
-      style={{
-        backgroundColor: "var(--md-surface-container)",
-      }}
-    >
+    <section id="how-it-works">
       <style>{`
         .how-scroll-stage {
-          --how-card-width: clamp(300px, 36vw, 480px);
-          --how-card-height: clamp(260px, 32vw, 420px);
+          --how-card-width: clamp(340px, 44vw, 560px);
+          --how-card-height: clamp(300px, 40vw, 500px);
         }
         @keyframes typewriter-cursor {
           0%, 100% { opacity: 1; }
@@ -116,17 +111,17 @@ export default function HowItWorksSection() {
           display: grid;
           grid-template-rows: auto minmax(0, 1fr);
           gap: clamp(1.5rem, 3vh, 2.5rem);
-          width: min(1280px, 94vw);
+          width: min(1400px, 96vw);
           margin-inline: auto;
         }
         .how-stage-header {
           text-align: center;
-          padding-top: clamp(1rem, 2vh, 1.75rem);
+          padding-top: clamp(3rem, 7vh, 5.5rem);
         }
         .how-sticky-inner {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-          gap: clamp(2rem, 5vw, 4.5rem);
+          grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+          gap: clamp(1.75rem, 3.5vw, 3rem);
           align-items: center;
           width: 100%;
           min-height: min(560px, calc(100vh - 64px - 8rem));
@@ -136,9 +131,28 @@ export default function HowItWorksSection() {
           left: 50%;
           top: 50%;
           width: var(--how-card-width);
+          padding: 10px;
+          background: var(--md-surface-container-lowest);
+          border-radius: 20px;
+          border: 1px solid var(--md-outline-variant);
+          box-shadow:
+            0 2px 0 rgba(255, 255, 255, 0.8) inset,
+            0 16px 40px rgba(0, 0, 0, 0.08);
           transform: translate(-50%, -50%) rotate(var(--card-rot)) translate(var(--card-x), var(--card-y));
           transform-origin: center center;
-          transition: box-shadow 0.3s ease;
+          transition: box-shadow 0.3s ease, opacity 0.3s ease;
+        }
+        .how-stack-card--top {
+          box-shadow:
+            0 2px 0 rgba(255, 255, 255, 0.9) inset,
+            0 28px 56px rgba(0, 0, 0, 0.12),
+            0 10px 24px rgba(0, 0, 0, 0.06);
+        }
+        .how-stack-card:not(.how-stack-card--top) {
+          opacity: 0.88;
+          box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.6) inset,
+            0 8px 20px rgba(0, 0, 0, 0.05);
         }
         .how-stack-card--enter {
           animation: card-drop 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -146,25 +160,24 @@ export default function HowItWorksSection() {
         .how-stack-card img {
           display: block;
           width: 100%;
-          height: auto;
-          border-radius: 16px;
-          border: 1px solid var(--md-outline-variant);
-          box-shadow:
-            0 1px 0 rgba(255,255,255,0.6) inset,
-            0 14px 32px rgba(0,0,0,0.12),
-            0 4px 10px rgba(0,0,0,0.06);
+          aspect-ratio: 16 / 10;
+          object-fit: cover;
+          object-position: top center;
+          border-radius: 12px;
+          border: 1px solid color-mix(in srgb, var(--md-outline-variant) 60%, transparent);
           background: var(--md-surface-container-lowest);
         }
         .how-stack-card--top img {
-          box-shadow:
-            0 1px 0 rgba(255,255,255,0.7) inset,
-            0 22px 48px rgba(0,0,0,0.16),
-            0 8px 18px rgba(0,0,0,0.08);
+          border-color: color-mix(in srgb, var(--md-outline-variant) 80%, transparent);
         }
         .how-stack-card:not(.how-stack-card--top) img {
-          box-shadow:
-            0 1px 0 rgba(255,255,255,0.5) inset,
-            0 8px 20px rgba(0,0,0,0.08);
+          filter: saturate(0.92) brightness(0.98);
+        }
+        .how-stack-scene {
+          position: relative;
+          width: calc(var(--how-card-width) + 64px);
+          height: var(--how-card-height);
+          z-index: 1;
         }
         .how-stack-wrap {
           position: relative;
@@ -172,24 +185,19 @@ export default function HowItWorksSection() {
           display: flex;
           align-items: center;
           justify-content: center;
+          width: 100%;
         }
         .how-stack-wrap::before {
           content: "";
           position: absolute;
-          inset: -12%;
+          inset: -8% -4%;
           background: radial-gradient(
             ellipse at center,
-            color-mix(in srgb, var(--green-light) 80%, transparent) 0%,
-            transparent 68%
+            color-mix(in srgb, var(--green-light) 70%, transparent) 0%,
+            transparent 72%
           );
           pointer-events: none;
           z-index: 0;
-        }
-        .how-stack-scene {
-          position: relative;
-          width: calc(var(--how-card-width) + 48px);
-          height: var(--how-card-height);
-          z-index: 1;
         }
         .how-step-copy {
           display: flex;
@@ -209,10 +217,20 @@ export default function HowItWorksSection() {
           opacity: 0;
           transform: translateY(6px);
         }
+        @media (min-width: 1200px) {
+          .how-scroll-stage {
+            --how-card-width: clamp(440px, 36vw, 600px);
+            --how-card-height: clamp(360px, 32vw, 540px);
+          }
+          .how-sticky-inner {
+            grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+            gap: clamp(2rem, 4vw, 4rem);
+          }
+        }
         @media (min-width: 901px) and (min-height: 900px) {
           .how-scroll-stage {
-            --how-card-width: clamp(380px, 34vw, 520px);
-            --how-card-height: clamp(320px, 30vw, 460px);
+            --how-card-width: clamp(400px, 40vw, 580px);
+            --how-card-height: clamp(340px, 36vw, 520px);
           }
         }
         @media (max-width: 900px) {
@@ -274,7 +292,7 @@ export default function HowItWorksSection() {
             position: "sticky",
             top: "64px",
             minHeight: "calc(100vh - 64px)",
-            padding: "0 1.5rem 2.5rem",
+            padding: "1rem 1.5rem 2.5rem",
           }}
         >
           <div className="how-stage-header">
@@ -423,7 +441,7 @@ export default function HowItWorksSection() {
         style={{
           maxWidth: "1100px",
           margin: "0 auto",
-          padding: "3rem 1.5rem 5rem",
+          padding: "4.5rem 1.5rem 5rem",
         }}
       >
         <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
@@ -493,7 +511,10 @@ export default function HowItWorksSection() {
               loading="lazy"
               style={{
                 width: "100%",
-                maxWidth: "320px",
+                maxWidth: "480px",
+                aspectRatio: "16 / 10",
+                objectFit: "cover",
+                objectPosition: "top center",
                 borderRadius: "14px",
                 border: "1px solid var(--md-outline-variant)",
                 boxShadow: "0 12px 32px rgba(0,0,0,0.1)",
