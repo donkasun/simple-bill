@@ -31,12 +31,14 @@
   --md-secondary-container: #a3d8fe;
   --md-on-secondary-container: #255f80;
   --md-secondary: #2b6485;
+  --md-secondary-mid: #5ba3cc;
 
   /* Legacy aliases */
   --brand-bg: var(--brand-background);
   --green-light: #dff5ea;
   --green-mid: #95d4b3;
   --green-dark: var(--brand-success);
+  --features-glow: rgba(123, 209, 167, 0.7);
   --orange-light: #fff4e5;
   --orange-dark: var(--brand-warning);
 
@@ -132,6 +134,7 @@
   /* Legacy aliases (dark mode) */
   --green-light: #0d2b1e;
   --green-mid: #2d5a3d;
+  --features-glow: rgba(90, 206, 164, 0.22);
 
   /* MD3 primary tokens */
   --md-primary: #5acea4;
@@ -148,6 +151,7 @@
   --md-secondary-container: #1b3d52;
   --md-on-secondary-container: #9ecff0;
   --md-secondary: #7bbcdc;
+  --md-secondary-mid: #4a8fb5;
 
   /* Quick-action customer card hover — lighter green bg, dark text (dark theme) */
   --quick-action-customer-hover-bg: #2d7a4f;

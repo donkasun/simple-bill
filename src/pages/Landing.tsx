@@ -66,10 +66,17 @@ const Landing = () => {
   const { user, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [glow, setGlow] = useState({ x: -1000, y: -1000 });
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => setGlow({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -88,6 +95,27 @@ const Landing = () => {
         flexDirection: "column",
       }}
     >
+      {/* Cursor-following glow (page-wide overlay) */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "500px",
+          height: "500px",
+          borderRadius: "50%",
+          background: "var(--features-glow)",
+          filter: "blur(100px)",
+          opacity: 0.55,
+          transform: `translate(${glow.x - 250}px, ${glow.y - 250}px)`,
+          transition: "transform 0.15s ease-out, opacity 0.3s ease",
+          pointerEvents: "none",
+          zIndex: 90,
+          willChange: "transform",
+        }}
+      />
+
       {/* ── Nav ─────────────────────────────────────── */}
       <nav
         style={{
@@ -260,31 +288,15 @@ const Landing = () => {
         </div>
       </main>
 
-      {/* ── Marquee placeholder ───────────────────── */}
-      <section
-        style={{
-          padding: "1.25rem 2rem",
-          backgroundColor: "var(--md-primary)",
-          textAlign: "center",
-        }}
-      >
-        <p
-          style={{
-            color: "var(--md-on-primary)",
-            fontSize: "var(--text-sm)",
-            margin: 0,
-            opacity: 0.8,
-          }}
-        >
-          Invoices · Quotations · Multi-currency · One-tap PDF · Repeat clients
-          · LKR · USD · EUR · GBP
-        </p>
-      </section>
-
       {/* ── Features bento grid ──────────────────── */}
       <section
         id="features"
-        style={{ padding: "5rem 1.5rem", backgroundColor: "var(--md-surface)" }}
+        style={{
+          padding: "5rem 1.5rem",
+          backgroundColor: "var(--green-light)",
+          position: "relative",
+          zIndex: 91,
+        }}
       >
         <style>{`
           .bento-grid {
@@ -297,9 +309,74 @@ const Landing = () => {
           @media (max-width: 768px) {
             .bento-card-wide, .bento-card-narrow { grid-column: span 12; }
           }
+          .bento-card-wide, .bento-card-narrow {
+            transition: background-color 0.25s ease;
+          }
+          /* Card 1 — Invoices (green) */
+          .bento-card-1 { background-color: var(--md-surface-container-lowest); }
+          .bento-card-1:hover { background-color: var(--md-primary-container); }
+          .bento-c1-heading { color: var(--md-primary-container); transition: color 0.25s ease; }
+          .bento-card-1:hover .bento-c1-heading { color: #ffffff; }
+          .bento-c1-body { color: var(--md-on-surface-variant); transition: color 0.25s ease; }
+          .bento-card-1:hover .bento-c1-body { color: rgba(255,255,255,0.85); }
+          /* Card 1 — button on card hover */
+          .bento-c1-btn { transition: background-color 0.25s ease, color 0.25s ease; }
+          .bento-card-1:hover .bento-c1-btn { background-color: var(--green-light) !important; color: var(--md-primary-container) !important; }
+          /* Card 2 — CRM (gray) */
+          .bento-card-2 { background-color: var(--md-surface-container-highest); }
+          .bento-card-2:hover { background-color: var(--md-outline); }
+          .bento-c2-icon-wrap { background-color: var(--md-surface-container-high); transition: background-color 0.25s ease; }
+          .bento-card-2:hover .bento-c2-icon-wrap { background-color: var(--md-surface-container-highest); }
+          .bento-c2-icon { color: var(--md-on-surface-variant); transition: color 0.25s ease; }
+          .bento-card-2:hover .bento-c2-icon { color: var(--md-on-surface); }
+          .bento-c2-heading { color: var(--md-on-surface); transition: color 0.25s ease; }
+          .bento-card-2:hover .bento-c2-heading { color: var(--md-surface-container-highest); }
+          .bento-c2-body { color: var(--md-on-surface-variant); transition: color 0.25s ease; }
+          .bento-card-2:hover .bento-c2-body { color: var(--md-surface-container-highest); }
+          /* Card 3 — Multi-currency (blue) */
+          .bento-card-3 { background-color: var(--md-secondary-container); }
+          .bento-card-3:hover { background-color: var(--md-secondary-mid); }
+          .bento-c3-icon-wrap { background-color: rgba(255,255,255,0.4); transition: background-color 0.25s ease; }
+          .bento-card-3:hover .bento-c3-icon-wrap { background-color: rgba(255,255,255,0.2); }
+          .bento-c3-icon { color: var(--md-on-secondary-container); transition: color 0.25s ease; }
+          .bento-card-3:hover .bento-c3-icon { color: #ffffff; }
+          .bento-c3-heading { color: var(--md-on-secondary-container); transition: color 0.25s ease; }
+          .bento-card-3:hover .bento-c3-heading { color: #ffffff; }
+          .bento-c3-body { color: var(--md-on-secondary-container); transition: color 0.25s ease; }
+          .bento-card-3:hover .bento-c3-body { color: rgba(255,255,255,0.85); }
+          /* Mockup lift animations */
+          .bento-c1-mockup {
+            transform: translateY(-50%) rotate(-3deg);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          .bento-card-1:hover .bento-c1-mockup {
+            transform: translateY(-50%) rotate(-6deg) scale(1.06);
+          }
+          .bento-c4-mockup {
+            transform: rotate(10deg);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          .bento-card-4:hover .bento-c4-mockup {
+            transform: rotate(14deg) scale(1.06);
+          }
+          /* Card 4 — One-tap PDF (amber) */
+          .bento-card-4 { background-color: var(--orange-light); }
+          .bento-card-4:hover { background-color: var(--brand-warning); }
+          .bento-c4-heading { color: var(--md-on-surface); transition: color 0.25s ease; }
+          .bento-card-4:hover .bento-c4-heading { color: var(--md-surface); }
+          .bento-c4-body { color: var(--md-on-surface-variant); transition: color 0.25s ease; }
+          .bento-card-4:hover .bento-c4-body { color: var(--md-surface); }
         `}</style>
 
-        <div style={{ maxWidth: "1100px", margin: "0 auto", width: "100%" }}>
+        <div
+          style={{
+            maxWidth: "1100px",
+            margin: "0 auto",
+            width: "100%",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
           {/* Section header */}
           <div style={{ textAlign: "center", marginBottom: "3rem" }}>
             <p
@@ -342,9 +419,8 @@ const Landing = () => {
           <div className="bento-grid">
             {/* Card 1 — Invoices & Quotations (wide) */}
             <div
-              className="bento-card-wide"
+              className="bento-card-wide bento-card-1"
               style={{
-                backgroundColor: "var(--green-light)",
                 borderRadius: "1.5rem",
                 padding: "2.5rem",
                 position: "relative",
@@ -357,20 +433,20 @@ const Landing = () => {
             >
               <div style={{ maxWidth: "320px", zIndex: 1 }}>
                 <h3
+                  className="bento-c1-heading"
                   style={{
                     fontFamily: "var(--font-heading)",
                     fontSize: "var(--text-xl)",
                     fontWeight: 700,
-                    color: "var(--md-primary-container)",
                     margin: "0 0 0.75rem",
                   }}
                 >
                   Invoices &amp; Quotations
                 </h3>
                 <p
+                  className="bento-c1-body"
                   style={{
                     fontSize: "var(--text-base)",
-                    color: "var(--md-on-surface-variant)",
                     lineHeight: 1.6,
                     margin: "0 0 1.5rem",
                   }}
@@ -378,16 +454,18 @@ const Landing = () => {
                   Convert quotes to professional invoices with one click. Custom
                   branding included.
                 </p>
-                <button style={ctaBtnStyle("sm")}>Explore features</button>
+                <button className="bento-c1-btn" style={ctaBtnStyle("sm")}>
+                  Explore features
+                </button>
               </div>
 
               {/* Mini invoice mockup */}
               <div
+                className="bento-c1-mockup"
                 style={{
                   position: "absolute",
                   right: "2rem",
                   top: "50%",
-                  transform: "translateY(-50%) rotate(-3deg)",
                   width: "192px",
                   backgroundColor: "var(--md-surface-container-lowest)",
                   borderRadius: "12px",
@@ -506,9 +584,8 @@ const Landing = () => {
 
             {/* Card 2 — CRM Simplified (narrow, dark) */}
             <div
-              className="bento-card-narrow"
+              className="bento-card-narrow bento-card-2"
               style={{
-                backgroundColor: "var(--md-surface-container-highest)",
                 borderRadius: "1.5rem",
                 padding: "2rem",
                 display: "flex",
@@ -518,10 +595,10 @@ const Landing = () => {
               }}
             >
               <div
+                className="bento-c2-icon-wrap"
                 style={{
                   width: "48px",
                   height: "48px",
-                  backgroundColor: "var(--md-surface-container-high)",
                   borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
@@ -529,31 +606,28 @@ const Landing = () => {
                 }}
               >
                 <span
-                  className="material-symbols-outlined"
-                  style={{
-                    color: "var(--md-on-surface-variant)",
-                    fontSize: "26px",
-                  }}
+                  className="material-symbols-outlined bento-c2-icon"
+                  style={{ fontSize: "26px" }}
                 >
                   group
                 </span>
               </div>
               <div>
                 <h3
+                  className="bento-c2-heading"
                   style={{
                     fontFamily: "var(--font-heading)",
                     fontSize: "var(--text-lg)",
                     fontWeight: 700,
-                    color: "var(--md-on-surface)",
                     margin: "0 0 0.5rem",
                   }}
                 >
                   CRM Simplified
                 </h3>
                 <p
+                  className="bento-c2-body"
                   style={{
                     fontSize: "var(--text-sm)",
-                    color: "var(--md-on-surface-variant)",
                     lineHeight: 1.6,
                     margin: 0,
                   }}
@@ -566,9 +640,8 @@ const Landing = () => {
 
             {/* Card 3 — Multi-currency (narrow, blue) */}
             <div
-              className="bento-card-narrow"
+              className="bento-card-narrow bento-card-3"
               style={{
-                backgroundColor: "var(--md-secondary-container)",
                 borderRadius: "1.5rem",
                 padding: "2rem",
                 display: "flex",
@@ -578,10 +651,10 @@ const Landing = () => {
               }}
             >
               <div
+                className="bento-c3-icon-wrap"
                 style={{
                   width: "48px",
                   height: "48px",
-                  backgroundColor: "rgba(255,255,255,0.4)",
                   borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
@@ -589,32 +662,28 @@ const Landing = () => {
                 }}
               >
                 <span
-                  className="material-symbols-outlined"
-                  style={{
-                    color: "var(--md-on-secondary-container)",
-                    fontSize: "26px",
-                  }}
+                  className="material-symbols-outlined bento-c3-icon"
+                  style={{ fontSize: "26px" }}
                 >
                   currency_exchange
                 </span>
               </div>
               <div>
                 <h3
+                  className="bento-c3-heading"
                   style={{
                     fontFamily: "var(--font-heading)",
                     fontSize: "var(--text-lg)",
                     fontWeight: 700,
-                    color: "var(--md-on-secondary-container)",
                     margin: "0 0 0.5rem",
                   }}
                 >
                   Multi-currency
                 </h3>
                 <p
+                  className="bento-c3-body"
                   style={{
                     fontSize: "var(--text-sm)",
-                    color: "var(--md-on-secondary-container)",
-                    opacity: 0.82,
                     lineHeight: 1.6,
                     margin: 0,
                   }}
@@ -626,9 +695,8 @@ const Landing = () => {
 
             {/* Card 4 — One-tap PDF (wide) */}
             <div
-              className="bento-card-wide"
+              className="bento-card-wide bento-card-4"
               style={{
-                backgroundColor: "var(--orange-light)",
                 borderRadius: "1.5rem",
                 padding: "2.5rem",
                 display: "flex",
@@ -641,20 +709,20 @@ const Landing = () => {
             >
               <div style={{ maxWidth: "300px" }}>
                 <h3
+                  className="bento-c4-heading"
                   style={{
                     fontFamily: "var(--font-heading)",
                     fontSize: "var(--text-xl)",
                     fontWeight: 700,
-                    color: "var(--md-on-surface)",
                     margin: "0 0 0.75rem",
                   }}
                 >
                   One-tap PDF
                 </h3>
                 <p
+                  className="bento-c4-body"
                   style={{
                     fontSize: "var(--text-base)",
-                    color: "var(--md-on-surface-variant)",
                     lineHeight: 1.6,
                     margin: 0,
                   }}
@@ -667,13 +735,13 @@ const Landing = () => {
               {/* PDF mock */}
               <div style={{ flexShrink: 0 }}>
                 <div
+                  className="bento-c4-mockup"
                   style={{
                     width: "116px",
                     height: "152px",
                     backgroundColor: "var(--md-surface-container-lowest)",
                     borderRadius: "12px",
                     boxShadow: "0 8px 28px rgba(0,0,0,0.12)",
-                    transform: "rotate(10deg)",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -702,6 +770,85 @@ const Landing = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Marquee strip ──────────────────────────── */}
+      <section
+        style={{
+          overflow: "hidden",
+          backgroundColor: "var(--md-primary)",
+          padding: "1rem 0",
+          position: "relative",
+          zIndex: 91,
+        }}
+        aria-label="Feature highlights"
+      >
+        <style>{`
+          @keyframes marquee {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+          }
+          .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: marquee 30s linear infinite;
+            user-select: none;
+          }
+          .marquee-track:hover { animation-play-state: paused; }
+          .marquee-item {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0 1.25rem;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            color: var(--md-on-primary);
+            white-space: nowrap;
+            opacity: 0.9;
+          }
+          .marquee-sep {
+            color: var(--md-on-primary);
+            opacity: 0.4;
+            font-size: 0.5rem;
+            flex-shrink: 0;
+          }
+        `}</style>
+        <div className="marquee-track" aria-hidden="true">
+          {[0, 1].map((copy) => (
+            <div key={copy} style={{ display: "flex", alignItems: "center" }}>
+              {[
+                { label: "Invoices", icon: "receipt_long" },
+                { label: "Quotations", icon: "request_quote" },
+                { label: "Multi-currency", icon: "currency_exchange" },
+                { label: "One-tap PDF", icon: "picture_as_pdf" },
+                { label: "Repeat clients", icon: "group" },
+                { label: "LKR", icon: "payments" },
+                { label: "USD", icon: "attach_money" },
+                { label: "EUR", icon: "euro" },
+                { label: "GBP", icon: "currency_pound" },
+              ].map(({ label, icon }, i, arr) => (
+                <div
+                  key={label}
+                  style={{ display: "flex", alignItems: "center" }}
+                >
+                  <span className="marquee-item">
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: "16px", opacity: 0.8 }}
+                    >
+                      {icon}
+                    </span>
+                    {label}
+                  </span>
+                  {i < arr.length - 1 && <span className="marquee-sep">◆</span>}
+                </div>
+              ))}
+              <span className="marquee-sep" style={{ padding: "0 1.25rem" }}>
+                ◆
+              </span>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -750,46 +897,93 @@ const Landing = () => {
         style={{
           padding: "5rem 1.5rem",
           backgroundColor: "var(--md-primary)",
-          textAlign: "center",
           display: "flex",
-          flexDirection: "column",
+          justifyContent: "center",
           alignItems: "center",
-          gap: "1.75rem",
+          position: "relative",
+          overflow: "hidden",
+          zIndex: 91,
         }}
       >
-        <h2
+        {/* Coin illustration overlay */}
+        <div
+          aria-hidden
           style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "clamp(1.75rem, 4vw, 2.75rem)",
-            fontWeight: 800,
-            margin: 0,
-            color: "var(--md-on-primary)",
+            position: "absolute",
+            inset: 0,
+            opacity: 0.2,
+            pointerEvents: "none",
           }}
         >
-          Ready to send that invoice?
-        </h2>
-        <p
+          <img
+            src="/coins-zen.png"
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+        <div
           style={{
-            margin: 0,
-            fontSize: "var(--text-lg)",
-            color: "var(--md-on-primary)",
-            opacity: 0.8,
-            maxWidth: "460px",
-            lineHeight: 1.6,
+            maxWidth: "640px",
+            width: "100%",
+            backgroundColor: "var(--md-surface-container-lowest)",
+            borderRadius: "2rem",
+            padding: "4rem 3rem",
+            boxShadow: "0 8px 48px rgba(0,0,0,0.07)",
+            position: "relative",
+            zIndex: 1,
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "1.25rem",
           }}
         >
-          A calmer way to bill your clients.
-        </p>
-        {user ? (
-          <Link to="/dashboard" style={ctaBtnStyle("lg")}>
-            Go to app
-          </Link>
-        ) : (
-          <button onClick={signInWithGoogle} style={ctaBtnStyle("lg")}>
-            <GoogleIcon />
-            Sign in with Google
-          </button>
-        )}
+          <h2
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
+              fontWeight: 800,
+              margin: 0,
+              color: "var(--md-on-surface)",
+            }}
+          >
+            Ready to send that invoice?
+          </h2>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--text-base)",
+              color: "var(--md-on-surface-variant)",
+              maxWidth: "400px",
+              lineHeight: 1.65,
+            }}
+          >
+            A calmer way to bill your clients. Free to use, no credit card
+            required.
+          </p>
+          <div style={{ marginTop: "0.5rem" }}>
+            {user ? (
+              <Link to="/dashboard" style={ctaBtnStyle("lg")}>
+                Go to app
+              </Link>
+            ) : (
+              <button onClick={signInWithGoogle} style={ctaBtnStyle("lg")}>
+                <GoogleIcon />
+                Sign in with Google
+              </button>
+            )}
+          </div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--text-xs)",
+              color: "var(--md-on-surface-variant)",
+              opacity: 0.7,
+            }}
+          >
+            Free to use. Sign in and start in under a minute.
+          </p>
+        </div>
       </section>
 
       {/* ── Footer ───────────────────────────────── */}
@@ -804,6 +998,9 @@ const Landing = () => {
           gap: "1rem",
           fontSize: "var(--text-sm)",
           color: "var(--md-on-surface-variant)",
+          backgroundColor: "var(--md-surface)",
+          position: "relative",
+          zIndex: 91,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
