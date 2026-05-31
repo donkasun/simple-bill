@@ -29,6 +29,7 @@ export default function DisintegratingText({
   const phaseRef = useRef<Phase>("solid");
   const builtRef = useRef(false);
   const fillRef = useRef<string>(color);
+  const offsetRef = useRef({ x: 0, y: 0 });
   const rafRef = useRef<number>(0);
   const [phase, setPhase] = useState<Phase>("solid");
 
@@ -74,10 +75,22 @@ export default function DisintegratingText({
         scatterYRange: drift.scatterY,
       });
 
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+      // Pad the visible canvas so particles can drift left / scatter vertically
+      // beyond the text box instead of being clipped at its edge.
+      const padX = Math.ceil(Math.abs(drift.x)) + 24; // left travel room
+      const padRight = 24;
+      const padTop = Math.ceil(drift.scatterY * 1.5) + 24;
+      const padBottom = Math.ceil(drift.scatterY) + 24;
+      const cssW = padX + w + padRight;
+      const cssH = padTop + h + padBottom;
+      offsetRef.current = { x: padX, y: padTop };
+
+      canvas.width = cssW * dpr;
+      canvas.height = cssH * dpr;
+      canvas.style.width = `${cssW}px`;
+      canvas.style.height = `${cssH}px`;
+      canvas.style.left = `${-padX}px`;
+      canvas.style.top = `${-padTop}px`;
       return true;
     };
 
@@ -87,8 +100,10 @@ export default function DisintegratingText({
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       const dpr = window.devicePixelRatio || 1;
+      const { x: ox, y: oy } = offsetRef.current;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      ctx.translate(ox, oy);
       ctx.fillStyle = fillRef.current;
       for (const p of particlesRef.current) {
         ctx.globalAlpha = Math.max(0, p.alpha);
@@ -162,7 +177,10 @@ export default function DisintegratingText({
     if (phase !== "solid" && phase !== "scattered") return;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (canvas && ctx) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
   }, [phase]);
 
   return (
