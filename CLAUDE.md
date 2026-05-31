@@ -81,6 +81,16 @@ Used on document cards (left border, badge, amount text):
 
 ---
 
+## Git workflow
+
+### Squash merges on PRs
+
+When squash-merging a branch, **always supply a rewritten commit message** (`gh pr merge --squash -t "…" -b "…"`). Do not accept GitHub's default squash body — it concatenates every commit on the branch, and agent-assisted commits often include `Co-authored-by` trailers that would repeat the same co-author once per commit.
+
+Write one concise subject and a short body summarizing the PR outcome. Then append **each unique `Co-authored-by` trailer once** (dedupe by email/name across branch commits). Do not omit co-authors, and do not paste every branch commit message verbatim.
+
+---
+
 ## Project overview
 
 **simple-bill** is an invoicing and quotation app for Sri Lankan freelancers and small business owners billing corporate clients. Target users are time-poor non-technical operators who invoice a small pool of repeat clients.

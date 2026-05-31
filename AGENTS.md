@@ -10,6 +10,7 @@
 - For route refactors, add characterization page tests before changing behavior when page coverage is missing.
 - On the public landing page, avoid empty section placeholders; defer a Product showcase until real screenshots exist.
 - Landing page visual work should follow Stitch design references in `docs/landing-page-stitch-brief.md` and `screenshots/stitch-*.png`.
+- When squash-merging a PR, **rewrite the squash commit message** — do not use GitHub's default concatenation of branch commits. Write a fresh PR summary with `gh pr merge --squash -t "subject" -b "body"` (or `--body-file`). Agent commits often carry `Co-authored-by` trailers; the default squash body duplicates them. In the rewritten body, include **each unique co-author once** at the end — do not omit attribution and do not repeat the same co-author.
 
 ## Learned Workspace Facts
 
