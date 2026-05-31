@@ -4,124 +4,168 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![React Router](https://img.shields.io/badge/React%20Router-CA4245?logo=react-router&logoColor=white)](https://reactrouter.com/)
-[![pdf-lib](https://img.shields.io/badge/pdf--lib-0A7EA4)](https://pdf-lib.js.org/)
+[![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
 
-A minimal, calm invoicing app built with React + TypeScript and Firebase. Create and manage customers, items, and billing documents quickly, with multi-currency support and PDF export.
+A calm invoicing app for freelancers and small business owners who bill the same people regularly. Real product scope, not a tutorial exercise.
 
-## Why SimpleBill?
+**Repo:** [github.com/donkasun/simple-bill](https://github.com/donkasun/simple-bill)
 
-I built SimpleBill for my non‑tech‑savvy dad, who only needs to make an invoice occasionally — about once a week or every couple of weeks. The focus is a calm, uncluttered flow that makes the task quick and stress‑free when he needs it.
+---
 
-## Tech Stack
+## What this is
 
-- React (Vite, TypeScript)
-- Firebase (Auth with Google, Firestore)
-- pdf-lib for PDF generation
+SimpleBill helps you set up customers and line items once, then create invoices and quotations in a few taps. Save a draft when you're half-done, finalize when you're ready, export a PDF, mark it paid. Google sign-in, multi-currency, light and dark theme.
 
-## Prerequisites
+I built it for my dad. He invoices maybe once a week and has zero interest in enterprise software. Most decisions in this repo trace back to him: plain labels, one main action per screen, no feature creep.
 
-- Node.js 18+
-- A Firebase project with Firestore and Google Sign‑In enabled
+Under the hood there's enough structure to take seriously: typed Firestore hooks, transactional document numbering, a reducer for the invoice form, Firestore rules that actually enforce ownership, and around 150 tests covering the business logic. The goal was always a small app someone would use, but I wanted to build it the way I'd build something at work.
 
-## Setup
+---
 
-1. Install deps
+## Features
 
-```bash
-npm install
+- **Customers and items:** reusable catalog, search, and quick-action shortcuts on the dashboard based on recent usage
+- **Invoices and quotations:** create, edit, duplicate; draft, finalized, and paid states with colour-coded status
+- **Quotation to invoice:** convert an approved quote into a new invoice in one step
+- **Multi-currency:** USD, LKR, EUR, GBP, AUD, CAD; per-document currency with a user default
+- **PDF export:** generated in the browser via pdf-lib, loaded only when you export
+- **Dashboard:** recent documents, a financial summary strip, shortcuts to frequent customers
+- **Settings:** default currency and theme (theme stored in localStorage)
+- **Landing page:** public marketing site at `/` with Google sign-in; the app itself sits behind auth
+
+---
+
+## How it's built
+
+React SPA on the front, Firebase Auth and Firestore on the back. Security lives in Firestore rules. No custom Node server to deploy.
+
+| Layer   | Choice                                                                                 |
+| ------- | -------------------------------------------------------------------------------------- |
+| UI      | React 19, TypeScript (strict), Vite 7                                                  |
+| Routing | React Router 7, lazy-loaded routes, one bundle per page                                |
+| Data    | Firestore via a generic `useFirestore` hook (real-time or one-shot, typed projections) |
+| Auth    | Firebase Auth, Google sign-in only                                                     |
+| PDF     | pdf-lib, dynamic import on export                                                      |
+| Tests   | Vitest + Testing Library (~150 tests), Playwright smoke script                         |
+| CI      | GitHub Actions: lint, test, build on every PR                                          |
+| Tooling | ESLint 9 (flat config), Prettier, Husky + lint-staged                                  |
+| Hosting | Vercel (SPA rewrites, COOP header for Google popup auth)                               |
+
+### Architecture notes
+
+**Page hooks, thin views.** Screens in `src/pages/` call into `use<Route>Page` hooks in `src/hooks/pages/`. The page renders UI; the hook handles data, mutations, and navigation. Document card actions share `useDocumentMutations`.
+
+**Generic Firestore hook.** One typed hook covers CRUD, subscriptions, and query building. It refuses unscoped reads and lets callers pass a `select` projection instead of duplicating boilerplate per collection.
+
+**Document form as a reducer.** Header fields, line items, and totals go through a discriminated-union reducer. A `canEdit` gate blocks mutations on finalized documents in one place. Validation is split between `validateDraft` and `validateFinalize` because drafts and finalized docs have different rules.
+
+**Transactional document numbering.** Numbers like `INV-2026-001` come from a Firestore transaction on a per-user counter. Counting existing documents and adding one would race under concurrency; this doesn't.
+
+**Pure utils, tested on their own.** Currency, document math, validation, and numbering live in `src/utils/` as plain functions. Most unit tests target that layer.
+
+**Firestore rules.** Per-user ownership on every collection, no ownership reassignment on update, deny-all catch-all. See `config/firebase/`.
+
+---
+
+## Design
+
+SimpleBill uses a **"Simple Humanist"** design system aimed at people who don't live in software:
+
+- Sage-green palette, light and dark themes, semantic colour tokens with matching foreground colours
+- Atkinson Hyperlegible for body text, Epilogue for headings
+- Large tap targets, labelled controls, plain English copy
+- Document status visible at a glance via colour-coded left borders (draft, sent, paid)
+
+More in [`docs/typography.md`](docs/typography.md) and [`docs/landing-page-stitch-brief.md`](docs/landing-page-stitch-brief.md).
+
+---
+
+## Project structure
+
+```
+src/
+├── auth/              Auth provider + useAuth hook
+├── components/
+│   ├── core/          Reusable UI (Button, StyledInput, ErrorBoundary, …)
+│   ├── customers/     Customer list, modal, empty state
+│   ├── documents/     Editor, cards, filters, line items table
+│   ├── dashboard/     Summary strip, quick actions, empty state
+│   ├── landing/       Public marketing page sections
+│   ├── layout/        AppShell, PageHeader, sidebar nav
+│   └── settings/      Theme and currency cards
+├── hooks/
+│   ├── pages/         Route orchestration (useDashboardPage, useDocumentPage, …)
+│   ├── useFirestore.ts
+│   └── useDocumentForm.ts
+├── pages/             Thin route views
+├── types/             Domain models
+└── utils/             Pure logic (currency, pdf, validation, docNumber, …)
+
+tests/                 Vitest: hooks, pages, utils, components
+config/firebase/       Firestore rules + indexes
+scripts/               Playwright smoke test
 ```
 
-2. Environment variables
-   Create a `.env` file with your Firebase web config:
+---
+
+## Getting started
+
+**Prerequisites:** Node.js 20+, pnpm, a Firebase project with Firestore and Google sign-in enabled.
 
 ```bash
-VITE_API_KEY=...
-VITE_AUTH_DOMAIN=...
-VITE_PROJECT_ID=...
-VITE_STORAGE_BUCKET=...
-VITE_MESSAGING_SENDER_ID=...
-VITE_APP_ID=...
+pnpm install
+cp .env.sample .env   # fill in Firebase web config
+pnpm dev              # http://localhost:5173
 ```
 
-3. Firestore
+### Firestore setup
 
-- Create the database (Native mode, region `nam5`) in Firebase Console
-- Deploy rules and indexes (requires Firebase CLI):
+1. Create the database (Native mode) in Firebase Console
+2. Deploy rules and indexes:
 
 ```bash
-npm i -g firebase-tools
 firebase login
 firebase use <your-project-id>
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-Files used:
+Config files: `firebase.json`, `config/firebase/firestore.rules`, `config/firebase/firestore.indexes.json`.
 
-- `firebase.json` – Firestore config (database, region, files)
-- `config/firebase/firestore.rules` – Secure, per‑user access rules
-- `config/firebase/firestore.indexes.json` – Composite index for `customers` (userId ASC, createdAt DESC)
+### Local dev without Firebase auth
 
-## Development
-
-Run the app locally:
+For UI testing and Playwright, add to `.env.development.local` (gitignored):
 
 ```bash
-npm run dev
+VITE_MOCK_USER=true
 ```
+
+---
 
 ## Testing
 
-- **Unit / component tests:** `npm test`
-- **Playwright smoke (mock user):** `npm run test:playwright` — expects the dev server at `BASE_URL` (default `http://localhost:5173`). Start it first with `VITE_MOCK_USER=true npm run dev`.
+```bash
+pnpm test                  # Vitest: unit, hook, and page tests
+pnpm test:watch            # watch mode
+pnpm run test:playwright   # smoke test (dev server must be running with mock user)
+```
 
-## Features
+CI runs lint, test, and build on every push and PR to `main`.
 
-- Google Sign‑In
-- Customers
-  - Add/Edit in modal
-  - Address supports multiple lines
-  - Email is optional; validated if provided
-  - `showEmail` boolean to control whether email appears on documents
-- Items
-  - Add/Edit in modal
-  - Unit price with currency formatting
-- Documents (Invoices/Quotations)
-  - Create, edit, validate draft/finalize
-  - Auto document number allocation
-  - Multi-currency: per-document currency with a user default (e.g. LKR, USD)
-  - PDF export (pdf-lib) with dynamic import
-- Dashboard: list and download recent documents
+---
 
-## Design Language
+## About
 
-SimpleBill uses the **"Simple Humanist"** design system — calm and high-legibility, built
-for a non-technical user:
+Built by [Don Kasun Gallage](https://github.com/donkasun). Side project, but built with the same habits I'd bring to a client engagement: start from a real user, scope hard, ship something maintainable.
 
-- Sage-green palette with warm neutrals; light and dark themes
-- Atkinson Hyperlegible (body, optimized for low vision) + Epilogue (headings)
-- Large tap targets, labeled controls (never icon-only), plain-English copy
-- Generous whitespace and soft, rounded surfaces
+If you want to talk about the project or something similar for your business, open an issue or reach out on GitHub.
 
-## Code Structure
+---
 
-- `src/components/core/*` – Reusable UI components
-- `src/components/customers/CustomerModal.tsx` – Add/Edit customer modal
-- `src/components/items/ItemModal.tsx` – Add/Edit item modal
-- `src/components/documents/LineItemsTable.tsx` – Line items editor
-- `src/auth/*` – Google Auth provider and hook
-- `src/hooks/useFirestore.ts` – Generic Firestore CRUD hook
-- `src/hooks/useDocumentForm.ts` – Document form state/validation utilities
-- `src/types/*` – Shared models (`@models/firestore`, `document`, `item`, `customer`)
-- `src/pages/*` – Route pages (Dashboard, Customers, Items, DocumentCreation, DocumentEdit)
+## Docs and contributing
 
-## Roadmap
-
-- This project is built in milestones. The canonical milestone tracker lives in `docs/project_plan.md`.
-
-## Contributing
-
-Contributions are welcome! See [CONTRIBUTING](.github/CONTRIBUTING.md) and [Code of Conduct](.github/CODE_OF_CONDUCT.md).
+- Feature status: [`docs/feature_requirements.md`](docs/feature_requirements.md)
+- Delivery plan: [`docs/project_plan.md`](docs/project_plan.md)
+- Contributing: [CONTRIBUTING](.github/CONTRIBUTING.md) · [Code of Conduct](.github/CODE_OF_CONDUCT.md)
 
 ## License
 
