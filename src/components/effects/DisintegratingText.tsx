@@ -177,17 +177,13 @@ export default function DisintegratingText({
       tween();
     };
 
-    // Dissolve shortly after the user starts scrolling down (hero still on
-    // screen), and reform near the top. Driven by scroll distance — not the
-    // hero's resting position — so it never fires at load (scrollY 0 = solid).
-    // Hysteresis band avoids thrashing right at the threshold.
+    // Dissolve once the user has scrolled past 60px; reform when back above it.
+    // Driven by scroll distance (not the hero's resting position) so it never
+    // fires at load (scrollY 0 = solid).
     const evaluate = () => {
       const y = window.scrollY || window.pageYOffset || 0;
-      let want = targetRef.current;
-      if (y > 40)
-        want = 1; // dissolve after scrolling ~40px
-      else if (y <= 10) want = 0; // reform near the top
-      if (want !== targetRef.current) setTarget(want as 0 | 1);
+      const want: 0 | 1 = y > 60 ? 1 : 0;
+      if (want !== targetRef.current) setTarget(want);
     };
 
     const onScroll = () => evaluate();
