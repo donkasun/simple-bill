@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@auth/useAuth";
 import DisintegratingText from "@components/effects/DisintegratingText";
+import HowItWorksSection from "@components/landing/HowItWorksSection";
 
 const GoogleIcon = () => (
   <svg
@@ -63,10 +64,16 @@ const outlineBtnStyle = (size: "md" | "lg"): React.CSSProperties => ({
   whiteSpace: "nowrap" as const,
 });
 
+const NAV_LINKS = [
+  { label: "Features", href: "#features", id: "features" },
+  { label: "How it works", href: "#how-it-works", id: "how-it-works" },
+] as const;
+
 const Landing = () => {
   const { user, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [glow, setGlow] = useState({ x: -1000, y: -1000 });
   const heroRef = useRef<HTMLHeadingElement>(null);
 
@@ -81,9 +88,28 @@ const Landing = () => {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const updateNav = () => {
+      setScrolled(window.scrollY > 16);
+
+      const featuresEl = document.getElementById("features");
+      const howEl = document.getElementById("how-it-works");
+      if (!featuresEl) return;
+
+      const navOffset = 80;
+      const y = window.scrollY + navOffset;
+
+      if (y < featuresEl.offsetTop) {
+        setActiveSection(null);
+      } else if (howEl && y >= howEl.offsetTop) {
+        setActiveSection("how-it-works");
+      } else {
+        setActiveSection("features");
+      }
+    };
+
+    window.addEventListener("scroll", updateNav, { passive: true });
+    updateNav();
+    return () => window.removeEventListener("scroll", updateNav);
   }, []);
 
   return (
@@ -124,9 +150,9 @@ const Landing = () => {
           position: "sticky",
           top: 0,
           zIndex: 100,
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          justifyContent: "space-between",
           padding: "0 2rem",
           height: "64px",
           backgroundColor: scrolled ? "rgba(248,249,250,0.88)" : "transparent",
@@ -140,7 +166,14 @@ const Landing = () => {
         }}
       >
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            justifySelf: "start",
+          }}
+        >
           <span
             className="material-symbols-outlined filled"
             style={{ fontSize: "24px", color: "var(--md-primary-container)" }}
@@ -161,38 +194,42 @@ const Landing = () => {
         </div>
 
         {/* Centre nav links */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-          {[
-            { label: "Features", href: "#features" },
-            { label: "How it works", href: "#how-it-works" },
-            { label: "Showcase", href: "#showcase" },
-          ].map(({ label, href }, i) => (
-            <a
-              key={href}
-              href={href}
-              style={{
-                padding: "0.375rem 0.875rem",
-                fontSize: "var(--text-base)",
-                fontWeight: i === 0 ? 700 : 400,
-                color:
-                  i === 0
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            justifySelf: "center",
+          }}
+        >
+          {NAV_LINKS.map(({ label, href, id }) => {
+            const isActive = activeSection === id;
+            return (
+              <a
+                key={href}
+                href={href}
+                style={{
+                  padding: "0.375rem 0.875rem",
+                  fontSize: "var(--text-base)",
+                  fontWeight: isActive ? 700 : 400,
+                  color: isActive
                     ? "var(--md-primary-container)"
                     : "var(--md-on-surface-variant)",
-                textDecoration: "none",
-                borderBottom:
-                  i === 0
+                  textDecoration: "none",
+                  borderBottom: isActive
                     ? "2px solid var(--md-primary-container)"
                     : "2px solid transparent",
-                lineHeight: "1.5",
-              }}
-            >
-              {label}
-            </a>
-          ))}
+                  lineHeight: "1.5",
+                }}
+              >
+                {label}
+              </a>
+            );
+          })}
         </div>
 
         {/* Right CTA */}
-        <div>
+        <div style={{ justifySelf: "end" }}>
           {user ? (
             <Link to="/dashboard" style={ctaBtnStyle("sm")}>
               Go to app
@@ -317,12 +354,12 @@ const Landing = () => {
           .bento-card-wide, .bento-card-narrow {
             transition: background-color 0.25s ease;
           }
-          /* Card 1 — Invoices (green) */
-          .bento-card-1 { background-color: var(--md-surface-container-lowest); }
+          /* Card 1 — Invoices (mint green, Stitch #9ef8ac) */
+          .bento-card-1 { background-color: #9ef8ac; }
           .bento-card-1:hover { background-color: var(--md-primary-container); }
-          .bento-c1-heading { color: var(--md-primary-container); transition: color 0.25s ease; }
+          .bento-c1-heading { color: var(--md-primary); transition: color 0.25s ease; }
           .bento-card-1:hover .bento-c1-heading { color: #ffffff; }
-          .bento-c1-body { color: var(--md-on-surface-variant); transition: color 0.25s ease; }
+          .bento-c1-body { color: var(--md-on-primary-container); transition: color 0.25s ease; }
           .bento-card-1:hover .bento-c1-body { color: rgba(255,255,255,0.85); }
           /* Card 1 — button on card hover */
           .bento-c1-btn { transition: background-color 0.25s ease, color 0.25s ease; }
@@ -860,45 +897,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── How it works placeholder ─────────────── */}
-      <section
-        id="how-it-works"
-        style={{
-          padding: "5rem 1.5rem",
-          backgroundColor: "var(--md-surface-container)",
-          textAlign: "center",
-        }}
-      >
-        <p
-          style={{
-            color: "var(--md-on-surface-variant)",
-            fontSize: "var(--text-sm)",
-          }}
-        >
-          How it works placeholder
-        </p>
-      </section>
-
-      {/* ── Showcase placeholder ─────────────────── */}
-      <section
-        id="showcase"
-        style={{
-          padding: "5rem 1.5rem",
-          maxWidth: "1100px",
-          margin: "0 auto",
-          width: "100%",
-          textAlign: "center",
-        }}
-      >
-        <p
-          style={{
-            color: "var(--md-on-surface-variant)",
-            fontSize: "var(--text-sm)",
-          }}
-        >
-          Product showcase placeholder
-        </p>
-      </section>
+      <HowItWorksSection />
 
       {/* ── Closing CTA band ─────────────────────── */}
       <section
