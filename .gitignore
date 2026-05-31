@@ -28,6 +28,9 @@ dist-ssr
 # Playwright MCP screenshots and snapshots
 .playwright-mcp/
 
+# Ad-hoc dev screenshots (design refs live in screenshots/stitch-*.png)
+screenshots/live-*.png
+
 # Claude Code tooling
 .claude/
 .superpowers/

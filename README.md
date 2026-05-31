@@ -73,10 +73,7 @@ npm run dev
 ## Testing
 
 - **Unit / component tests:** `npm test`
-- **Playwright (Milestone 6 + smoke, mock user):** `npm run test:playwright`  
-  Starts Vite on port **5179** with `VITE_MOCK_USER=true` unless the server is already up. To use your own dev server:  
-  `BASE_URL=http://localhost:5173 PLAYWRIGHT_START_SERVER=0 npm run test:playwright`
-- **Legacy smoke only:** `npm run test:playwright:smoke` (expects `BASE_URL`, default `http://localhost:5173`)
+- **Playwright smoke (mock user):** `npm run test:playwright` — expects the dev server at `BASE_URL` (default `http://localhost:5173`). Start it first with `VITE_MOCK_USER=true npm run dev`.
 
 ## Features
 
