@@ -820,40 +820,43 @@ const Landing = () => {
           }
         `}</style>
         <div className="marquee-track" aria-hidden="true">
-          {[0, 1].map((copy) => (
-            <div key={copy} style={{ display: "flex", alignItems: "center" }}>
-              {[
-                { label: "Invoices", icon: "receipt_long" },
-                { label: "Quotations", icon: "request_quote" },
-                { label: "Multi-currency", icon: "currency_exchange" },
-                { label: "One-tap PDF", icon: "picture_as_pdf" },
-                { label: "Repeat clients", icon: "group" },
-                { label: "LKR", icon: "payments" },
-                { label: "USD", icon: "attach_money" },
-                { label: "EUR", icon: "euro" },
-                { label: "GBP", icon: "currency_pound" },
-              ].map(({ label, icon }, i, arr) => (
-                <div
-                  key={label}
-                  style={{ display: "flex", alignItems: "center" }}
-                >
-                  <span className="marquee-item">
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: "16px", opacity: 0.8 }}
-                    >
-                      {icon}
+          {(() => {
+            const items = [
+              { label: "Invoices", icon: "receipt_long" },
+              { label: "Quotations", icon: "request_quote" },
+              { label: "Multi-currency", icon: "currency_exchange" },
+              { label: "One-tap PDF", icon: "picture_as_pdf" },
+              { label: "Repeat clients", icon: "group" },
+              { label: "LKR", icon: "payments" },
+              { label: "USD", icon: "attach_money" },
+              { label: "EUR", icon: "euro" },
+              { label: "GBP", icon: "currency_pound" },
+            ];
+            // Repeat the set enough times that one copy is wider than even
+            // ultra-wide viewports, so the -50% loop never reveals empty space.
+            const perCopy = Array.from({ length: 4 }).flatMap(() => items);
+            return [0, 1].map((copy) => (
+              <div key={copy} style={{ display: "flex", alignItems: "center" }}>
+                {perCopy.map(({ label, icon }, i) => (
+                  <div
+                    key={`${copy}-${i}`}
+                    style={{ display: "flex", alignItems: "center" }}
+                  >
+                    <span className="marquee-item">
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: "16px", opacity: 0.8 }}
+                      >
+                        {icon}
+                      </span>
+                      {label}
                     </span>
-                    {label}
-                  </span>
-                  {i < arr.length - 1 && <span className="marquee-sep">◆</span>}
-                </div>
-              ))}
-              <span className="marquee-sep" style={{ padding: "0 1.25rem" }}>
-                ◆
-              </span>
-            </div>
-          ))}
+                    <span className="marquee-sep">◆</span>
+                  </div>
+                ))}
+              </div>
+            ));
+          })()}
         </div>
       </section>
 
