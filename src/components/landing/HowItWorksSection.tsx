@@ -6,7 +6,7 @@ const STEPS = [
     id: "add",
     label: "Add",
     title: "Add your client and what you charge for",
-    body: "Set it up once. SimpleBill remembers, so next time is faster.",
+    body: "Set it up once. SimpleBill remembers your people and your usual charges.",
     image: "/how-it-works/step-add.png",
     imageAlt: "Customers and items screens in SimpleBill",
     rotate: -5,
@@ -17,7 +17,7 @@ const STEPS = [
     id: "build",
     label: "Build",
     title: "Build the invoice",
-    body: "Pick a client, add your items, watch the total sort itself out.",
+    body: "Pick a client, drop in your line items, and the total adds itself up.",
     image: "/how-it-works/step-build.png",
     imageAlt: "Line items on an invoice in SimpleBill",
     rotate: 4.5,
@@ -28,7 +28,7 @@ const STEPS = [
     id: "send",
     label: "Send",
     title: "Send it and move on",
-    body: "Download a polished PDF, send it, and get back to the actual work.",
+    body: "Download the PDF, send it off, and get back to the work that pays you.",
     image: "/how-it-works/step-send.png",
     imageAlt: "Dashboard showing invoice status in SimpleBill",
     rotate: -2.5,
@@ -320,7 +320,7 @@ export default function HowItWorksSection() {
                 lineHeight: 1.2,
               }}
             >
-              From blank page to sent invoice in three steps
+              Blank page to sent invoice
             </h2>
           </div>
 
@@ -467,7 +467,7 @@ export default function HowItWorksSection() {
               lineHeight: 1.2,
             }}
           >
-            From blank page to sent invoice in three steps
+            Blank page to sent invoice
           </h2>
         </div>
         {STEPS.map((step, i) => (

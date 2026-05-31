@@ -2,7 +2,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@auth/useAuth";
 import DisintegratingText from "@components/effects/DisintegratingText";
+import CtaCoinsBackground from "@components/landing/CtaCoinsBackground";
 import HowItWorksSection from "@components/landing/HowItWorksSection";
+import { scrollToSection } from "@utils/scrollToSection";
 
 const GoogleIcon = () => (
   <svg
@@ -76,6 +78,14 @@ const Landing = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [glow, setGlow] = useState({ x: -1000, y: -1000 });
   const heroRef = useRef<HTMLHeadingElement>(null);
+
+  const handleSectionNavClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    sectionId: string,
+  ) => {
+    e.preventDefault();
+    scrollToSection(sectionId);
+  };
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -220,6 +230,7 @@ const Landing = () => {
                 <a
                   key={href}
                   href={href}
+                  onClick={(e) => handleSectionNavClick(e, id)}
                   style={{
                     padding: "0.375rem 0.875rem",
                     fontSize: "var(--text-base)",
@@ -314,7 +325,7 @@ const Landing = () => {
               margin: 0,
             }}
           >
-            SimpleBill helps you bill your regular clients in a few calm taps.
+            Bill the clients you already know, without fighting a spreadsheet.
             Create an invoice or quote, add your items, send a clean PDF.
           </p>
 
@@ -336,7 +347,11 @@ const Landing = () => {
                 Sign in with Google
               </button>
             )}
-            <a href="#how-it-works" style={outlineBtnStyle("md")}>
+            <a
+              href="#how-it-works"
+              style={outlineBtnStyle("md")}
+              onClick={(e) => handleSectionNavClick(e, "how-it-works")}
+            >
               See how it works
             </a>
           </div>
@@ -452,7 +467,7 @@ const Landing = () => {
                   color: "var(--md-on-surface)",
                 }}
               >
-                Everything you need
+                What you need, nothing more
               </h2>
               <p
                 style={{
@@ -463,7 +478,7 @@ const Landing = () => {
                   lineHeight: 1.6,
                 }}
               >
-                Simple tools built for how you actually work.
+                For people who invoice sometimes, not all day.
               </p>
             </div>
 
@@ -503,8 +518,8 @@ const Landing = () => {
                       margin: "0 0 1.5rem",
                     }}
                   >
-                    Convert quotes to professional invoices with one click.
-                    Custom branding included.
+                    Quotes and invoices use the same flow. When they&apos;re
+                    ready to pay, flip it to an invoice without starting over.
                   </p>
                   <button className="bento-c1-btn" style={ctaBtnStyle("sm")}>
                     Explore features
@@ -674,7 +689,7 @@ const Landing = () => {
                       margin: "0 0 0.5rem",
                     }}
                   >
-                    CRM Simplified
+                    Your regulars, saved
                   </h3>
                   <p
                     className="bento-c2-body"
@@ -684,8 +699,8 @@ const Landing = () => {
                       margin: 0,
                     }}
                   >
-                    Your clients, contacts, and billing history — all in one
-                    place.
+                    Keep the people you bill in one place. No more retyping
+                    names and emails every month.
                   </p>
                 </div>
               </div>
@@ -740,8 +755,8 @@ const Landing = () => {
                       margin: 0,
                     }}
                   >
-                    LKR, USD, EUR, GBP. Bill anyone, anywhere, in their
-                    currency.
+                    LKR, USD, EUR, GBP. Bill in whatever currency your client
+                    actually pays in.
                   </p>
                 </div>
               </div>
@@ -780,8 +795,8 @@ const Landing = () => {
                       margin: 0,
                     }}
                   >
-                    Export beautiful, print-ready documents instantly. Works on
-                    any screen, every time.
+                    Turn any document into a PDF you can email or WhatsApp. One
+                    tap.
                   </p>
                 </div>
 
@@ -927,22 +942,7 @@ const Landing = () => {
             overflow: "hidden",
           }}
         >
-          {/* Coin illustration overlay */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: 0.2,
-              pointerEvents: "none",
-            }}
-          >
-            <img
-              src="/coins-zen.png"
-              alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          </div>
+          <CtaCoinsBackground />
           <div
             style={{
               maxWidth: "640px",
@@ -980,8 +980,7 @@ const Landing = () => {
                 lineHeight: 1.65,
               }}
             >
-              A calmer way to bill your clients. Free to use, no credit card
-              required.
+              Free to use. No credit card, no sales call.
             </p>
             <div style={{ marginTop: "0.5rem" }}>
               {user ? (
@@ -1003,7 +1002,7 @@ const Landing = () => {
                 opacity: 0.7,
               }}
             >
-              Free to use. Sign in and start in under a minute.
+              Sign in with Google and send your first invoice in about a minute.
             </p>
           </div>
         </section>
