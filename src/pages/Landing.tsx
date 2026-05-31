@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@auth/useAuth";
+import DisintegratingText from "@components/effects/DisintegratingText";
 
 const GoogleIcon = () => (
   <svg
@@ -67,6 +68,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [glow, setGlow] = useState({ x: -1000, y: -1000 });
+  const heroRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -236,6 +238,7 @@ const Landing = () => {
         </p>
 
         <h1
+          ref={heroRef}
           style={{
             fontFamily: "var(--font-heading)",
             fontSize: "clamp(2.25rem, 6vw, 3.75rem)",
@@ -246,9 +249,11 @@ const Landing = () => {
           }}
         >
           Make an invoice.{" "}
-          <span style={{ color: "var(--md-primary-container)" }}>
-            Then forget about it.
-          </span>
+          <DisintegratingText
+            text="Then forget about it."
+            color="var(--md-primary-container)"
+            triggerRef={heroRef}
+          />
         </h1>
 
         <p
