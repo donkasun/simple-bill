@@ -31,7 +31,13 @@ function row(alphas: number[]): Uint8ClampedArray {
 }
 
 describe("createParticles", () => {
-  const opts = { gap: 1, dpr: 1, driftX: -100, scatterY: 20, rng: () => 0.5 };
+  const opts = {
+    gap: 1,
+    dpr: 1,
+    driftX: -100,
+    scatterYRange: 20,
+    rng: () => 0.5,
+  };
 
   it("emits one particle per opaque pixel and skips transparent ones", () => {
     const data = row([255, 0, 255, 255]); // 3 opaque, 1 transparent
@@ -68,6 +74,13 @@ describe("createParticles", () => {
     expect(ps[0].y).toBe(ps[0].homeY);
     expect(ps[0].alpha).toBe(1);
   });
+
+  it("computes scatter target deterministically from rng", () => {
+    const data = row([255, 0, 0, 0]);
+    const ps = createParticles(data, 4, 1, opts);
+    expect(ps[0].scatterX).toBeCloseTo(-100, 5);
+    expect(ps[0].scatterTargetY).toBeCloseTo(-5, 5);
+  });
 });
 
 function makeParticle(): Particle {
@@ -75,7 +88,7 @@ function makeParticle(): Particle {
     homeX: 10,
     homeY: 5,
     scatterX: -90,
-    scatterY: 25,
+    scatterTargetY: 25,
     x: 10,
     y: 5,
     size: 1.5,
@@ -113,5 +126,21 @@ describe("applyPhase", () => {
     expect(p.x).toBeCloseTo(10, 5);
     expect(p.y).toBeCloseTo(5, 5);
     expect(p.alpha).toBeCloseTo(1, 5);
+  });
+
+  it("solid snaps particles to home, fully opaque", () => {
+    const p = { ...makeParticle(), x: -50, y: 99, alpha: 0.3 };
+    applyPhase([p], "solid", 0);
+    expect(p.x).toBeCloseTo(10, 5);
+    expect(p.y).toBeCloseTo(5, 5);
+    expect(p.alpha).toBeCloseTo(1, 5);
+  });
+
+  it("scattered snaps particles to scatter target, fully transparent", () => {
+    const p = { ...makeParticle(), x: 10, y: 5, alpha: 1 };
+    applyPhase([p], "scattered", 0);
+    expect(p.x).toBeCloseTo(-90, 5);
+    expect(p.y).toBeCloseTo(25, 5);
+    expect(p.alpha).toBeCloseTo(0, 5);
   });
 });
