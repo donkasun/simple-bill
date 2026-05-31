@@ -140,14 +140,16 @@ export default function DisintegratingText({
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.4;
+        // Fire as soon as the hero *starts* to leave so the dissolve plays
+        // while it's still on screen (not after it's scrolled away).
+        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.9;
         if (!visible && phaseRef.current === "solid") {
           if (ensureBuilt()) run("dissolving");
         } else if (visible && phaseRef.current === "scattered") {
           run("reforming");
         }
       },
-      { threshold: [0, 0.4, 1] },
+      { threshold: [0, 0.9, 1] },
     );
     io.observe(target);
 
