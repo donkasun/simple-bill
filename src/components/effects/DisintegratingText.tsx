@@ -41,6 +41,7 @@ export default function DisintegratingText({
     if (prefersReduced) return;
     const target = triggerRef.current;
     if (!target || typeof IntersectionObserver === "undefined") return;
+    builtRef.current = false; // re-measure/rebuild whenever inputs change
 
     const buildParticles = (): boolean => {
       const span = spanRef.current;
@@ -96,12 +97,6 @@ export default function DisintegratingText({
       ctx.globalAlpha = 1;
     };
 
-    const clearCanvas = () => {
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext("2d");
-      if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-    };
-
     const run = (next: "dissolving" | "reforming") => {
       cancelAnimationFrame(rafRef.current);
       phaseRef.current = next;
@@ -117,7 +112,6 @@ export default function DisintegratingText({
           const done: Phase = next === "dissolving" ? "scattered" : "solid";
           phaseRef.current = done;
           setPhase(done);
-          clearCanvas();
         }
       };
       rafRef.current = requestAnimationFrame(tick);
@@ -161,6 +155,15 @@ export default function DisintegratingText({
     drift.scatterY,
     duration,
   ]);
+
+  // Clear leftover particles after the span is committed in a static phase,
+  // so the visible <span> reappears before the canvas is wiped (no blank frame).
+  useEffect(() => {
+    if (phase !== "solid" && phase !== "scattered") return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }, [phase]);
 
   return (
     <span style={{ position: "relative", display: "inline-block" }}>
