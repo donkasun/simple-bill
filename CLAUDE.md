@@ -85,9 +85,26 @@ Used on document cards (left border, badge, amount text):
 
 ### Squash merges on PRs
 
-When squash-merging a branch, **always supply a rewritten commit message** (`gh pr merge --squash -t "…" -b "…"`). Do not accept GitHub's default squash body — it concatenates every commit on the branch, and agent-assisted commits often include `Co-authored-by` trailers that would repeat the same co-author once per commit.
+When the user asks to squash-merge a PR (or after CI is green and merge is intended):
 
-Write one concise subject and a short body summarizing the PR outcome. Then append **each unique `Co-authored-by` trailer once** (dedupe by email/name across branch commits). Do not omit co-authors, and do not paste every branch commit message verbatim.
+1. **Rewrite the squash commit message** — never accept GitHub's default. The default body concatenates every branch commit; agent commits often repeat the same `Co-authored-by` trailer once per commit.
+2. **Merge with explicit subject and body:**
+
+   ```bash
+   gh pr merge <number> --squash \
+     -t "feat(scope): concise outcome" \
+     -b "$(cat <<'EOF'
+   Short summary of what landed on main (not a commit-by-commit dump).
+
+   Co-authored-by: Cursor <cursoragent@cursor.com>
+   EOF
+   )"
+   ```
+
+   Use `--body-file` for longer bodies. Append **each unique `Co-authored-by` once** at the end (dedupe by email/name across branch commits). Do not omit co-authors.
+
+3. **Delete the feature branch** after a successful merge unless the user asks to keep it — either pass `--delete-branch` on `gh pr merge`, or run `git push origin --delete <branch>` (and delete the local branch if needed).
+4. **Checkout `main` and pull** in the workspace after merge so the agent is not left on a stale head branch.
 
 ---
 
