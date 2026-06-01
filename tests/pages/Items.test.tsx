@@ -189,43 +189,9 @@ describe("Items", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Failed to load items");
   });
 
-  it("shows page error after failed delete", async () => {
-    remove.mockRejectedValueOnce(new Error("Network down"));
-
-    mockUseFirestore.mockReturnValue({
-      items: [
-        {
-          id: "it-1",
-          userId: "uid-1",
-          name: "Design work",
-          unitPrice: 1200,
-          unitPriceLabel: "$1,200.00",
-          description: "Per hour",
-        },
-      ],
-      loading: false,
-      error: null,
-      add: vi.fn(),
-      update: vi.fn(),
-      remove,
-      set: vi.fn(),
-      getById: vi.fn(),
-      getOnce: vi.fn(),
-    } as unknown as ReturnType<typeof useFirestore>);
-
+  it("does not show an inline banner for a failed delete (handled by toast)", async () => {
+    // error is null (load-only) so no alert banner is rendered
     render(<Items />);
-
-    fireEvent.click(
-      within(
-        screen.getByText("Design work").closest("tr") as HTMLElement,
-      ).getByRole("button", { name: "Delete item" }),
-    );
-
-    const dialog = screen.getByRole("dialog", { name: "Delete Item" });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Network down");
-    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

@@ -13,6 +13,7 @@ export default defineConfig({
       "@hooks": fileURLToPath(new URL("./src/hooks", import.meta.url)),
       "@auth": fileURLToPath(new URL("./src/auth", import.meta.url)),
       "@models": fileURLToPath(new URL("./src/types", import.meta.url)),
+      "@contexts": fileURLToPath(new URL("./src/contexts", import.meta.url)),
     },
   },
   test: {

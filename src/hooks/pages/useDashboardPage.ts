@@ -36,7 +36,6 @@ export type DashboardPageViewModel = {
   firstName: string;
   loading: boolean;
   firestoreError: string | null;
-  mutationError: string | null;
   financialSummary: DashboardFinancialSummary;
   statusCounts: DashboardStatusCounts;
   formatSummaryCurrency: (value: number) => string;
@@ -306,7 +305,6 @@ export function useDashboardPage(): DashboardPageViewModel {
     firstName,
     loading,
     firestoreError,
-    mutationError: mutations.mutationError,
     financialSummary,
     statusCounts,
     formatSummaryCurrency,

@@ -10,24 +10,21 @@ const Settings: React.FC = () => {
   const vm = useSettingsPage();
 
   return (
-    <div className="app-page">
+    <div className="app-page settings-page">
       <PageHeader
         title="Settings"
-        subtitle="Currency, appearance, and other defaults."
+        subtitle="Your usual currency and how the app looks."
       />
 
-      {vm.loading && <p>Loading settings...</p>}
-      {vm.error && <p style={{ color: "red" }}>{vm.error}</p>}
+      {vm.loading && <p className="settings-page__status">Loading settings…</p>}
+      {vm.error && (
+        <p className="settings-page__error" role="alert">
+          {vm.error}
+        </p>
+      )}
 
       {vm.profile && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "2rem",
-            marginTop: "1rem",
-          }}
-        >
+        <div className="settings-sections">
           <SettingsCurrencyCard
             currency={vm.profile.currency ?? "USD"}
             onChange={vm.actions.setCurrency}

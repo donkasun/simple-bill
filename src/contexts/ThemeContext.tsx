@@ -74,10 +74,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, [theme, updateResolvedTheme]);
 
-  // Apply theme to document
+  // Apply theme to document (skip color transitions so controls repaint immediately)
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.add("theme-switching");
     root.setAttribute("data-theme", resolvedTheme);
+
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove("theme-switching");
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [resolvedTheme]);
 
   const handleSetTheme = (newTheme: Theme) => {

@@ -7,10 +7,11 @@ import useUserProfile from "@hooks/useUserProfile";
 
 vi.mock("@hooks/useUserProfile");
 vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
+const mockSetTheme = vi.fn();
 vi.mock("@hooks/useTheme", () => ({
   useTheme: () => ({
     theme: "system",
-    setTheme: vi.fn(),
+    setTheme: mockSetTheme,
     resolvedTheme: "light",
   }),
 }));
@@ -36,16 +37,26 @@ describe("Settings", () => {
     cleanup();
   });
 
-  it("renders currency and theme controls", () => {
+  it("renders currency and appearance controls", () => {
     render(
       <BrowserRouter>
         <Settings />
       </BrowserRouter>,
     );
 
-    expect(screen.getByLabelText(/global currency/i)).toBeTruthy();
-    expect(screen.getByLabelText(/^theme:/i)).toBeTruthy();
-    expect(screen.getByDisplayValue("USD")).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /default currency/i }),
+    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /appearance/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /us dollar/i })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByRole("radio", { name: /^light$/i })).toBeTruthy();
+    expect(
+      screen.getByRole("radio", { name: /match device/i }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(document.querySelector(".settings-theme-picker")).toBeTruthy();
   });
 
   it("calls updateUserProfile when currency changes", () => {
@@ -55,10 +66,20 @@ describe("Settings", () => {
       </BrowserRouter>,
     );
 
-    fireEvent.change(screen.getByLabelText(/global currency/i), {
-      target: { value: "LKR" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: /sri lankan rupee/i }));
 
     expect(updateUserProfile).toHaveBeenCalledWith({ currency: "LKR" });
+  });
+
+  it("calls setTheme when appearance changes", () => {
+    render(
+      <BrowserRouter>
+        <Settings />
+      </BrowserRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: /^dark$/i }));
+
+    expect(mockSetTheme).toHaveBeenCalledWith("dark");
   });
 });

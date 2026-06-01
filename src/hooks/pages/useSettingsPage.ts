@@ -1,5 +1,6 @@
 import useUserProfile from "@hooks/useUserProfile";
 import { useTheme } from "@hooks/useTheme";
+import { toast } from "@contexts/toast";
 
 export type SettingsPageViewModel = {
   loading: boolean;
@@ -8,7 +9,7 @@ export type SettingsPageViewModel = {
   theme: ReturnType<typeof useTheme>["theme"];
   resolvedTheme: ReturnType<typeof useTheme>["resolvedTheme"];
   actions: {
-    setCurrency: (currency: string) => void;
+    setCurrency: (currency: string) => Promise<void>;
     setTheme: (theme: "light" | "dark" | "system") => void;
   };
 };
@@ -24,8 +25,15 @@ export function useSettingsPage(): SettingsPageViewModel {
     theme,
     resolvedTheme,
     actions: {
-      setCurrency: (currency: string) => {
-        void updateUserProfile({ currency });
+      setCurrency: async (currency: string) => {
+        try {
+          await updateUserProfile({ currency });
+          toast.success("Currency updated");
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to update currency",
+          );
+        }
       },
       setTheme: (value: "light" | "dark" | "system") => {
         setTheme(value);

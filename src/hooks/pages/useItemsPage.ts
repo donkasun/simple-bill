@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import useUserProfile from "@hooks/useUserProfile";
+import { toast } from "@contexts/toast";
 import type { ItemFormData } from "@components/items/ItemModal";
 import { formatCurrency } from "@utils/currency";
 import type { Item } from "../../types/item";
@@ -57,13 +58,12 @@ export function useItemsPage(): ItemsPageViewModel {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
-  const [pageError, setPageError] = useState<string | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const error = firestoreError || pageError;
+  const error = firestoreError;
   const showItemsTable = !loading && !firestoreError;
   const empty = items.length === 0;
 
@@ -88,10 +88,9 @@ export function useItemsPage(): ItemsPageViewModel {
     setConfirmOpen(false);
     try {
       await remove(itemToDelete);
+      toast.success("Item deleted");
     } catch (err) {
-      setPageError(
-        err instanceof Error ? err.message : "Failed to delete item",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to delete item");
     } finally {
       setDeletingId(null);
       setItemToDelete(null);
@@ -107,7 +106,6 @@ export function useItemsPage(): ItemsPageViewModel {
   };
 
   const submitItem = async (data: ItemFormData) => {
-    setPageError(null);
     setModalSubmitting(true);
     try {
       if (editingItem?.id) {
@@ -125,10 +123,9 @@ export function useItemsPage(): ItemsPageViewModel {
         });
       }
       setModalOpen(false);
+      toast.success(editingItem?.id ? "Item updated" : "Item added");
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to save item";
-      setPageError(message);
+      toast.error(err instanceof Error ? err.message : "Failed to save item");
     } finally {
       setModalSubmitting(false);
     }

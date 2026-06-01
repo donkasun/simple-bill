@@ -31,7 +31,8 @@
       "@utils/*": ["src/utils/*"],
       "@hooks/*": ["src/hooks/*"],
       "@auth/*": ["src/auth/*"],
-      "@models/*": ["src/types/*"]
+      "@models/*": ["src/types/*"],
+      "@contexts/*": ["src/contexts/*"]
     }
   },
   "include": ["src"]

@@ -5,10 +5,23 @@ import { render, waitFor, cleanup } from "@testing-library/react";
 import { useCustomersPage } from "../../src/hooks/pages/useCustomersPage";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
+import { toast } from "@contexts/toast";
 
 vi.mock("@auth/useAuth");
 vi.mock("@hooks/useFirestore");
 vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
+vi.mock("@contexts/toast", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
+    promise: vi.fn((p: Promise<unknown>) => p),
+  },
+}));
+
+const toastMock = toast as unknown as { success: vi.Mock; error: vi.Mock };
 
 const mockUseAuth = useAuth as vi.MockedFunction<typeof useAuth>;
 const mockUseFirestore = useFirestore as vi.MockedFunction<typeof useFirestore>;
@@ -151,27 +164,8 @@ describe("useCustomersPage", () => {
     });
   });
 
-  it("merges pageError into error and keeps list visible", async () => {
-    remove.mockRejectedValueOnce(new Error("Network down"));
-
-    mockUseFirestore.mockReturnValue({
-      items: [
-        {
-          id: "c1",
-          userId: "uid-1",
-          name: "Acme",
-          addressDisplay: "-",
-        },
-      ],
-      loading: false,
-      error: null,
-      add,
-      update,
-      remove,
-      set: vi.fn(),
-      getById: vi.fn(),
-      getOnce: vi.fn(),
-    } as unknown as ReturnType<typeof useFirestore>);
+  it("toasts an error when save fails and leaves error (load) null", async () => {
+    add.mockRejectedValueOnce(new Error("Network down"));
 
     let vm: ReturnType<typeof useCustomersPage> | null = null;
     const Comp = () => {
@@ -180,16 +174,15 @@ describe("useCustomersPage", () => {
     };
     render(<Comp />);
 
-    await waitFor(() => expect(vm!.customers).toHaveLength(1));
-
-    vm!.actions.requestDelete("c1");
-    await waitFor(() => expect(vm!.deleteConfirm.open).toBe(true));
-    await vm!.actions.confirmDelete();
-
-    await waitFor(() => {
-      expect(vm!.error).toBe("Network down");
-      expect(vm!.showCustomerList).toBe(true);
+    await vm!.actions.submitCustomer({
+      name: "Acme",
+      email: "a@b.com",
+      address: "",
     });
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith("Network down"),
+    );
+    expect(vm!.error).toBeNull();
   });
 
   it("hides list when firestore error is set", async () => {
