@@ -6,6 +6,7 @@ import { downloadBlob } from "@utils/download";
 import { buildDuplicatePayload, getDocumentFilename } from "@utils/documents";
 import { allocateNextDocumentNumber } from "@utils/docNumber";
 import { todayIso } from "@utils/date";
+import { toast } from "@contexts/toast";
 
 export type DocumentMutationsPending = {
   duplicatingId: string | null;
@@ -36,7 +37,6 @@ export type DocumentMutationsActions = {
 };
 
 export type DocumentMutationsViewModel = {
-  mutationError: string | null;
   pending: DocumentMutationsPending;
   confirms: DocumentMutationsConfirms;
   actions: DocumentMutationsActions;
@@ -75,34 +75,40 @@ export function useDocumentMutations({
   );
   const [markingUnpaidId, setMarkingUnpaidId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
-  const [mutationError, setMutationError] = useState<string | null>(null);
 
   const duplicate = useCallback(
     async (source: DocumentEntity) => {
       if (!userId) return;
       setDuplicatingId(source.id ?? null);
-      setMutationError(null);
-
       try {
-        const today = todayIso();
-        const nextNumber = await allocateNextDocumentNumber(
-          userId,
-          source.type,
-          today,
+        await toast.promise(
+          (async () => {
+            const today = todayIso();
+            const nextNumber = await allocateNextDocumentNumber(
+              userId,
+              source.type,
+              today,
+            );
+            const payload = buildDuplicatePayload(
+              userId,
+              source,
+              nextNumber,
+              today,
+            );
+            const newId = await add(payload);
+            navigate(`/documents/${newId}/edit`, {
+              state: { autoEdit: true },
+            });
+          })(),
+          {
+            loading: "Duplicating document…",
+            success: "Document duplicated",
+            error: (e) =>
+              e instanceof Error ? e.message : "Failed to duplicate document",
+          },
         );
-        const payload = buildDuplicatePayload(
-          userId,
-          source,
-          nextNumber,
-          today,
-        );
-        const newId = await add(payload);
-        navigate(`/documents/${newId}/edit`, { state: { autoEdit: true } });
       } catch (e: unknown) {
         onDuplicateError?.(e);
-        setMutationError(
-          e instanceof Error ? e.message : "Failed to duplicate document",
-        );
       } finally {
         setDuplicatingId(null);
       }
@@ -111,26 +117,33 @@ export function useDocumentMutations({
   );
 
   const download = useCallback(async (doc: DocumentEntity) => {
-    setMutationError(null);
     setDownloadingId(doc.id ?? null);
     try {
-      const { generateDocumentPdf } = await import("../../utils/pdf");
-      const pdfBytes = await generateDocumentPdf({
-        type: doc.type,
-        docNumber: doc.docNumber,
-        date: doc.date,
-        customerDetails: doc.customerDetails,
-        items: doc.items,
-        subtotal: doc.subtotal,
-        total: doc.total,
-        currency: doc.currency || "USD",
-      });
-      const filename = `${getDocumentFilename(doc.type, doc.docNumber, doc.date)}.pdf`;
-      downloadBlob(filename, pdfBytes, "application/pdf");
-    } catch (e: unknown) {
-      setMutationError(
-        e instanceof Error ? e.message : "Failed to download PDF",
+      await toast.promise(
+        (async () => {
+          const { generateDocumentPdf } = await import("../../utils/pdf");
+          const pdfBytes = await generateDocumentPdf({
+            type: doc.type,
+            docNumber: doc.docNumber,
+            date: doc.date,
+            customerDetails: doc.customerDetails,
+            items: doc.items,
+            subtotal: doc.subtotal,
+            total: doc.total,
+            currency: doc.currency || "USD",
+          });
+          const filename = `${getDocumentFilename(doc.type, doc.docNumber, doc.date)}.pdf`;
+          downloadBlob(filename, pdfBytes, "application/pdf");
+        })(),
+        {
+          loading: "Generating PDF…",
+          success: "PDF downloaded",
+          error: (e) =>
+            e instanceof Error ? e.message : "Failed to download PDF",
+        },
       );
+    } catch {
+      // toast.promise already surfaced the error
     } finally {
       setDownloadingId(null);
     }
@@ -138,15 +151,14 @@ export function useDocumentMutations({
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirmId) return;
-    setMutationError(null);
-    setDeletingId(deleteConfirmId);
+    const id = deleteConfirmId;
+    setDeletingId(id);
     setDeleteConfirmId(null);
     try {
-      await remove(deleteConfirmId);
+      await remove(id);
+      toast.success("Document deleted");
     } catch (e: unknown) {
-      setMutationError(
-        e instanceof Error ? e.message : "Failed to delete document",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to delete document");
     } finally {
       setDeletingId(null);
     }
@@ -154,18 +166,14 @@ export function useDocumentMutations({
 
   const handleConfirmMarkPaid = useCallback(async () => {
     if (!markPaidConfirmId) return;
-    setMutationError(null);
-    setMarkingPaidId(markPaidConfirmId);
+    const id = markPaidConfirmId;
+    setMarkingPaidId(id);
     setMarkPaidConfirmId(null);
     try {
-      await update(markPaidConfirmId, {
-        status: "paid",
-        paidAt: new Date(),
-      });
+      await update(id, { status: "paid", paidAt: new Date() });
+      toast.success("Marked as paid");
     } catch (e: unknown) {
-      setMutationError(
-        e instanceof Error ? e.message : "Failed to mark as paid",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to mark as paid");
     } finally {
       setMarkingPaidId(null);
     }
@@ -173,25 +181,20 @@ export function useDocumentMutations({
 
   const handleConfirmMarkUnpaid = useCallback(async () => {
     if (!markUnpaidConfirmId) return;
-    setMutationError(null);
-    setMarkingUnpaidId(markUnpaidConfirmId);
+    const id = markUnpaidConfirmId;
+    setMarkingUnpaidId(id);
     setMarkUnpaidConfirmId(null);
     try {
-      await update(markUnpaidConfirmId, {
-        status: "finalized",
-        paidAt: null,
-      });
+      await update(id, { status: "finalized", paidAt: null });
+      toast.success("Marked as unpaid");
     } catch (e: unknown) {
-      setMutationError(
-        e instanceof Error ? e.message : "Failed to mark as unpaid",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to mark as unpaid");
     } finally {
       setMarkingUnpaidId(null);
     }
   }, [markUnpaidConfirmId, update]);
 
   return {
-    mutationError,
     pending: {
       duplicatingId,
       deletingId,
