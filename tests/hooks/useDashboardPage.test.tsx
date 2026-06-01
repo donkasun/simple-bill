@@ -11,7 +11,6 @@ vi.mock("@auth/useAuth");
 vi.mock("@hooks/useFirestore");
 vi.mock("@hooks/pages/useDocumentMutations", () => ({
   useDocumentMutations: () => ({
-    mutationError: null,
     pending: {
       duplicatingId: null,
       deletingId: null,
