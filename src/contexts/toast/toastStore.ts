@@ -10,8 +10,13 @@ const DEFAULT_DURATIONS: Record<ToastVariant, number | null> = {
   loading: null,
 };
 
+type Timer = ReturnType<typeof setTimeout>;
+
 let toasts: Toast[] = [];
 const listeners = new Set<() => void>();
+const timers = new Map<string, Timer>();
+const remaining = new Map<string, number>();
+const startTimes = new Map<string, number>();
 let counter = 0;
 
 function genId(): string {
@@ -23,6 +28,30 @@ function genId(): string {
 
 function emit(): void {
   for (const listener of listeners) listener();
+}
+
+function clearTimer(id: string): void {
+  const t = timers.get(id);
+  if (t !== undefined) {
+    clearTimeout(t);
+    timers.delete(id);
+  }
+}
+
+function forget(id: string): void {
+  clearTimer(id);
+  remaining.delete(id);
+  startTimes.delete(id);
+}
+
+function scheduleDismiss(id: string, duration: number): void {
+  clearTimer(id);
+  remaining.set(id, duration);
+  startTimes.set(id, Date.now());
+  timers.set(
+    id,
+    setTimeout(() => dismiss(id), duration),
+  );
 }
 
 function add(
@@ -41,9 +70,18 @@ function add(
   } else {
     toasts = [next, ...toasts];
     if (toasts.length > MAX_TOASTS) {
+      const evicted = toasts.slice(MAX_TOASTS);
       toasts = toasts.slice(0, MAX_TOASTS);
+      for (const e of evicted) forget(e.id);
     }
   }
+
+  if (duration != null) {
+    scheduleDismiss(id, duration);
+  } else {
+    forget(id);
+  }
+
   emit();
   return id;
 }
@@ -51,7 +89,26 @@ function add(
 function dismiss(id: string): void {
   if (!toasts.some((t) => t.id === id)) return;
   toasts = toasts.filter((t) => t.id !== id);
+  forget(id);
   emit();
+}
+
+function pause(id: string): void {
+  const timer = timers.get(id);
+  if (timer === undefined) return; // sticky or not scheduled
+  clearTimeout(timer);
+  timers.delete(id);
+  const rem =
+    (remaining.get(id) ?? 0) -
+    (Date.now() - (startTimes.get(id) ?? Date.now()));
+  remaining.set(id, Math.max(0, rem));
+}
+
+function resume(id: string): void {
+  const rem = remaining.get(id);
+  if (rem == null) return; // sticky
+  if (timers.has(id)) return; // already running
+  scheduleDismiss(id, rem);
 }
 
 function subscribe(listener: () => void): () => void {
@@ -64,6 +121,7 @@ function getSnapshot(): Toast[] {
 }
 
 function clearAll(): void {
+  for (const id of [...timers.keys()]) forget(id);
   toasts = [];
   emit();
 }
@@ -81,5 +139,7 @@ export const toast = {
 export const toastStore = {
   subscribe,
   getSnapshot,
+  pause,
+  resume,
   clearAll,
 } as const;

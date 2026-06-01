@@ -59,4 +59,45 @@ describe("toastStore", () => {
     const b = toastStore.getSnapshot();
     expect(a).toBe(b);
   });
+
+  it("auto-dismisses success after its duration", () => {
+    vi.useFakeTimers();
+    toast.success("bye", { duration: 4000 });
+    expect(toastStore.getSnapshot()).toHaveLength(1);
+    vi.advanceTimersByTime(3999);
+    expect(toastStore.getSnapshot()).toHaveLength(1);
+    vi.advanceTimersByTime(1);
+    expect(toastStore.getSnapshot()).toHaveLength(0);
+  });
+
+  it("does not auto-dismiss sticky toasts", () => {
+    vi.useFakeTimers();
+    toast.error("stay");
+    vi.advanceTimersByTime(100000);
+    expect(toastStore.getSnapshot()).toHaveLength(1);
+  });
+
+  it("evicts the oldest when exceeding max 3", () => {
+    toast.info("a");
+    toast.info("b");
+    toast.info("c");
+    toast.info("d");
+    const list = toastStore.getSnapshot();
+    expect(list).toHaveLength(3);
+    expect(list.map((t) => t.message)).toEqual(["d", "c", "b"]);
+  });
+
+  it("pauses and resumes the dismiss timer", () => {
+    vi.useFakeTimers();
+    const id = toast.success("hover", { duration: 4000 });
+    vi.advanceTimersByTime(1000);
+    toastStore.pause(id);
+    vi.advanceTimersByTime(10000); // paused: nothing happens
+    expect(toastStore.getSnapshot()).toHaveLength(1);
+    toastStore.resume(id);
+    vi.advanceTimersByTime(2999); // 3000 remained
+    expect(toastStore.getSnapshot()).toHaveLength(1);
+    vi.advanceTimersByTime(1);
+    expect(toastStore.getSnapshot()).toHaveLength(0);
+  });
 });
