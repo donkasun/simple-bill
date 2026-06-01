@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
+import { toast } from "@contexts/toast";
 import type { CustomerFormData } from "@components/customers/CustomerModal";
 import type { Customer } from "../../types/customer";
 
@@ -50,13 +51,12 @@ export function useCustomersPage(): CustomersPageViewModel {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [pageError, setPageError] = useState<string | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const error = firestoreError || pageError;
+  const error = firestoreError;
   const showCustomerList = !loading && !firestoreError;
   const empty = items.length === 0;
 
@@ -81,8 +81,9 @@ export function useCustomersPage(): CustomersPageViewModel {
     setConfirmOpen(false);
     try {
       await remove(customerToDelete);
+      toast.success("Customer deleted");
     } catch (err) {
-      setPageError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to delete customer",
       );
     } finally {
@@ -100,7 +101,6 @@ export function useCustomersPage(): CustomersPageViewModel {
   };
 
   const submitCustomer = async (data: CustomerFormData) => {
-    setPageError(null);
     setModalSubmitting(true);
     try {
       if (editingCustomer?.id) {
@@ -120,10 +120,13 @@ export function useCustomersPage(): CustomersPageViewModel {
         });
       }
       setModalOpen(false);
+      toast.success(
+        editingCustomer?.id ? "Customer updated" : "Customer added",
+      );
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to save customer";
-      setPageError(message);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save customer",
+      );
     } finally {
       setModalSubmitting(false);
     }
