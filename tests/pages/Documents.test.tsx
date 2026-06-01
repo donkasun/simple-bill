@@ -296,7 +296,7 @@ describe("Documents page", () => {
     });
   });
 
-  it("shows mutation error when duplicate fails", async () => {
+  it("does not show an inline banner when duplicate fails (handled by toast)", async () => {
     const add = vi.fn().mockRejectedValue(new Error("Duplicate failed"));
     vi.mocked(useFirestore).mockReturnValue({
       items: mockDocuments as never,
@@ -319,9 +319,9 @@ describe("Documents page", () => {
     const card = openCardMenu("Don Kasun");
     fireEvent.click(within(card).getByRole("button", { name: "Duplicate" }));
 
-    await waitFor(() => {
-      expect(screen.getByText("Duplicate failed")).toBeInTheDocument();
-    });
+    // Give async operations time to settle, then assert no inline error banner
+    await waitFor(() => expect(add).toHaveBeenCalled());
+    expect(screen.queryByText("Duplicate failed")).not.toBeInTheDocument();
   });
 
   it("hides document cards when firestore error is set", () => {

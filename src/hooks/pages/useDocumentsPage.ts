@@ -18,7 +18,6 @@ export type DocumentsPageViewModel = {
   subtitle: string;
   loading: boolean;
   firestoreError: string | null;
-  mutationError: string | null;
   showDocumentList: boolean;
   typeFilter: TypeFilter;
   statusFilter: StatusFilter;
@@ -138,7 +137,6 @@ export function useDocumentsPage(): DocumentsPageViewModel {
     subtitle,
     loading,
     firestoreError,
-    mutationError: mutations.mutationError,
     showDocumentList,
     typeFilter,
     statusFilter,

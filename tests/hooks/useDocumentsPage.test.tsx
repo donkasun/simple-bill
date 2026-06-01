@@ -159,9 +159,7 @@ describe("useDocumentsPage", () => {
     });
   });
 
-  it("sets mutationError when duplicate fails", async () => {
-    add.mockRejectedValueOnce(new Error("Duplicate failed"));
-
+  it("does not expose mutationError on the view model", () => {
     let vm: ReturnType<typeof useDocumentsPage> | null = null;
     const Comp = () => {
       vm = useDocumentsPage();
@@ -169,12 +167,7 @@ describe("useDocumentsPage", () => {
     };
     render(<Comp />);
 
-    await vm!.actions.duplicate(mockDocuments[0] as never);
-
-    await waitFor(() => {
-      expect(vm!.mutationError).toBe("Duplicate failed");
-      expect(vm!.firestoreError).toBeNull();
-    });
+    expect("mutationError" in vm!).toBe(false);
   });
 
   it("confirms delete and calls remove", async () => {

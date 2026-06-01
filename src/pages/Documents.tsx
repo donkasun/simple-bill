@@ -39,7 +39,6 @@ const Documents: React.FC = () => {
           <div className="dashboard-loading">Loading documents…</div>
         )}
         {vm.firestoreError && <ErrorBanner>{vm.firestoreError}</ErrorBanner>}
-        {vm.mutationError && <ErrorBanner>{vm.mutationError}</ErrorBanner>}
 
         {vm.showDocumentList && vm.hasFilteredResults && (
           <div className="doc-card-list">
