@@ -39,9 +39,10 @@ const Dashboard: React.FC = () => {
       />
 
       <DashboardSummaryStrip
-        financialSummary={vm.financialSummary}
-        formatSummaryCurrency={vm.formatSummaryCurrency}
-        onDraftsClick={vm.actions.navigateToDrafts}
+        statusCounts={vm.statusCounts}
+        onPaidClick={vm.actions.navigateToPaid}
+        onSentClick={vm.actions.navigateToSent}
+        onDraftClick={vm.actions.navigateToDrafts}
       />
 
       <DashboardQuickActions

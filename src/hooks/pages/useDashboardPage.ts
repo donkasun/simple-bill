@@ -55,6 +55,8 @@ export type DashboardPageViewModel = {
     navigateToNewQuotation: () => void;
     navigateToCustomerInvoice: (customerId: string) => void;
     navigateToDrafts: () => void;
+    navigateToPaid: () => void;
+    navigateToSent: () => void;
     navigateToCreateFirstInvoice: () => void;
   };
 };
@@ -311,6 +313,8 @@ export function useDashboardPage(): DashboardPageViewModel {
       navigateToCustomerInvoice: (customerId: string) =>
         navigate("/documents/new", { state: { customerId } }),
       navigateToDrafts: () => navigate("/documents?status=draft"),
+      navigateToPaid: () => navigate("/documents?status=paid"),
+      navigateToSent: () => navigate("/documents?status=finalized"),
       navigateToCreateFirstInvoice: () => navigate("/documents/new"),
     },
   };

@@ -523,25 +523,34 @@ describe("Dashboard", () => {
     });
   });
 
-  describe("Financial summary strip", () => {
-    it("shows outstanding, paid this month, and draft count", () => {
+  describe("Status summary bento", () => {
+    it("shows paid, sent, and draft counts", () => {
       renderDashboard();
 
-      const strip = screen.getByRole("region", { name: "Financial summary" });
-      expect(within(strip).getByText("Awaiting payment")).toBeTruthy();
-      expect(within(strip).getByText(/\$5,500/)).toBeTruthy();
-      expect(within(strip).getByText("Paid this month")).toBeTruthy();
-      expect(within(strip).getByText(/\$0/)).toBeTruthy();
-      expect(within(strip).getByText("Drafts")).toBeTruthy();
+      const strip = screen.getByRole("region", {
+        name: "Invoice status summary",
+      });
+      expect(within(strip).getByText("Paid")).toBeTruthy();
+      expect(within(strip).getByText("Sent")).toBeTruthy();
+      expect(within(strip).getByText("Draft")).toBeTruthy();
+      expect(within(strip).getByText("0")).toBeTruthy();
+      expect(within(strip).getByText("2")).toBeTruthy();
       expect(within(strip).getByText("1")).toBeTruthy();
     });
 
-    it("navigates to draft documents when clicking drafts summary", () => {
+    it("navigates to filtered document lists when clicking status cards", () => {
       renderDashboard();
 
-      const strip = screen.getByRole("region", { name: "Financial summary" });
-      fireEvent.click(within(strip).getByRole("button", { name: /drafts/i }));
+      const strip = screen.getByRole("region", {
+        name: "Invoice status summary",
+      });
+      fireEvent.click(within(strip).getByRole("button", { name: /paid/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/documents?status=paid");
 
+      fireEvent.click(within(strip).getByRole("button", { name: /sent/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/documents?status=finalized");
+
+      fireEvent.click(within(strip).getByRole("button", { name: /draft/i }));
       expect(mockNavigate).toHaveBeenCalledWith("/documents?status=draft");
     });
   });
