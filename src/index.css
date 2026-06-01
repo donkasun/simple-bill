@@ -1336,12 +1336,22 @@ h6 {
   gap: var(--dashboard-space-stack-lg);
 }
 
+/* Fixed to the main pane (not the centered .dashboard-page column) */
 .dashboard-ambient {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 256px;
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-ambient {
+    left: 0;
+  }
 }
 
 .dashboard-page > :not(.dashboard-ambient) {
@@ -1738,7 +1748,7 @@ h6 {
 .dashboard-doc-row__icon {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 8px;
   background: var(--dashboard-doc-row-icon-bg);
   color: var(--dashboard-doc-row-icon-color);
   display: flex;
