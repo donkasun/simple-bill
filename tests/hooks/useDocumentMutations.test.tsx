@@ -38,11 +38,7 @@ const mockAllocateNextDocumentNumber =
 const mockBuildDuplicatePayload = buildDuplicatePayload as vi.MockedFunction<
   typeof buildDuplicatePayload
 >;
-const toastMock = toast as unknown as {
-  success: vi.Mock;
-  error: vi.Mock;
-  promise: vi.Mock;
-};
+const toastMock = vi.mocked(toast);
 
 const sourceDoc = { id: "doc1", type: "invoice" as const, userId: "user1" };
 

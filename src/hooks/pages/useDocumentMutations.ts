@@ -108,6 +108,8 @@ export function useDocumentMutations({
           },
         );
       } catch (e: unknown) {
+        // toast.promise re-throws the rejection after showing the error toast;
+        // forward it to the optional callback (e.g. dashboard logging).
         onDuplicateError?.(e);
       } finally {
         setDuplicatingId(null);
@@ -143,7 +145,8 @@ export function useDocumentMutations({
         },
       );
     } catch {
-      // toast.promise already surfaced the error
+      // rejection was already surfaced as a toast by toast.promise's error
+      // handler; nothing more to do here.
     } finally {
       setDownloadingId(null);
     }
