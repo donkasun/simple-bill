@@ -4,6 +4,8 @@ import AppShell from "@components/layout/AppShell";
 import ProtectedRoute from "@components/core/ProtectedRoute";
 import ErrorBoundary from "@components/core/ErrorBoundary";
 import { ThemeProvider, ToastProvider } from "./contexts";
+import { DevColorGuidePage } from "./routes/DevRoutes";
+
 const Landing = lazy(() => import("./pages/Landing"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Dashboard = lazy(() => import("./pages/dashboard"));
@@ -44,6 +46,9 @@ function App() {
                     <Route path="new" element={<DocumentCreation />} />
                     <Route path=":id/edit" element={<DocumentEdit />} />
                   </Route>
+                  {DevColorGuidePage ? (
+                    <Route path="dev/colors" element={<DevColorGuidePage />} />
+                  ) : null}
                 </Route>
               </Routes>
             </Suspense>

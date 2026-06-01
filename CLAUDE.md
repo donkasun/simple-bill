@@ -73,11 +73,11 @@ Before shipping any interactive element with a coloured background:
 
 Used on document cards (left border, badge, amount text):
 
-| Status           | Colour role | Token                              |
-| ---------------- | ----------- | ---------------------------------- |
-| Draft            | Amber       | `--brand-warning`                  |
-| Sent / Finalized | Blue        | `--md-secondary`                   |
-| Paid             | Green       | `--md-primary` / `--brand-success` |
+| Status           | Colour role                    | Token                                             |
+| ---------------- | ------------------------------ | ------------------------------------------------- |
+| Draft            | Neutral grey (dashboard bento) | `--status-draft-border` / `--md-outline`          |
+| Sent / Finalized | Amber (dashboard bento)        | `--status-sent-accent` / `--brand-warning`        |
+| Paid             | Green (dashboard bento)        | `--status-paid-accent` / `--md-primary-container` |
 
 ---
 

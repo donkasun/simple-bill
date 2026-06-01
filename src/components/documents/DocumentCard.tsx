@@ -1,13 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import type { DocumentEntity } from "../../types/document";
-import { formatCurrency } from "@utils/currency";
-import { formatIsoDate } from "@utils/date";
+import DocumentRowBody from "@components/documents/DocumentRowBody";
+import type { DocumentRow } from "@hooks/pages/useDocumentsPage";
 
 type DocumentCardProps = {
-  document: DocumentEntity & {
-    typeLabel: string;
-    customerName: string;
-  };
+  document: DocumentRow;
   duplicatingId: string | null;
   deletingId: string | null;
   downloadingId: string | null;
@@ -18,27 +15,6 @@ type DocumentCardProps = {
   onDelete: (id: string) => void;
   onMarkPaid: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
-};
-
-const badgeStyles: Record<
-  string,
-  { bg: string; color: string; label: string }
-> = {
-  draft: {
-    bg: "var(--md-surface-container-highest)",
-    color: "var(--md-on-surface-variant)",
-    label: "Draft",
-  },
-  finalized: {
-    bg: "var(--md-secondary-container)",
-    color: "var(--md-on-secondary-container)",
-    label: "Sent",
-  },
-  paid: {
-    bg: "var(--md-primary-container)",
-    color: "var(--md-on-primary-container)",
-    label: "Paid",
-  },
 };
 
 const getPrimaryAction = (
@@ -84,21 +60,16 @@ const DocumentCard = ({
   const isDuplicating = duplicatingId === document.id;
   const isBusy = Boolean(
     isDeleting ||
-      isDownloading ||
-      isMarkingPaid ||
-      isMarkingUnpaid ||
-      duplicatingId,
+    isDownloading ||
+    isMarkingPaid ||
+    isMarkingUnpaid ||
+    duplicatingId,
   );
-  const badge = badgeStyles[document.status ?? "draft"] ?? badgeStyles.draft;
   const primaryAction = getPrimaryAction(
     document,
     isMarkingPaid,
     isDownloading,
   );
-  const iconName =
-    document.type === "quotation" ? "request_quote" : "receipt_long";
-  const docNumber = document.docNumber || "-";
-  const displayDate = document.date ? formatIsoDate(document.date) : "—";
 
   const handlePrimaryAction = () => {
     if (!document.id) return;
@@ -114,41 +85,11 @@ const DocumentCard = ({
   };
 
   return (
-    <div
+    <article
       className={`doc-card doc-card--${document.status ?? "draft"} doc-card--${document.type}`}
     >
-      <div className="doc-card__main">
-        <div className="doc-card__icon" aria-hidden>
-          <span className="material-symbols-outlined icon-md">{iconName}</span>
-        </div>
-        <div className="doc-card__info">
-          <h5 className="doc-card__title">{document.customerName}</h5>
-          <p className="doc-card__meta">
-            <span>{document.typeLabel}</span>
-            <span>#{docNumber}</span>
-            <span>{displayDate}</span>
-          </p>
-        </div>
-      </div>
-
-      <div className="doc-card-amount">
-        <span
-          className={`doc-card__amount ${
-            isDraft
-              ? "doc-card__amount--draft"
-              : isFinalized
-                ? "doc-card__amount--finalized"
-                : "doc-card__amount--paid"
-          }`}
-        >
-          {formatCurrency(document.total, document.currency || "USD")}
-        </span>
-        <span
-          className="doc-card__status"
-          style={{ background: badge.bg, color: badge.color }}
-        >
-          {badge.label}
-        </span>
+      <div className={`doc-card__summary dashboard-doc-row--${document.type}`}>
+        <DocumentRowBody document={document} />
       </div>
 
       <div className="doc-card-actions">
@@ -229,7 +170,7 @@ const DocumentCard = ({
           </div>
         </details>
       </div>
-    </div>
+    </article>
   );
 };
 

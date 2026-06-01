@@ -1,7 +1,9 @@
 import React from "react";
 import type { DashboardStatusCounts } from "@hooks/pages/useDashboardPage";
+import { dashboardIntroAnimationClasses } from "@utils/dashboardIntroAnimation";
 
 type DashboardSummaryStripProps = {
+  playIntro?: boolean;
   statusCounts: DashboardStatusCounts;
   onPaidClick: () => void;
   onSentClick: () => void;
@@ -20,6 +22,7 @@ type StatusCardConfig = {
 };
 
 const DashboardSummaryStrip: React.FC<DashboardSummaryStripProps> = ({
+  playIntro = false,
   statusCounts,
   onPaidClick,
   onSentClick,
@@ -65,7 +68,7 @@ const DashboardSummaryStrip: React.FC<DashboardSummaryStripProps> = ({
         <button
           key={card.key}
           type="button"
-          className={`dashboard-status-card ${card.className} dashboard-animate-fade-up ${card.delayClass} dashboard-soft-shadow`}
+          className={`dashboard-status-card ${card.className} ${dashboardIntroAnimationClasses(playIntro, card.delayClass)} dashboard-soft-shadow`.trim()}
           onClick={card.onClick}
         >
           <div className="dashboard-status-card__head">

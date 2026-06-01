@@ -1,5 +1,5 @@
 import React from "react";
-import SegmentedToggle from "@components/core/SegmentedToggle";
+import ChoiceTileGroup from "@components/core/ChoiceTileGroup";
 import type { StatusFilter, TypeFilter } from "@hooks/pages/useDocumentsPage";
 
 type DocumentsFilterBarProps = {
@@ -17,21 +17,23 @@ const DocumentsFilterBar: React.FC<DocumentsFilterBarProps> = ({
 }) => {
   return (
     <div className="docs-filter-bar">
-      <SegmentedToggle
+      <ChoiceTileGroup
         id="doc-type-filter"
         ariaLabel="Filter by document type"
         value={typeFilter}
+        columns={3}
         options={[
-          { value: "all", label: "All types" },
+          { value: "all", label: "All" },
           { value: "invoice", label: "Invoices" },
           { value: "quotation", label: "Quotations" },
         ]}
         onChange={onTypeChange}
       />
-      <SegmentedToggle
+      <ChoiceTileGroup
         id="doc-status-filter"
         ariaLabel="Filter by status"
         value={statusFilter}
+        columns={4}
         options={[
           { value: "all", label: "All" },
           { value: "draft", label: "Draft" },

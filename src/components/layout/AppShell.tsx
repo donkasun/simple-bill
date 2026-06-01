@@ -10,10 +10,11 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PageTitleContext } from "./PageTitleContext";
 import { useAuth } from "@auth/useAuth";
 import ConfirmDialog from "../core/ConfirmDialog";
+import { isLocalDevHost } from "@utils/isLocalDevHost";
 
 const SIDEBAR_NAV_ITEMS = [
   { to: "/dashboard", icon: "dashboard", label: "Dashboard", end: true },
-  { to: "/documents", icon: "description", label: "Invoices" },
+  { to: "/documents", icon: "folder_open", label: "Documents" },
   { to: "/customers", icon: "group", label: "Customers" },
   { to: "/items", icon: "inventory_2", label: "Items" },
   { to: "/settings", icon: "settings", label: "Settings" },
@@ -30,6 +31,7 @@ const AppShell: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [indicatorReady, setIndicatorReady] = useState(false);
+  const [showDevNav, setShowDevNav] = useState(false);
   const [navIndicator, setNavIndicator] = useState<NavIndicator>({
     top: 0,
     height: 0,
@@ -61,6 +63,10 @@ const AppShell: React.FC = () => {
       document.title = "SimpleBill";
     }
   }, [pageTitle]);
+
+  useEffect(() => {
+    setShowDevNav(isLocalDevHost());
+  }, []);
 
   const updateNavIndicator = useCallback(() => {
     const nav = navRef.current;
@@ -158,6 +164,9 @@ const AppShell: React.FC = () => {
                   "end" in item ? item.end : false,
                 ),
               )}
+              {showDevNav
+                ? navLink("/dev/colors", "palette", "Color guide (dev)")
+                : null}
             </nav>
 
             <div className="sidebar-footer">

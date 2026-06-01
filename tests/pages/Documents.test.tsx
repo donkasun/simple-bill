@@ -149,7 +149,9 @@ describe("Documents page", () => {
     expect(screen.getAllByText("Don Kasun").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Finlays").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("2 documents · 1 drafts · 1 sent · 0 paid"),
+      screen.getByText(
+        "2 items · 1 invoice · 1 quotation · 1 drafts · 1 sent · 0 paid",
+      ),
     ).toBeInTheDocument();
   });
 

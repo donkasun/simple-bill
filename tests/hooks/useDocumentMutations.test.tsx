@@ -149,6 +149,31 @@ describe("useDocumentMutations", () => {
     });
   });
 
+  it("confirms mark unpaid, updates status to finalized, and toasts success", async () => {
+    const getVm = renderHook();
+    getVm().actions.requestMarkUnpaid("doc3");
+    await waitFor(() => expect(getVm().confirms.markUnpaidId).toBe("doc3"));
+    await getVm().actions.confirmMarkUnpaid();
+    await waitFor(() => {
+      expect(update).toHaveBeenCalledWith(
+        "doc3",
+        expect.objectContaining({ status: "finalized", paidAt: null }),
+      );
+      expect(toastMock.success).toHaveBeenCalled();
+    });
+  });
+
+  it("toasts error when mark unpaid fails", async () => {
+    update.mockRejectedValueOnce(new Error("Unpaid failed"));
+    const getVm = renderHook();
+    getVm().actions.requestMarkUnpaid("doc3");
+    await waitFor(() => expect(getVm().confirms.markUnpaidId).toBe("doc3"));
+    await getVm().actions.confirmMarkUnpaid();
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith("Unpaid failed"),
+    );
+  });
+
   it("does not expose mutationError", () => {
     const getVm = renderHook();
     expect("mutationError" in getVm()).toBe(false);

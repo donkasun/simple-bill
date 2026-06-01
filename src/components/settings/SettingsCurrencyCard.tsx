@@ -44,7 +44,7 @@ const SettingsCurrencyCard: React.FC<SettingsCurrencyCardProps> = ({
               type="button"
               role="radio"
               aria-checked={isSelected}
-              className={`settings-currency-option${isSelected ? " is-selected" : ""}`}
+              className={`choice-tile settings-currency-option${isSelected ? " is-selected" : ""}`}
               onClick={() => onChange(code)}
             >
               <span className="settings-currency-option__name">

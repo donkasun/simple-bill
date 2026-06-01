@@ -102,13 +102,19 @@ export function useDocumentsPage(): DocumentsPageViewModel {
   }, [documents, statusFilter, typeFilter]);
 
   const subtitle = useMemo(() => {
+    const invoices = documents.filter((doc) => doc.type === "invoice").length;
+    const quotations = documents.filter(
+      (doc) => doc.type === "quotation",
+    ).length;
     const drafts = documents.filter(
       (doc) => !doc.status || doc.status === "draft",
     ).length;
     const sent = documents.filter((doc) => doc.status === "finalized").length;
     const paid = documents.filter((doc) => doc.status === "paid").length;
-    const countLabel = documents.length === 1 ? "document" : "documents";
-    return `${documents.length} ${countLabel} · ${drafts} drafts · ${sent} sent · ${paid} paid`;
+    const countLabel = documents.length === 1 ? "item" : "items";
+    const invoiceLabel = invoices === 1 ? "invoice" : "invoices";
+    const quotationLabel = quotations === 1 ? "quotation" : "quotations";
+    return `${documents.length} ${countLabel} · ${invoices} ${invoiceLabel} · ${quotations} ${quotationLabel} · ${drafts} drafts · ${sent} sent · ${paid} paid`;
   }, [documents]);
 
   useEffect(() => {

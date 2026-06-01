@@ -51,7 +51,7 @@ const SettingsThemePicker: React.FC<SettingsThemePickerProps> = ({
             type="button"
             role="radio"
             aria-checked={selected}
-            className={`settings-theme-option${selected ? " is-selected" : ""}`}
+            className={`choice-tile settings-theme-option${selected ? " is-selected" : ""}`}
             onClick={() => onChange(opt.value)}
           >
             <span

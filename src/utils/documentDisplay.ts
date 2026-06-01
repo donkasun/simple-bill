@@ -1,0 +1,32 @@
+import type { DocumentEntity } from "../types/document";
+
+export type DocumentStatusPillModifier = "paid" | "sent" | "draft";
+
+export type DocumentStatusPill = {
+  label: string;
+  modifier: DocumentStatusPillModifier;
+};
+
+export function getDocumentStatusPill(
+  status: DocumentEntity["status"],
+): DocumentStatusPill {
+  if (status === "paid") {
+    return { label: "Paid", modifier: "paid" };
+  }
+  if (status === "finalized") {
+    return { label: "Sent", modifier: "sent" };
+  }
+  return { label: "Draft", modifier: "draft" };
+}
+
+export function getDocumentTypeIconName(type: DocumentEntity["type"]): string {
+  return type === "quotation" ? "request_quote" : "receipt_long";
+}
+
+export function getDocumentListTitle(document: {
+  typeLabel: string;
+  docNumber?: string | null;
+}): string {
+  const number = document.docNumber?.trim() || "—";
+  return `${document.typeLabel} ${number}`;
+}

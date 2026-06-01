@@ -19,6 +19,16 @@ vi.mock("@utils/documents", () => ({
 }));
 vi.mock("@utils/download", () => ({ downloadBlob: vi.fn() }));
 vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
+vi.mock("@contexts/toast", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
+    promise: vi.fn((p: Promise<unknown>) => p),
+  },
+}));
 
 const mockNavigate = vi.fn();
 let mockSearchParams = new URLSearchParams();
@@ -102,7 +112,9 @@ describe("useDocumentsPage", () => {
 
     await waitFor(() => {
       expect(vm!.filteredDocuments).toHaveLength(2);
-      expect(vm!.subtitle).toBe("2 documents · 1 drafts · 1 sent · 0 paid");
+      expect(vm!.subtitle).toBe(
+        "2 items · 1 invoice · 1 quotation · 1 drafts · 1 sent · 0 paid",
+      );
       expect(vm!.showDocumentList).toBe(true);
     });
   });

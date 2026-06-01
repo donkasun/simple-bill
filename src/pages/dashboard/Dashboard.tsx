@@ -8,6 +8,8 @@ import DashboardDocumentRow from "@components/dashboard/DashboardDocumentRow";
 import DashboardSummaryStrip from "@components/dashboard/DashboardSummaryStrip";
 import DashboardEmptyState from "@components/dashboard/DashboardEmptyState";
 import { useDashboardPage } from "@hooks/pages/useDashboardPage";
+import { useDashboardIntroAnimation } from "@hooks/useDashboardIntroAnimation";
+import { dashboardAsideIntroAnimationClasses } from "@utils/dashboardIntroAnimation";
 
 const ROW_ANIMATION_DELAYS = [
   "dashboard-animate-fade-up--delay-4",
@@ -20,6 +22,7 @@ const ROW_ANIMATION_DELAYS = [
 const Dashboard: React.FC = () => {
   usePageTitle("Home");
   const vm = useDashboardPage();
+  const playIntro = useDashboardIntroAnimation();
 
   const headline = vm.firstName
     ? `Welcome back, ${vm.firstName}`
@@ -40,7 +43,7 @@ const Dashboard: React.FC = () => {
         actions={
           <button
             type="button"
-            className="dashboard-header-cta btn-primary dashboard-pulse-breathing"
+            className={`dashboard-header-cta btn-primary${playIntro ? " dashboard-pulse-breathing" : ""}`}
             onClick={vm.actions.navigateToNewInvoice}
           >
             <span className="material-symbols-outlined filled" aria-hidden>
@@ -52,6 +55,7 @@ const Dashboard: React.FC = () => {
       />
 
       <DashboardSummaryStrip
+        playIntro={playIntro}
         statusCounts={vm.statusCounts}
         onPaidClick={vm.actions.navigateToPaid}
         onSentClick={vm.actions.navigateToSent}
@@ -84,6 +88,7 @@ const Dashboard: React.FC = () => {
                 <DashboardDocumentRow
                   key={document.id}
                   document={document}
+                  playIntro={playIntro}
                   animationDelayClass={
                     ROW_ANIMATION_DELAYS[
                       Math.min(index, ROW_ANIMATION_DELAYS.length - 1)
@@ -105,7 +110,9 @@ const Dashboard: React.FC = () => {
           className="dashboard-split__aside"
           aria-label="Dashboard highlights"
         >
-          <div className="dashboard-aside-stack dashboard-animate-slide-right dashboard-animate-fade-up--delay-3">
+          <div
+            className={`dashboard-aside-stack ${dashboardAsideIntroAnimationClasses(playIntro)}`.trim()}
+          >
             {vm.spotlightCustomer && (
               <DashboardCustomerSpotlight
                 customer={vm.spotlightCustomer}

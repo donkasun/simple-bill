@@ -133,6 +133,7 @@ const renderDashboard = () => {
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     firestoreCallCount = 0;
     updateSpy = vi.fn();
 
@@ -234,6 +235,27 @@ describe("Dashboard", () => {
       expect(
         screen.getByRole("button", { name: "New Invoice" }).className,
       ).toContain("dashboard-pulse-breathing");
+    });
+
+    it("plays entrance motion only once per browser session", () => {
+      const { unmount, container } = renderDashboard();
+
+      expect(
+        screen.getByRole("button", { name: "New Invoice" }).className,
+      ).toContain("dashboard-pulse-breathing");
+      expect(
+        container.querySelector(".dashboard-animate-fade-up"),
+      ).toBeTruthy();
+
+      unmount();
+      const { container: containerAgain } = renderDashboard();
+
+      expect(
+        screen.getByRole("button", { name: "New Invoice" }).className,
+      ).not.toContain("dashboard-pulse-breathing");
+      expect(
+        containerAgain.querySelector(".dashboard-animate-fade-up"),
+      ).toBeNull();
     });
   });
 
