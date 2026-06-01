@@ -3056,3 +3056,129 @@ select:focus {
   border-color: var(--brand-primary) !important;
   outline: none;
 }
+
+/* ── Toast notifications ─────────────────────────────────────── */
+.toast-viewport {
+  position: fixed;
+  z-index: 1100;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(calc(100vw - 32px), 380px);
+  pointer-events: none;
+}
+
+@media (min-width: 640px) {
+  .toast-viewport {
+    left: auto;
+    right: 24px;
+    transform: none;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--dashboard-radius-xl);
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  box-shadow: var(--dashboard-shadow-floating);
+  border-left: 4px solid var(--md-on-surface-variant);
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast--success {
+  border-left-color: var(--brand-success);
+}
+.toast--error {
+  border-left-color: var(--brand-danger);
+}
+.toast--info {
+  border-left-color: var(--md-primary);
+}
+.toast--loading {
+  border-left-color: var(--md-primary);
+}
+
+.toast__icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.toast--success .toast__icon {
+  color: var(--brand-success);
+}
+.toast--error .toast__icon {
+  color: var(--brand-danger);
+}
+.toast--info .toast__icon {
+  color: var(--md-primary);
+}
+
+.toast__message {
+  flex: 1 1 auto;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.toast__dismiss {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--md-on-surface-variant);
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 2px;
+  border-radius: 4px;
+}
+.toast__dismiss:hover {
+  color: var(--md-on-surface);
+}
+
+.toast__spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--md-on-surface-variant);
+  border-top-color: var(--md-primary);
+  animation: toast-spin 0.7s linear infinite;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+  .toast__spinner {
+    animation-duration: 1.6s;
+  }
+}
