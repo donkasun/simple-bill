@@ -29,7 +29,7 @@ const DashboardDocumentRow = ({
 }: DashboardDocumentRowProps) => {
   const navigate = useNavigate();
   const statusPill = getStatusPill(document.status);
-  const amount = formatCurrency(document.total, document.currency);
+  const amount = formatCurrency(document.total, document.currency ?? "USD");
   const dateLabel = formatDashboardDocumentRowDate(document);
   const isPendingDate = dateLabel === "Pending";
   const title = `${document.typeLabel} ${document.docNumber}`;
