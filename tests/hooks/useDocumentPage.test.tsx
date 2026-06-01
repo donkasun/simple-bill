@@ -19,6 +19,14 @@ vi.mock("@hooks/useUserProfile", () => ({
 vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
 vi.mock("@utils/docNumber", () => ({
   allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-001"),
+  isDocNumberTaken: vi.fn().mockResolvedValue(false),
+  reconcileDocCounter: vi.fn().mockResolvedValue(undefined),
+  DuplicateDocNumberError: class DuplicateDocNumberError extends Error {
+    constructor(public docNumber: string) {
+      super(`Document number "${docNumber}" is already in use.`);
+      this.name = "DuplicateDocNumberError";
+    }
+  },
 }));
 vi.mock("@utils/pdf", () => ({
   generateDocumentPdf: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
@@ -430,5 +438,41 @@ describe("useDocumentPage", () => {
       );
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
     });
+  });
+
+  it("saveDraft rejects a duplicate manual document number without persisting", async () => {
+    const { isDocNumberTaken } = await import("@utils/docNumber");
+    (isDocNumberTaken as vi.Mock).mockResolvedValueOnce(true);
+
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "create" });
+      return null;
+    };
+    render(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
+
+    await act(async () => {
+      vm!.dispatch({
+        type: "SET_FIELD",
+        field: "documentNumber",
+        value: "QUO-2026-001",
+      });
+    });
+
+    await act(async () => {
+      await vm!.actions.saveDraft();
+    });
+
+    await waitFor(() => {
+      expect(vm!.headerErrors.documentNumber).toBeTruthy();
+      expect(vm!.banners.saveError).toBeTruthy();
+    });
+    expect(addDocumentSpy).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

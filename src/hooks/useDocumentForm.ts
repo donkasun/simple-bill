@@ -11,6 +11,7 @@ import { computeAmount, computeSubtotal } from "@utils/documentMath";
 
 export type HeaderErrors = {
   documentType?: string;
+  documentNumber?: string;
   date?: string;
   customerId?: string;
 };

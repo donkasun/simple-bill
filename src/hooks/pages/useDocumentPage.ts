@@ -29,7 +29,12 @@ import type {
 import type { Customer } from "../../types/customer";
 import type { Item } from "../../types/item";
 import { db } from "../../firebase/config";
-import { allocateNextDocumentNumber } from "@utils/docNumber";
+import {
+  allocateNextDocumentNumber,
+  isDocNumberTaken,
+  reconcileDocCounter,
+  DuplicateDocNumberError,
+} from "@utils/docNumber";
 import {
   buildDocumentPayload,
   selectCustomerDetails,
@@ -392,10 +397,37 @@ export function useDocumentPage(
 
   const resolveDocNumber = useCallback(async () => {
     if (!user?.uid) throw new Error("Not signed in");
-    return state.documentNumber?.trim()
-      ? state.documentNumber.trim()
-      : allocateNextDocumentNumber(user.uid, state.documentType, state.date);
-  }, [state.date, state.documentNumber, state.documentType, user?.uid]);
+    const manual = state.documentNumber?.trim();
+    if (manual) {
+      if (await isDocNumberTaken(user.uid, manual, documentId)) {
+        throw new DuplicateDocNumberError(manual);
+      }
+      // Keep the auto-number counter ahead of manually entered sequences so a
+      // later auto-allocation can't re-emit the same number.
+      await reconcileDocCounter(user.uid, manual);
+      return manual;
+    }
+    return allocateNextDocumentNumber(user.uid, state.documentType, state.date);
+  }, [
+    documentId,
+    state.date,
+    state.documentNumber,
+    state.documentType,
+    user?.uid,
+  ]);
+
+  // Surfaces a duplicate-number failure as a field error on Document #.
+  // Returns true when it handled the error.
+  const applyDocNumberError = useCallback((e: unknown): boolean => {
+    if (e instanceof DuplicateDocNumberError) {
+      setHeaderErrors((prev) => ({
+        ...prev,
+        documentNumber: "This number is already used by another document.",
+      }));
+      return true;
+    }
+    return false;
+  }, []);
 
   const saveChanges = useCallback(async () => {
     setSaveError(null);
@@ -424,12 +456,17 @@ export function useDocumentPage(
         recordCustomerBilled(user.uid, state.customerId);
       }
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save changes");
+      if (applyDocNumberError(e)) {
+        setSaveError("That document number is already in use. Pick another.");
+      } else {
+        setSaveError(e instanceof Error ? e.message : "Failed to save changes");
+      }
     } finally {
       setSaving(false);
     }
   }, [
     applyValidationErrors,
+    applyDocNumberError,
     currency,
     customers,
     documentId,
@@ -472,13 +509,18 @@ export function useDocumentPage(
       }
       if (id) navigate("/dashboard");
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save draft");
+      if (applyDocNumberError(e)) {
+        setSaveError("That document number is already in use. Pick another.");
+      } else {
+        setSaveError(e instanceof Error ? e.message : "Failed to save draft");
+      }
     } finally {
       setSaving(false);
     }
   }, [
     addDocument,
     applyValidationErrors,
+    applyDocNumberError,
     currency,
     customers,
     navigate,
@@ -572,15 +614,22 @@ export function useDocumentPage(
       finalizeDocNumberRef.current = null;
       navigate("/dashboard");
     } catch (e: unknown) {
-      setFinalizeError(
-        e instanceof Error ? e.message : "Failed to finalize & download",
-      );
+      if (applyDocNumberError(e)) {
+        setFinalizeError(
+          "That document number is already in use. Pick another.",
+        );
+      } else {
+        setFinalizeError(
+          e instanceof Error ? e.message : "Failed to finalize & download",
+        );
+      }
     } finally {
       setFinalizing(false);
     }
   }, [
     addDocument,
     applyValidationErrors,
+    applyDocNumberError,
     currency,
     customers,
     documentId,

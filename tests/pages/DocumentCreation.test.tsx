@@ -21,6 +21,16 @@ vi.mock("react-router-dom", async () => {
 });
 vi.mock("@utils/docNumber", () => ({
   allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-001"),
+  isDocNumberTaken: vi.fn().mockResolvedValue(false),
+  reconcileDocCounter: vi.fn().mockResolvedValue(undefined),
+  DuplicateDocNumberError: class DuplicateDocNumberError extends Error {
+    docNumber: string;
+    constructor(docNumber: string) {
+      super(`Document number "${docNumber}" is already in use.`);
+      this.name = "DuplicateDocNumberError";
+      this.docNumber = docNumber;
+    }
+  },
 }));
 
 let capturedDismiss: undefined | (() => void);

@@ -150,6 +150,7 @@ const DocumentEditorForm: React.FC<DocumentEditorFormProps> = ({
               })
             }
             disabled={!canEdit}
+            error={headerErrors.documentNumber}
           />
 
           <StyledInput
