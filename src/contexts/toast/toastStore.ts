@@ -1,5 +1,10 @@
 // src/contexts/toast/toastStore.ts
-import type { Toast, ToastOptions, ToastVariant } from "./types";
+import type {
+  Toast,
+  ToastOptions,
+  ToastVariant,
+  PromiseMessages,
+} from "./types";
 
 const MAX_TOASTS = 3;
 
@@ -126,6 +131,38 @@ function clearAll(): void {
   emit();
 }
 
+function resolveMessage<T>(
+  message: string | ((value: T) => string),
+  value: T,
+): string {
+  return typeof message === "function"
+    ? (message as (value: T) => string)(value)
+    : message;
+}
+
+function promise<T>(
+  input: Promise<T>,
+  messages: PromiseMessages<T>,
+  opts?: ToastOptions,
+): Promise<T> {
+  const id = add("loading", messages.loading, { ...opts, duration: null });
+  input.then(
+    (value) => {
+      add("success", resolveMessage(messages.success, value), {
+        id,
+        duration: opts?.duration,
+      });
+    },
+    (err: unknown) => {
+      add("error", resolveMessage(messages.error, err), {
+        id,
+        duration: opts?.duration,
+      });
+    },
+  );
+  return input;
+}
+
 export const toast = {
   success: (message: string, opts?: ToastOptions) =>
     add("success", message, opts),
@@ -133,6 +170,7 @@ export const toast = {
   info: (message: string, opts?: ToastOptions) => add("info", message, opts),
   loading: (message: string, opts?: ToastOptions) =>
     add("loading", message, opts),
+  promise,
   dismiss,
 } as const;
 

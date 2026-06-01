@@ -100,4 +100,41 @@ describe("toastStore", () => {
     vi.advanceTimersByTime(1);
     expect(toastStore.getSnapshot()).toHaveLength(0);
   });
+
+  it("promise: shows loading then success in the same slot", async () => {
+    const p = Promise.resolve("ok");
+    const returned = toast.promise(p, {
+      loading: "Working…",
+      success: "Done",
+      error: "Failed",
+    });
+    // loading toast present immediately
+    let list = toastStore.getSnapshot();
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ variant: "loading", message: "Working…" });
+    const loadingId = list[0].id;
+
+    await expect(returned).resolves.toBe("ok");
+    list = toastStore.getSnapshot();
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({
+      id: loadingId,
+      variant: "success",
+      message: "Done",
+    });
+  });
+
+  it("promise: rejects → error toast in place, re-throws to caller", async () => {
+    const p = Promise.reject(new Error("nope"));
+    const returned = toast.promise(p, {
+      loading: "Working…",
+      success: "Done",
+      error: (e) => (e instanceof Error ? e.message : "Failed"),
+    });
+    await expect(returned).rejects.toThrow("nope");
+    const list = toastStore.getSnapshot();
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ variant: "error", message: "nope" });
+    expect(list[0].duration).toBeNull();
+  });
 });
