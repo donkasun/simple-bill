@@ -27,6 +27,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="app-page dashboard-page">
+      <div className="dashboard-ambient" aria-hidden>
+        <div className="dashboard-ambient__blob dashboard-ambient__blob--primary" />
+        <div className="dashboard-ambient__blob dashboard-ambient__blob--secondary" />
+      </div>
+
       <PageHeader
         className="page-header--flush page-header--dashboard"
         size="large"
@@ -35,7 +40,7 @@ const Dashboard: React.FC = () => {
         actions={
           <button
             type="button"
-            className="dashboard-header-cta btn-primary"
+            className="dashboard-header-cta btn-primary dashboard-pulse-breathing"
             onClick={vm.actions.navigateToNewInvoice}
           >
             <span className="material-symbols-outlined filled" aria-hidden>

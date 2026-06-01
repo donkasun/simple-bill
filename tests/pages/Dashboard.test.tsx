@@ -226,6 +226,15 @@ describe("Dashboard", () => {
       const page = container.querySelector(".dashboard-page.app-page");
       expect(page).toBeTruthy();
     });
+
+    it("includes stitch motion and ambient dashboard polish", () => {
+      const { container } = renderDashboard();
+
+      expect(container.querySelector(".dashboard-ambient")).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "New Invoice" }).className,
+      ).toContain("dashboard-pulse-breathing");
+    });
   });
 
   describe("Recent document rows", () => {
