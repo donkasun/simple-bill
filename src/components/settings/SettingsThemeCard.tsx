@@ -1,10 +1,12 @@
 import React from "react";
-import StyledDropdown from "@components/core/StyledDropdown";
+import SettingsThemePicker, {
+  type ThemeValue,
+} from "@components/settings/SettingsThemePicker";
 
 type SettingsThemeCardProps = {
   theme: string;
   resolvedTheme: string;
-  onChange: (theme: "light" | "dark" | "system") => void;
+  onChange: (theme: ThemeValue) => void;
 };
 
 const SettingsThemeCard: React.FC<SettingsThemeCardProps> = ({
@@ -12,50 +14,40 @@ const SettingsThemeCard: React.FC<SettingsThemeCardProps> = ({
   resolvedTheme,
   onChange,
 }) => {
-  const cardStyle = {
-    padding: "1.5rem",
-    backgroundColor: "var(--white)",
-    borderRadius: "8px",
-    border: "1px solid var(--brand-border)",
-  } as const;
+  const themeValue = (
+    ["light", "dark", "system"].includes(theme) ? theme : "system"
+  ) as ThemeValue;
+
+  const resolved =
+    resolvedTheme === "dark" ? "dark" : ("light" as "light" | "dark");
+
+  const resolvedHint =
+    themeValue === "system"
+      ? `You're using ${resolved} because your device is set to ${resolved}.`
+      : null;
 
   return (
-    <div style={cardStyle}>
-      <h2 className="page-card-title">Appearance</h2>
-      <div>
-        <label
-          htmlFor="theme-select"
-          style={{
-            display: "block",
-            marginBottom: "0.5rem",
-            fontWeight: 500,
-          }}
-        >
-          Theme:
-        </label>
-        <StyledDropdown
-          id="theme-select"
-          value={theme}
-          onChange={(e) =>
-            onChange(e.target.value as "light" | "dark" | "system")
-          }
-          style={{ width: "100%" }}
-        >
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="system">System</option>
-        </StyledDropdown>
-        <p
-          style={{
-            color: "var(--brand-text-secondary)",
-            margin: "0.5rem 0 0 0",
-            fontSize: "0.875rem",
-          }}
-        >
-          Current: {theme === "system" ? `${resolvedTheme} (system)` : theme}
-        </p>
-      </div>
-    </div>
+    <section
+      className="settings-card"
+      aria-labelledby="settings-appearance-title"
+    >
+      <h2 id="settings-appearance-title" className="page-card-title">
+        Appearance
+      </h2>
+      <p className="settings-card__helper">
+        How SimpleBill looks on this phone or computer.
+      </p>
+
+      <SettingsThemePicker
+        value={themeValue}
+        resolvedTheme={resolved}
+        onChange={onChange}
+      />
+
+      {resolvedHint ? (
+        <p className="settings-card__hint">{resolvedHint}</p>
+      ) : null}
+    </section>
   );
 };
 
