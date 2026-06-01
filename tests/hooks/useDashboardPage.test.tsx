@@ -375,6 +375,76 @@ describe("useDashboardPage", () => {
     });
   });
 
+  it("ignores finalized quotations when picking spotlight customer", async () => {
+    mockUseFirestore.mockImplementation((options) => {
+      if (options.collectionName === "customers") {
+        return {
+          items: mockCustomers,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          set: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as unknown as ReturnType<typeof useFirestore>;
+      }
+      return {
+        items: [
+          {
+            id: "quo1",
+            type: "quotation" as const,
+            typeLabel: "Quotation",
+            status: "finalized" as const,
+            customerId: "cust2",
+            customerName: "Beta",
+            total: 9000,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-02",
+          },
+          {
+            id: "inv1",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "finalized" as const,
+            customerId: "cust1",
+            customerName: "Acme",
+            total: 100,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-01",
+          },
+        ],
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        set: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as unknown as ReturnType<typeof useFirestore>;
+    });
+
+    let vm: ReturnType<typeof useDashboardPage> | null = null;
+    const Comp = () => {
+      vm = useDashboardPage();
+      return null;
+    };
+    render(<Comp />);
+
+    await waitFor(() => {
+      expect(vm!.spotlightCustomer).toEqual({
+        customerId: "cust1",
+        name: "Acme",
+        email: "acme@example.com",
+        outstandingBalance: 100,
+      });
+    });
+  });
+
   it("builds tax season tip from documents saved this month", async () => {
     const now = new Date();
     const isoThisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-15`;
@@ -450,6 +520,67 @@ describe("useDashboardPage", () => {
     await waitFor(() => {
       expect(vm!.taxSeasonTip).toBe(
         "Keep your receipts organized! Jane, you've saved 2 documents this month. Great progress.",
+      );
+    });
+  });
+
+  it("builds a neutral tax season tip when no documents were saved this month", async () => {
+    mockUseFirestore.mockImplementation((options) => {
+      if (options.collectionName === "customers") {
+        return {
+          items: mockCustomers,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          set: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as unknown as ReturnType<typeof useFirestore>;
+      }
+      return {
+        items: [
+          {
+            id: "doc-old",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "paid" as const,
+            customerName: "Acme",
+            total: 100,
+            currency: "USD",
+            userId: "user1",
+            date: "2020-01-01",
+          },
+        ],
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        set: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as unknown as ReturnType<typeof useFirestore>;
+    });
+
+    mockUseAuth.mockReturnValue({
+      user: { uid: "user1", displayName: "Jane Doe" },
+      loading: false,
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+    });
+
+    let vm: ReturnType<typeof useDashboardPage> | null = null;
+    const Comp = () => {
+      vm = useDashboardPage();
+      return null;
+    };
+    render(<Comp />);
+
+    await waitFor(() => {
+      expect(vm!.taxSeasonTip).toBe(
+        "Keep your receipts organized! Jane, you haven't saved any documents this month yet.",
       );
     });
   });

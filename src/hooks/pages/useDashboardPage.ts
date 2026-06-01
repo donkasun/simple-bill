@@ -87,12 +87,26 @@ function buildTaxSeasonTip(
   firstName: string,
   documentsSavedThisMonth: number,
 ): string {
+  const intro = "Keep your receipts organized!";
+
+  if (documentsSavedThisMonth === 0) {
+    if (firstName) {
+      return `${intro} ${firstName}, you haven't saved any documents this month yet.`;
+    }
+    return `${intro} You haven't saved any documents this month yet.`;
+  }
+
   const countLabel =
     documentsSavedThisMonth === 1
       ? "1 document"
       : `${documentsSavedThisMonth} documents`;
-  const nameClause = firstName ? `${firstName}, you've saved` : "You've saved";
-  return `Keep your receipts organized! ${nameClause} ${countLabel} this month. Great progress.`;
+
+  const closing =
+    documentsSavedThisMonth === 1 ? "Nice start." : "Great progress.";
+
+  const verbClause = firstName ? `${firstName}, you've saved` : "You've saved";
+
+  return `${intro} ${verbClause} ${countLabel} this month. ${closing}`;
 }
 
 function resolveSpotlightCustomer(
@@ -102,7 +116,8 @@ function resolveSpotlightCustomer(
 ): DashboardSpotlightCustomer | null {
   const outstandingByCustomer = new Map<string, number>();
   for (const doc of documents) {
-    if (doc.status !== "finalized" || !doc.customerId) continue;
+    if (doc.type !== "invoice" || doc.status !== "finalized" || !doc.customerId)
+      continue;
     const total = Number.isFinite(doc.total) ? doc.total : 0;
     outstandingByCustomer.set(
       doc.customerId,

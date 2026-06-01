@@ -1,13 +1,21 @@
 import React from "react";
 import ErrorBanner from "@components/core/ErrorBanner";
-import ConfirmDialog from "@components/core/ConfirmDialog";
 import { usePageTitle } from "@components/layout/PageTitleContext";
 import PageHeader from "@components/layout/PageHeader";
-import DocumentCard from "@components/documents/DocumentCard";
+import DashboardCustomerSpotlight from "@components/dashboard/DashboardCustomerSpotlight";
+import DashboardTaxSeasonTip from "@components/dashboard/DashboardTaxSeasonTip";
+import DashboardDocumentRow from "@components/dashboard/DashboardDocumentRow";
 import DashboardSummaryStrip from "@components/dashboard/DashboardSummaryStrip";
-import DashboardQuickActions from "@components/dashboard/DashboardQuickActions";
 import DashboardEmptyState from "@components/dashboard/DashboardEmptyState";
 import { useDashboardPage } from "@hooks/pages/useDashboardPage";
+
+const ROW_ANIMATION_DELAYS = [
+  "dashboard-animate-fade-up--delay-4",
+  "dashboard-animate-fade-up--delay-5",
+  "dashboard-animate-fade-up--delay-6",
+  "dashboard-animate-fade-up--delay-7",
+  "dashboard-animate-fade-up--delay-7",
+] as const;
 
 const Dashboard: React.FC = () => {
   usePageTitle("Home");
@@ -45,91 +53,64 @@ const Dashboard: React.FC = () => {
         onDraftClick={vm.actions.navigateToDrafts}
       />
 
-      <DashboardQuickActions
-        quickActionCustomers={vm.quickActionCustomers}
-        customerUsage={vm.customerUsage}
-        onNewInvoice={vm.actions.navigateToNewInvoice}
-        onNewQuotation={vm.actions.navigateToNewQuotation}
-        onCustomerClick={vm.actions.navigateToCustomerInvoice}
-      />
-
-      <section className="dashboard-section">
-        <div className="dashboard-section__head">
-          <h2 className="page-section-label">Latest documents</h2>
-          {vm.hasDocuments && (
-            <button
-              type="button"
-              className="dashboard-view-all"
-              onClick={vm.actions.navigateToDocuments}
-            >
-              View all →
-            </button>
-          )}
-        </div>
-
-        {vm.loading && (
-          <div className="dashboard-loading">Loading documents…</div>
-        )}
-        {vm.firestoreError && <ErrorBanner>{vm.firestoreError}</ErrorBanner>}
-        {vm.mutationError && <ErrorBanner>{vm.mutationError}</ErrorBanner>}
-
-        {vm.showRecentList && vm.hasDocuments && (
-          <div className="doc-card-list">
-            {vm.recentDocuments.map((d) => (
-              <DocumentCard
-                key={d.id}
-                document={d}
-                duplicatingId={vm.pending.duplicatingId}
-                deletingId={vm.pending.deletingId}
-                downloadingId={vm.pending.downloadingId}
-                markingPaidId={vm.pending.markingPaidId}
-                markingUnpaidId={vm.pending.markingUnpaidId}
-                onDuplicate={vm.actions.duplicate}
-                onDownload={vm.actions.download}
-                onDelete={vm.actions.requestDelete}
-                onMarkPaid={vm.actions.requestMarkPaid}
-                onMarkUnpaid={vm.actions.requestMarkUnpaid}
-              />
-            ))}
+      <div className="dashboard-split">
+        <section className="dashboard-section dashboard-split__main">
+          <div className="dashboard-section__head">
+            <h2 className="page-section-label">Recent Documents</h2>
+            {vm.hasDocuments && (
+              <button
+                type="button"
+                className="dashboard-view-all"
+                onClick={vm.actions.navigateToDocuments}
+              >
+                View all →
+              </button>
+            )}
           </div>
-        )}
 
-        {vm.showRecentList && !vm.hasDocuments && (
-          <DashboardEmptyState
-            onCreateInvoice={vm.actions.navigateToCreateFirstInvoice}
-          />
-        )}
-      </section>
+          {vm.loading && (
+            <div className="dashboard-loading">Loading documents…</div>
+          )}
+          {vm.firestoreError && <ErrorBanner>{vm.firestoreError}</ErrorBanner>}
 
-      <ConfirmDialog
-        isOpen={!!vm.confirms.deleteId}
-        title="Delete document"
-        message="Are you sure you want to delete this document? This cannot be undone."
-        confirmLabel="Delete"
-        onConfirm={vm.actions.confirmDelete}
-        onCancel={vm.actions.cancelDelete}
-        danger
-      />
+          {vm.showRecentList && vm.hasDocuments && (
+            <div className="dashboard-doc-row-list">
+              {vm.recentDocuments.map((document, index) => (
+                <DashboardDocumentRow
+                  key={document.id}
+                  document={document}
+                  animationDelayClass={
+                    ROW_ANIMATION_DELAYS[
+                      Math.min(index, ROW_ANIMATION_DELAYS.length - 1)
+                    ]
+                  }
+                />
+              ))}
+            </div>
+          )}
 
-      <ConfirmDialog
-        isOpen={!!vm.confirms.markPaidId}
-        title="Mark as paid"
-        message="Mark this document as paid? You can always undo this from the dashboard."
-        confirmLabel="Mark as paid"
-        onConfirm={vm.actions.confirmMarkPaid}
-        onCancel={vm.actions.cancelMarkPaid}
-        danger={false}
-      />
+          {vm.showRecentList && !vm.hasDocuments && (
+            <DashboardEmptyState
+              onCreateInvoice={vm.actions.navigateToCreateFirstInvoice}
+            />
+          )}
+        </section>
 
-      <ConfirmDialog
-        isOpen={!!vm.confirms.markUnpaidId}
-        title="Mark as unpaid"
-        message="Revert this document back to finalized (unpaid)?"
-        confirmLabel="Mark as unpaid"
-        onConfirm={vm.actions.confirmMarkUnpaid}
-        onCancel={vm.actions.cancelMarkUnpaid}
-        danger={false}
-      />
+        <aside
+          className="dashboard-split__aside"
+          aria-label="Dashboard highlights"
+        >
+          <div className="dashboard-aside-stack dashboard-animate-slide-right dashboard-animate-fade-up--delay-3">
+            {vm.spotlightCustomer && (
+              <DashboardCustomerSpotlight
+                customer={vm.spotlightCustomer}
+                formatCurrency={vm.formatSummaryCurrency}
+              />
+            )}
+            <DashboardTaxSeasonTip message={vm.taxSeasonTip} />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 };
