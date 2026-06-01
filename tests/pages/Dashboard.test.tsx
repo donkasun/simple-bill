@@ -4,7 +4,6 @@ import {
   render,
   screen,
   fireEvent,
-  waitFor,
   within,
   cleanup,
 } from "@testing-library/react";
@@ -182,113 +181,128 @@ describe("Dashboard", () => {
     cleanup();
   });
 
-  describe("Click Behavior Routing", () => {
-    it("should navigate to edit page when clicking 'Continue editing' on draft document", async () => {
+  describe("Page layout baseline (pre–Stitch re-skin)", () => {
+    it("shows the stitch dashboard header", () => {
+      mockUseAuth.mockReturnValue({
+        user: { uid: "test-user-id", displayName: "Jane Doe" },
+        loading: false,
+        signIn: vi.fn(),
+        signOut: vi.fn(),
+      });
+
       renderDashboard();
 
-      // Find the first document (draft quotation)
-      const editButtons = screen.getAllByRole("button", {
-        name: "Continue editing",
-      });
-      const firstEditButton = editButtons[0];
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Welcome back, Jane" }),
+      ).toBeTruthy();
+      expect(
+        screen.getByText("Here is your clean status summary for this month."),
+      ).toBeTruthy();
+      expect(screen.getByRole("button", { name: "New Invoice" })).toBeTruthy();
+    });
 
-      fireEvent.click(firstEditButton);
+    it("shows the two-column dashboard split with recent documents", () => {
+      const { container } = renderDashboard();
+
+      expect(container.querySelector(".dashboard-split")).toBeTruthy();
+      expect(container.querySelector(".dashboard-split__main")).toBeTruthy();
+      expect(container.querySelector(".dashboard-split__aside")).toBeTruthy();
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Recent Documents" }),
+      ).toBeTruthy();
+    });
+
+    it("shows New Invoice in the header only", () => {
+      renderDashboard();
+
+      expect(
+        screen.getAllByRole("button", { name: /new invoice/i }),
+      ).toHaveLength(1);
+    });
+
+    it("uses the widened dashboard page shell", () => {
+      const { container } = renderDashboard();
+
+      const page = container.querySelector(".dashboard-page.app-page");
+      expect(page).toBeTruthy();
+    });
+
+    it("includes stitch motion and ambient dashboard polish", () => {
+      const { container } = renderDashboard();
+
+      expect(container.querySelector(".dashboard-ambient")).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "New Invoice" }).className,
+      ).toContain("dashboard-pulse-breathing");
+    });
+  });
+
+  describe("Recent document rows", () => {
+    it("navigates to edit when clicking a document row", () => {
+      renderDashboard();
+
+      const acmeRow = screen
+        .getByText("Acme Corp")
+        .closest(".dashboard-doc-row");
+      fireEvent.click(acmeRow as HTMLElement);
 
       expect(mockNavigate).toHaveBeenCalledWith("/documents/doc1/edit");
     });
 
-    it("should open confirmation and mark as paid for finalized document", async () => {
+    it("does not show document card actions on the dashboard", () => {
       renderDashboard();
-
-      // Find the second document (finalized invoice)
-      const markPaidButtons = screen.getAllByRole("button", {
-        name: "Mark as paid",
-      });
-      const firstMarkPaidButton = markPaidButtons[0];
-
-      fireEvent.click(firstMarkPaidButton);
 
       expect(
-        screen.getByRole("heading", { name: "Mark as paid" }),
-      ).toBeTruthy();
+        screen.queryByRole("button", { name: "Continue editing" }),
+      ).toBeNull();
+      expect(screen.queryByRole("button", { name: "Mark as paid" })).toBeNull();
       expect(
-        screen.getByText(
-          "Mark this document as paid? You can always undo this from the dashboard.",
-        ),
-      ).toBeTruthy();
+        screen.queryByRole("button", { name: /download pdf/i }),
+      ).toBeNull();
+    });
 
-      const dialog = screen.getByRole("dialog");
-      fireEvent.click(
-        within(dialog).getByRole("button", { name: "Mark as paid" }),
+    it("shows Pending for draft rows instead of a date", () => {
+      renderDashboard();
+
+      const acmeRow = screen
+        .getByText("Acme Corp")
+        .closest(".dashboard-doc-row");
+      expect(within(acmeRow as HTMLElement).getByText("Pending")).toBeTruthy();
+    });
+
+    it("shows formatted date below amount for sent or paid rows", () => {
+      renderDashboard();
+
+      const betaRow = screen
+        .getByText("Beta Inc")
+        .closest(".dashboard-doc-row");
+      const dateEl = (betaRow as HTMLElement).querySelector(
+        ".dashboard-doc-row__date",
       );
-
-      await waitFor(() => {
-        expect(updateSpy).toHaveBeenCalledWith(
-          "doc2",
-          expect.objectContaining({
-            paidAt: expect.any(Date),
-            status: "paid",
-          }),
-        );
-      });
+      expect(dateEl?.textContent).toMatch(/2024/);
+      expect(dateEl?.textContent).not.toBe("Sent");
+      expect(dateEl?.textContent).not.toBe("Pending");
     });
 
-    it("should trigger download when clicking 'Download PDF' on finalized document", async () => {
-      const { downloadBlob } = await import("@utils/download");
-      const { generateDocumentPdf } = await import("@utils/pdf");
+    it("shows type icons for invoices and quotations", () => {
+      const { container } = renderDashboard();
 
-      renderDashboard();
+      const invoiceRow = screen
+        .getByText("Beta Inc")
+        .closest(".dashboard-doc-row--invoice");
+      expect(invoiceRow).toBeTruthy();
+      expect(
+        (invoiceRow as HTMLElement).querySelector(".material-symbols-outlined")
+          ?.textContent,
+      ).toBe("receipt_long");
 
-      const betaCard = screen.getByText("Beta Inc").closest(".doc-card");
-      expect(betaCard).toBeTruthy();
-      const downloadButton = within(betaCard as HTMLElement).getByRole(
-        "button",
-        {
-          name: /download pdf/i,
-        },
+      const quotationRow = container.querySelector(
+        ".dashboard-doc-row--quotation",
       );
-
-      fireEvent.click(downloadButton);
-
-      await waitFor(() => {
-        expect(generateDocumentPdf).toHaveBeenCalledWith({
-          type: "invoice",
-          docNumber: "INV-2024-001",
-          date: "2024-01-16",
-          customerDetails: undefined,
-          items: undefined,
-          subtotal: undefined,
-          total: 2500,
-          currency: "USD",
-        });
-        expect(downloadBlob).toHaveBeenCalled();
-      });
-    });
-
-    it("should not show download button for draft documents", () => {
-      renderDashboard();
-
-      // Check that there's at least one download button (for the finalized document)
-      const downloadButtons = screen.getAllByRole("button", {
-        name: /download pdf/i,
-      });
-      expect(downloadButtons.length).toBeGreaterThan(0);
-    });
-
-    it("should show both Mark as paid and Download PDF buttons for finalized documents", () => {
-      renderDashboard();
-
-      // Check that we have Mark as paid buttons
-      const markPaidButtons = screen.getAllByRole("button", {
-        name: "Mark as paid",
-      });
-      expect(markPaidButtons.length).toBeGreaterThan(0);
-
-      // Check that we have Download buttons
-      const downloadButtons = screen.getAllByRole("button", {
-        name: /download pdf/i,
-      });
-      expect(downloadButtons.length).toBeGreaterThan(0);
+      expect(quotationRow).toBeTruthy();
+      expect(
+        quotationRow?.querySelector(".material-symbols-outlined")?.textContent,
+      ).toBe("request_quote");
     });
   });
 
@@ -473,31 +487,111 @@ describe("Dashboard", () => {
     });
   });
 
-  describe("Financial summary strip", () => {
-    it("shows outstanding, paid this month, and draft count", () => {
+  describe("Status summary bento", () => {
+    it("shows paid, sent, and draft counts", () => {
       renderDashboard();
 
-      const strip = screen.getByRole("region", { name: "Financial summary" });
-      expect(within(strip).getByText("Awaiting payment")).toBeTruthy();
-      expect(within(strip).getByText(/\$5,500/)).toBeTruthy();
-      expect(within(strip).getByText("Paid this month")).toBeTruthy();
-      expect(within(strip).getByText(/\$0/)).toBeTruthy();
-      expect(within(strip).getByText("Drafts")).toBeTruthy();
+      const strip = screen.getByRole("region", {
+        name: "Invoice status summary",
+      });
+      expect(within(strip).getByText("Paid")).toBeTruthy();
+      expect(within(strip).getByText("Sent")).toBeTruthy();
+      expect(within(strip).getByText("Draft")).toBeTruthy();
+      expect(within(strip).getByText("0")).toBeTruthy();
+      expect(within(strip).getByText("2")).toBeTruthy();
       expect(within(strip).getByText("1")).toBeTruthy();
     });
 
-    it("navigates to draft documents when clicking drafts summary", () => {
+    it("navigates to filtered document lists when clicking status cards", () => {
       renderDashboard();
 
-      const strip = screen.getByRole("region", { name: "Financial summary" });
-      fireEvent.click(within(strip).getByRole("button", { name: /drafts/i }));
+      const strip = screen.getByRole("region", {
+        name: "Invoice status summary",
+      });
+      fireEvent.click(within(strip).getByRole("button", { name: /paid/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/documents?status=paid");
 
+      fireEvent.click(within(strip).getByRole("button", { name: /sent/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/documents?status=finalized");
+
+      fireEvent.click(within(strip).getByRole("button", { name: /draft/i }));
       expect(mockNavigate).toHaveBeenCalledWith("/documents?status=draft");
     });
   });
 
+  describe("Dashboard aside", () => {
+    it("always shows the tax season tip", () => {
+      renderDashboard();
+
+      expect(
+        screen.getByRole("region", { name: "Tax season tip" }),
+      ).toBeTruthy();
+      expect(screen.getByText("Tax Season Tip")).toBeTruthy();
+      expect(screen.getByText(/Keep your receipts organized/)).toBeTruthy();
+    });
+
+    it("shows customer spotlight without an avatar when a customer has outstanding invoices", () => {
+      mockUseFirestore.mockImplementation((options) => {
+        if (options?.collectionName === "customers") {
+          return {
+            items: [
+              {
+                id: "cust-beta",
+                name: "Beta Inc",
+                email: "beta@example.com",
+              },
+            ] as never,
+            loading: false,
+            error: null,
+            add: vi.fn(),
+            set: vi.fn(),
+            update: vi.fn(),
+            remove: vi.fn(),
+            getById: vi.fn(),
+            getOnce: vi.fn(),
+          } as never;
+        }
+        return {
+          items: [
+            {
+              ...mockDocuments[1],
+              customerId: "cust-beta",
+            },
+          ] as never,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          set: vi.fn(),
+          update: updateSpy as never,
+          remove: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as never;
+      });
+
+      const { container } = renderDashboard();
+
+      const spotlight = screen.getByRole("region", {
+        name: "Customer spotlight",
+      });
+      expect(
+        within(spotlight).getByRole("heading", { level: 3, name: "Beta Inc" }),
+      ).toBeTruthy();
+      expect(within(spotlight).getByText("beta@example.com")).toBeTruthy();
+      expect(
+        container.querySelector(".dashboard-spotlight__avatar"),
+      ).toBeNull();
+      expect(
+        within(spotlight).getByRole("link", { name: "Send Reminder" }),
+      ).toHaveProperty(
+        "href",
+        expect.stringContaining("mailto:beta@example.com"),
+      );
+    });
+  });
+
   describe("Recent documents list", () => {
-    it("shows at most five document cards when more exist", () => {
+    it("shows at most five document rows when more exist", () => {
       const manyDocs = Array.from({ length: 10 }, (_, i) => ({
         id: `doc-${i}`,
         type: "invoice" as const,
@@ -542,66 +636,7 @@ describe("Dashboard", () => {
 
       const { container } = renderDashboard();
 
-      expect(container.querySelectorAll(".doc-card")).toHaveLength(5);
-    });
-  });
-
-  describe("Duplicate error handling", () => {
-    it("shows mutation error banner when duplicate fails", async () => {
-      const addReject = vi
-        .fn()
-        .mockRejectedValue(new Error("Duplicate failed"));
-      const consoleError = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      mockUseFirestore.mockImplementation(() => {
-        firestoreCallCount++;
-        if (firestoreCallCount === 2) {
-          return {
-            items: [] as never,
-            loading: false,
-            error: null,
-            add: vi.fn(),
-            set: vi.fn(),
-            update: vi.fn(),
-            remove: vi.fn(),
-            getById: vi.fn(),
-            getOnce: vi.fn(),
-          } as never;
-        }
-        return {
-          items: mockDocuments as never,
-          loading: false,
-          error: null,
-          add: addReject,
-          set: vi.fn(),
-          update: updateSpy as never,
-          remove: vi.fn(),
-          getById: vi.fn(),
-          getOnce: vi.fn(),
-        } as never;
-      });
-
-      renderDashboard();
-
-      const acmeCard = screen.getByText("Acme Corp").closest(".doc-card");
-      const menu = (acmeCard as HTMLElement).querySelector(
-        'summary[aria-label="More document actions"]',
-      );
-      fireEvent.click(menu as Element);
-      fireEvent.click(
-        within(acmeCard as HTMLElement).getByRole("button", {
-          name: "Duplicate",
-        }),
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText("Duplicate failed")).toBeTruthy();
-        expect(consoleError).toHaveBeenCalled();
-      });
-
-      consoleError.mockRestore();
+      expect(container.querySelectorAll(".dashboard-doc-row")).toHaveLength(5);
     });
   });
 });
