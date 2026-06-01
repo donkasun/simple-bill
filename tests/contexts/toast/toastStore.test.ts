@@ -124,6 +124,29 @@ describe("toastStore", () => {
     });
   });
 
+  it("promise resolve while paused does not dismiss the toast until resumed", async () => {
+    vi.useFakeTimers();
+    // Start a loading toast (sticky)
+    const id = toast.loading("Working…");
+    // Pause it (simulates user hovering)
+    toastStore.pause(id);
+    // Simulate promise resolving while still paused: update to success with 4000ms duration
+    toast.success("Done", { id, duration: 4000 });
+    // Advance well past 4000ms — toast must still be present because it was paused
+    vi.advanceTimersByTime(10000);
+    expect(toastStore.getSnapshot()).toHaveLength(1);
+    expect(toastStore.getSnapshot()[0]).toMatchObject({
+      id,
+      variant: "success",
+    });
+    // Now resume (simulates mouseleave after hover)
+    toastStore.resume(id);
+    vi.advanceTimersByTime(3999);
+    expect(toastStore.getSnapshot()).toHaveLength(1);
+    vi.advanceTimersByTime(1);
+    expect(toastStore.getSnapshot()).toHaveLength(0);
+  });
+
   it("promise: rejects → error toast in place, re-throws to caller", async () => {
     const p = Promise.reject(new Error("nope"));
     const returned = toast.promise(p, {

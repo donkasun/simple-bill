@@ -22,6 +22,9 @@ const listeners = new Set<() => void>();
 const timers = new Map<string, Timer>();
 const remaining = new Map<string, number>();
 const startTimes = new Map<string, number>();
+// Tracks toasts currently in a hover/focus-paused state so add() can defer
+// starting a timer when a promise resolves while the toast is being hovered.
+const paused = new Set<string>();
 let counter = 0;
 
 function genId(): string {
@@ -43,10 +46,11 @@ function clearTimer(id: string): void {
   }
 }
 
-function forget(id: string): void {
+function clearSchedule(id: string): void {
   clearTimer(id);
   remaining.delete(id);
   startTimes.delete(id);
+  paused.delete(id);
 }
 
 function scheduleDismiss(id: string, duration: number): void {
@@ -77,14 +81,20 @@ function add(
     if (toasts.length > MAX_TOASTS) {
       const evicted = toasts.slice(MAX_TOASTS);
       toasts = toasts.slice(0, MAX_TOASTS);
-      for (const e of evicted) forget(e.id);
+      for (const e of evicted) clearSchedule(e.id);
     }
   }
 
   if (duration != null) {
-    scheduleDismiss(id, duration);
+    // If the toast is currently hover/focus-paused, defer the timer; resume()
+    // will start it when the user moves the pointer away.
+    if (paused.has(id)) {
+      remaining.set(id, duration); // resume() will call scheduleDismiss with this
+    } else {
+      scheduleDismiss(id, duration);
+    }
   } else {
-    forget(id);
+    clearSchedule(id);
   }
 
   emit();
@@ -94,24 +104,27 @@ function add(
 function dismiss(id: string): void {
   if (!toasts.some((t) => t.id === id)) return;
   toasts = toasts.filter((t) => t.id !== id);
-  forget(id);
+  clearSchedule(id);
   emit();
 }
 
 function pause(id: string): void {
+  if (!toasts.some((t) => t.id === id)) return;
+  paused.add(id);
   const timer = timers.get(id);
-  if (timer === undefined) return; // sticky or not scheduled
+  if (timer === undefined) return; // sticky toast — just mark as paused above
   clearTimeout(timer);
   timers.delete(id);
-  const rem =
-    (remaining.get(id) ?? 0) -
-    (Date.now() - (startTimes.get(id) ?? Date.now()));
-  remaining.set(id, Math.max(0, rem));
+  const rem = remaining.get(id);
+  const start = startTimes.get(id);
+  if (rem == null || start == null) return; // maps out of sync — should not happen
+  remaining.set(id, Math.max(0, rem - (Date.now() - start)));
 }
 
 function resume(id: string): void {
+  paused.delete(id);
   const rem = remaining.get(id);
-  if (rem == null) return; // sticky
+  if (rem == null) return; // sticky — no timer to schedule
   if (timers.has(id)) return; // already running
   scheduleDismiss(id, rem);
 }
@@ -126,7 +139,8 @@ function getSnapshot(): Toast[] {
 }
 
 function clearAll(): void {
-  for (const id of [...timers.keys()]) forget(id);
+  for (const id of [...timers.keys()]) clearSchedule(id);
+  paused.clear();
   toasts = [];
   emit();
 }

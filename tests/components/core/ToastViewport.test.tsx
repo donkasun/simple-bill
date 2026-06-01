@@ -1,7 +1,13 @@
 // tests/components/core/ToastViewport.test.tsx
 import React from "react";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  render,
+  screen,
+  cleanup,
+  act,
+  fireEvent,
+} from "@testing-library/react";
 import ToastViewport from "../../../src/components/core/ToastViewport";
 import { toast, toastStore } from "../../../src/contexts/toast/toastStore";
 
@@ -39,5 +45,22 @@ describe("ToastViewport", () => {
       toast.dismiss(id);
     });
     expect(screen.queryByText("Hello")).not.toBeInTheDocument();
+  });
+
+  it("fires pause on mouseenter and resume on mouseleave with the toast id", () => {
+    const pauseSpy = vi.spyOn(toastStore, "pause");
+    const resumeSpy = vi.spyOn(toastStore, "resume");
+    render(<ToastViewport />);
+    let id = "";
+    act(() => {
+      id = toast.success("Hover me");
+    });
+    const toastEl = screen.getByRole("status");
+    fireEvent.mouseEnter(toastEl);
+    expect(pauseSpy).toHaveBeenCalledWith(id);
+    fireEvent.mouseLeave(toastEl);
+    expect(resumeSpy).toHaveBeenCalledWith(id);
+    pauseSpy.mockRestore();
+    resumeSpy.mockRestore();
   });
 });
