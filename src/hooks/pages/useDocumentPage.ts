@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   collection,
@@ -176,6 +176,12 @@ export function useDocumentPage(
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
+
+  // Tracks an in-flight create→finalize so a retry (e.g. after a PDF or
+  // download failure) updates the same document and reuses the same number
+  // instead of creating a duplicate. Reset once a finalize fully succeeds.
+  const finalizeCreatedIdRef = useRef<string | null>(null);
+  const finalizeDocNumberRef = useRef<string | null>(null);
 
   const canEdit = isCreate || (documentStatus === "draft" && isEditMode);
 
@@ -494,7 +500,11 @@ export function useDocumentPage(
         focusFirstValidationError(state, validation);
         return;
       }
-      const docNumber = await resolveDocNumber();
+      // Reuse the number allocated on a previous (failed) attempt so retries
+      // don't burn sequence numbers or change the document's identity.
+      const docNumber =
+        finalizeDocNumberRef.current ?? (await resolveDocNumber());
+      finalizeDocNumberRef.current = docNumber;
       const base = buildDocumentPayload(
         user.uid,
         state,
@@ -503,29 +513,10 @@ export function useDocumentPage(
         selectCustomerDetails(customers, state.customerId),
         { subtotal, total },
       );
-      const payload: Partial<DocumentEntity> = {
-        ...base,
-        currency,
-        finalizedAt:
-          serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
-      };
 
-      if (isCreate) {
-        await addDocument(
-          payload as Omit<DocumentEntity, "id" | "createdAt" | "updatedAt"> & {
-            finalizedAt: import("firebase/firestore").Timestamp;
-          },
-        );
-      } else if (documentId) {
-        await setDocument(documentId, payload);
-        setDocumentStatus("finalized");
-        setIsEditMode(false);
-      }
-
-      if (state.customerId) {
-        recordCustomerBilled(user.uid, state.customerId);
-      }
-
+      // Generate the PDF *before* persisting. It is pure given the form state,
+      // so a PDF failure must never leave a finalized document behind that a
+      // retry would then duplicate.
       const { generateDocumentPdf } = await import("../../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
         type: base.type as DocumentType,
@@ -537,12 +528,48 @@ export function useDocumentPage(
         total: base.total as number,
         currency,
       });
+
+      const payload: Partial<DocumentEntity> = {
+        ...base,
+        currency,
+        finalizedAt:
+          serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
+      };
+
+      if (isCreate) {
+        if (finalizeCreatedIdRef.current) {
+          // A previous attempt already created the document; update it in
+          // place rather than creating a second finalized document.
+          await setDocument(finalizeCreatedIdRef.current, payload);
+        } else {
+          finalizeCreatedIdRef.current = await addDocument(
+            payload as Omit<
+              DocumentEntity,
+              "id" | "createdAt" | "updatedAt"
+            > & {
+              finalizedAt: import("firebase/firestore").Timestamp;
+            },
+          );
+        }
+      } else if (documentId) {
+        await setDocument(documentId, payload);
+        setDocumentStatus("finalized");
+        setIsEditMode(false);
+      }
+
+      if (state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
+
       const filename = `${getDocumentFilename(
         base.type as DocumentType,
         base.docNumber as string,
         base.date as string,
       )}.pdf`;
       downloadBlob(filename, pdfBytes, "application/pdf");
+      // Fully succeeded — clear the retry guards for any future finalize.
+      finalizeCreatedIdRef.current = null;
+      finalizeDocNumberRef.current = null;
       navigate("/dashboard");
     } catch (e: unknown) {
       setFinalizeError(

@@ -332,4 +332,103 @@ describe("useDocumentPage", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/documents/inv-2/edit");
     });
   });
+
+  // Helper: render create mode and make the single default line item valid
+  // for finalize (name, qty >= 1, price >= 0), with a customer selected.
+  async function renderValidCreateForm() {
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "create" });
+      return null;
+    };
+    render(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
+    await act(async () => {
+      for (const li of vm!.state.lineItems) {
+        vm!.dispatch({
+          type: "UPDATE_LINE_ITEM",
+          id: li.id,
+          changes: { name: "Work", quantity: 1, unitPrice: 100 },
+        });
+      }
+    });
+    await waitFor(() => expect(vm!.finalizeDisabled).toBe(false));
+    return () => vm!;
+  }
+
+  it("create mode finalize does not persist when PDF generation fails; retry persists exactly once", async () => {
+    const { generateDocumentPdf } = await import("@utils/pdf");
+    // First finalize attempt: PDF generation throws. Subsequent calls fall
+    // back to the factory default (resolves), simulating a transient failure.
+    (generateDocumentPdf as vi.Mock).mockRejectedValueOnce(
+      new Error("pdf boom"),
+    );
+
+    const getVm = await renderValidCreateForm();
+
+    // Attempt 1 — PDF fails, so nothing must be persisted.
+    await act(async () => {
+      await getVm().actions.finalizeAndDownload();
+    });
+    await waitFor(() => expect(getVm().banners.finalizeError).toBeTruthy());
+    expect(addDocumentSpy).not.toHaveBeenCalled();
+
+    // Attempt 2 — PDF succeeds, document is persisted exactly once.
+    await act(async () => {
+      await getVm().actions.finalizeAndDownload();
+    });
+    await waitFor(() => {
+      expect(addDocumentSpy).toHaveBeenCalledTimes(1);
+      expect(addDocumentSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ status: "finalized" }),
+      );
+    });
+  });
+
+  it("create mode finalize reuses the created doc on retry after a download failure", async () => {
+    const { downloadBlob } = await import("@utils/download");
+    // First finalize: PDF + persist succeed, but the download throws.
+    (downloadBlob as vi.Mock).mockImplementationOnce(() => {
+      throw new Error("download boom");
+    });
+    const { allocateNextDocumentNumber } = await import("@utils/docNumber");
+    (allocateNextDocumentNumber as vi.Mock)
+      .mockResolvedValueOnce("INV-2026-001")
+      .mockResolvedValueOnce("INV-2026-002");
+
+    const getVm = await renderValidCreateForm();
+
+    // Attempt 1 — persists, then download fails.
+    await act(async () => {
+      await getVm().actions.finalizeAndDownload();
+    });
+    await waitFor(() => {
+      expect(addDocumentSpy).toHaveBeenCalledTimes(1);
+      expect(getVm().banners.finalizeError).toBeTruthy();
+    });
+    expect(addDocumentSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ docNumber: "INV-2026-001" }),
+    );
+
+    // Attempt 2 — must update the already-created doc, not create a new one,
+    // and must keep the originally allocated number.
+    await act(async () => {
+      await getVm().actions.finalizeAndDownload();
+    });
+    await waitFor(() => {
+      expect(addDocumentSpy).toHaveBeenCalledTimes(1);
+      expect(setDocumentSpy).toHaveBeenCalledWith(
+        "new-id",
+        expect.objectContaining({
+          status: "finalized",
+          docNumber: "INV-2026-001",
+        }),
+      );
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    });
+  });
 });
