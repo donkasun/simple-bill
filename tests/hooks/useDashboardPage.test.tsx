@@ -54,8 +54,9 @@ const mockUseAuth = useAuth as vi.MockedFunction<typeof useAuth>;
 const mockUseFirestore = useFirestore as vi.MockedFunction<typeof useFirestore>;
 
 const mockCustomers = [
-  { id: "cust1", name: "Acme", userId: "user1" },
-  { id: "cust2", name: "Beta", userId: "user1" },
+  { id: "cust1", name: "Acme", email: "acme@example.com", userId: "user1" },
+  { id: "cust2", name: "Beta", email: "beta@example.com", userId: "user1" },
+  { id: "cust3", name: "Gamma", userId: "user1" },
 ];
 
 const makeDocs = (count: number) =>
@@ -212,6 +213,269 @@ describe("useDashboardPage", () => {
     await waitFor(() => {
       expect(vm!.firstName).toBe("Jane");
       expect(vm!.greeting).toMatch(/Good (morning|afternoon|evening)/);
+    });
+  });
+
+  it("computes status counts for bento cards", async () => {
+    mockUseFirestore.mockImplementation((options) => {
+      if (options.collectionName === "customers") {
+        return {
+          items: mockCustomers,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          set: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as unknown as ReturnType<typeof useFirestore>;
+      }
+      return {
+        items: [
+          {
+            id: "paid1",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "paid" as const,
+            customerName: "Paid Co",
+            total: 50,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-01",
+          },
+          {
+            id: "sent1",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "finalized" as const,
+            customerName: "Sent Co",
+            total: 75,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-02",
+          },
+          {
+            id: "sent2",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "finalized" as const,
+            customerName: "Sent Co 2",
+            total: 25,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-03",
+          },
+          {
+            id: "draft1",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "draft" as const,
+            customerName: "Draft Co",
+            total: 10,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-04",
+          },
+        ],
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        set: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as unknown as ReturnType<typeof useFirestore>;
+    });
+
+    let vm: ReturnType<typeof useDashboardPage> | null = null;
+    const Comp = () => {
+      vm = useDashboardPage();
+      return null;
+    };
+    render(<Comp />);
+
+    await waitFor(() => {
+      expect(vm!.statusCounts).toEqual({
+        paidCount: 1,
+        sentCount: 2,
+        draftCount: 1,
+      });
+    });
+  });
+
+  it("picks spotlight customer with highest outstanding balance", async () => {
+    mockUseFirestore.mockImplementation((options) => {
+      if (options.collectionName === "customers") {
+        return {
+          items: mockCustomers,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          set: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as unknown as ReturnType<typeof useFirestore>;
+      }
+      return {
+        items: [
+          {
+            id: "sent1",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "finalized" as const,
+            customerId: "cust1",
+            customerName: "Acme",
+            total: 100,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-01",
+          },
+          {
+            id: "sent2",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "finalized" as const,
+            customerId: "cust2",
+            customerName: "Beta",
+            total: 450,
+            currency: "USD",
+            userId: "user1",
+            date: "2024-06-02",
+          },
+        ],
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        set: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as unknown as ReturnType<typeof useFirestore>;
+    });
+
+    let vm: ReturnType<typeof useDashboardPage> | null = null;
+    const Comp = () => {
+      vm = useDashboardPage();
+      return null;
+    };
+    render(<Comp />);
+
+    await waitFor(() => {
+      expect(vm!.spotlightCustomer).toEqual({
+        customerId: "cust2",
+        name: "Beta",
+        email: "beta@example.com",
+        outstandingBalance: 450,
+      });
+    });
+  });
+
+  it("builds tax season tip from documents saved this month", async () => {
+    const now = new Date();
+    const isoThisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-15`;
+
+    mockUseFirestore.mockImplementation((options) => {
+      if (options.collectionName === "customers") {
+        return {
+          items: mockCustomers,
+          loading: false,
+          error: null,
+          add: vi.fn(),
+          update: vi.fn(),
+          remove: vi.fn(),
+          set: vi.fn(),
+          getById: vi.fn(),
+          getOnce: vi.fn(),
+        } as unknown as ReturnType<typeof useFirestore>;
+      }
+      return {
+        items: [
+          {
+            id: "doc1",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "paid" as const,
+            customerName: "Acme",
+            total: 100,
+            currency: "USD",
+            userId: "user1",
+            date: isoThisMonth,
+          },
+          {
+            id: "doc2",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "draft" as const,
+            customerName: "Beta",
+            total: 50,
+            currency: "USD",
+            userId: "user1",
+            date: isoThisMonth,
+          },
+          {
+            id: "doc3",
+            type: "invoice" as const,
+            typeLabel: "Invoice",
+            status: "draft" as const,
+            customerName: "Old",
+            total: 25,
+            currency: "USD",
+            userId: "user1",
+            date: "2020-01-01",
+          },
+        ],
+        loading: false,
+        error: null,
+        add: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        set: vi.fn(),
+        getById: vi.fn(),
+        getOnce: vi.fn(),
+      } as unknown as ReturnType<typeof useFirestore>;
+    });
+
+    let vm: ReturnType<typeof useDashboardPage> | null = null;
+    const Comp = () => {
+      vm = useDashboardPage();
+      return null;
+    };
+    render(<Comp />);
+
+    await waitFor(() => {
+      expect(vm!.taxSeasonTip).toBe(
+        "Keep your receipts organized! Jane, you've saved 2 documents this month. Great progress.",
+      );
+    });
+  });
+
+  it("exposes stitch-ready view-model fields", async () => {
+    let vm: ReturnType<typeof useDashboardPage> | null = null;
+    const Comp = () => {
+      vm = useDashboardPage();
+      return null;
+    };
+    render(<Comp />);
+
+    await waitFor(() => {
+      expect(vm!.statusCounts).toEqual(
+        expect.objectContaining({
+          paidCount: expect.any(Number),
+          sentCount: expect.any(Number),
+          draftCount: expect.any(Number),
+        }),
+      );
+      expect(typeof vm!.taxSeasonTip).toBe("string");
+      expect(vm!.taxSeasonTip.length).toBeGreaterThan(0);
+      expect(
+        vm!.spotlightCustomer === null ||
+          typeof vm!.spotlightCustomer === "object",
+      ).toBe(true);
     });
   });
 });

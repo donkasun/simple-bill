@@ -13,15 +13,29 @@ const Dashboard: React.FC = () => {
   usePageTitle("Home");
   const vm = useDashboardPage();
 
-  const eyebrow = vm.firstName ? `${vm.greeting}, ${vm.firstName}` : undefined;
+  const headline = vm.firstName
+    ? `Welcome back, ${vm.firstName}`
+    : "Welcome back";
 
   return (
     <div className="app-page dashboard-page">
       <PageHeader
-        className="page-header--flush"
+        className="page-header--flush page-header--dashboard"
         size="large"
-        eyebrow={eyebrow}
-        title="Your business at a glance"
+        title={headline}
+        subtitle="Here is your clean status summary for this month."
+        actions={
+          <button
+            type="button"
+            className="dashboard-header-cta btn-primary"
+            onClick={vm.actions.navigateToNewInvoice}
+          >
+            <span className="material-symbols-outlined filled" aria-hidden>
+              add_circle
+            </span>
+            New Invoice
+          </button>
+        }
       />
 
       <DashboardSummaryStrip

@@ -18,6 +18,19 @@ export type DashboardFinancialSummary = {
   drafts: number;
 };
 
+export type DashboardStatusCounts = {
+  paidCount: number;
+  sentCount: number;
+  draftCount: number;
+};
+
+export type DashboardSpotlightCustomer = {
+  customerId: string;
+  name: string;
+  email: string | null;
+  outstandingBalance: number;
+};
+
 export type DashboardPageViewModel = {
   greeting: string;
   firstName: string;
@@ -25,9 +38,12 @@ export type DashboardPageViewModel = {
   firestoreError: string | null;
   mutationError: string | null;
   financialSummary: DashboardFinancialSummary;
+  statusCounts: DashboardStatusCounts;
   formatSummaryCurrency: (value: number) => string;
   customerUsage: CustomerUsageMap;
   quickActionCustomers: Customer[];
+  spotlightCustomer: DashboardSpotlightCustomer | null;
+  taxSeasonTip: string;
   recentDocuments: DocumentRow[];
   hasDocuments: boolean;
   showRecentList: boolean;
@@ -48,6 +64,75 @@ function getGreeting(): string {
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
+}
+
+function getDocumentTimestamp(doc: DocumentRow): Date | null {
+  if (doc.createdAt instanceof Date) return doc.createdAt;
+  const fromTimestamp = doc.createdAt?.toDate?.();
+  if (fromTimestamp instanceof Date) return fromTimestamp;
+  if (doc.date) {
+    const parsed = new Date(doc.date);
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
+  }
+  return null;
+}
+
+function isSameCalendarMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+function buildTaxSeasonTip(
+  firstName: string,
+  documentsSavedThisMonth: number,
+): string {
+  const countLabel =
+    documentsSavedThisMonth === 1
+      ? "1 document"
+      : `${documentsSavedThisMonth} documents`;
+  const nameClause = firstName ? `${firstName}, you've saved` : "You've saved";
+  return `Keep your receipts organized! ${nameClause} ${countLabel} this month. Great progress.`;
+}
+
+function resolveSpotlightCustomer(
+  documents: DocumentRow[],
+  customers: Customer[],
+  quickActionCustomers: Customer[],
+): DashboardSpotlightCustomer | null {
+  const outstandingByCustomer = new Map<string, number>();
+  for (const doc of documents) {
+    if (doc.status !== "finalized" || !doc.customerId) continue;
+    const total = Number.isFinite(doc.total) ? doc.total : 0;
+    outstandingByCustomer.set(
+      doc.customerId,
+      (outstandingByCustomer.get(doc.customerId) ?? 0) + total,
+    );
+  }
+
+  let spotlightId: string | null = null;
+  let maxOutstanding = 0;
+  for (const [customerId, balance] of outstandingByCustomer) {
+    if (balance > maxOutstanding) {
+      maxOutstanding = balance;
+      spotlightId = customerId;
+    }
+  }
+
+  if (!spotlightId && quickActionCustomers.length > 0) {
+    spotlightId = quickActionCustomers[0].id ?? null;
+    maxOutstanding = outstandingByCustomer.get(spotlightId ?? "") ?? 0;
+  }
+
+  if (!spotlightId) return null;
+
+  const customer = customers.find((c) => c.id === spotlightId);
+  if (!customer?.id) return null;
+
+  return {
+    customerId: customer.id,
+    name: customer.name,
+    email: customer.email ?? null,
+    outstandingBalance: maxOutstanding,
+  };
 }
 
 export function useDashboardPage(): DashboardPageViewModel {
@@ -166,12 +251,38 @@ export function useDashboardPage(): DashboardPageViewModel {
     return { outstanding, paidThisMonth, drafts };
   }, [documents]);
 
+  const statusCounts = useMemo((): DashboardStatusCounts => {
+    let paidCount = 0;
+    let sentCount = 0;
+    let draftCount = 0;
+    for (const doc of documents) {
+      if (doc.status === "paid") paidCount += 1;
+      else if (doc.status === "finalized") sentCount += 1;
+      else draftCount += 1;
+    }
+    return { paidCount, sentCount, draftCount };
+  }, [documents]);
+
+  const spotlightCustomer = useMemo(
+    () => resolveSpotlightCustomer(documents, customers, quickActionCustomers),
+    [documents, customers, quickActionCustomers],
+  );
+
   const recentDocuments = useMemo(() => documents.slice(0, 5), [documents]);
 
   const greeting = getGreeting();
   const firstName = user?.displayName?.split(" ")[0] ?? "";
   const showRecentList = !loading && !firestoreError;
   const hasDocuments = documents.length > 0;
+
+  const taxSeasonTip = useMemo(() => {
+    const now = new Date();
+    const documentsSavedThisMonth = documents.filter((doc) => {
+      const ts = getDocumentTimestamp(doc);
+      return ts !== null && isSameCalendarMonth(ts, now);
+    }).length;
+    return buildTaxSeasonTip(firstName, documentsSavedThisMonth);
+  }, [documents, firstName]);
 
   return {
     greeting,
@@ -180,9 +291,12 @@ export function useDashboardPage(): DashboardPageViewModel {
     firestoreError,
     mutationError: mutations.mutationError,
     financialSummary,
+    statusCounts,
     formatSummaryCurrency,
     customerUsage,
     quickActionCustomers,
+    spotlightCustomer,
+    taxSeasonTip,
     recentDocuments,
     hasDocuments,
     showRecentList,

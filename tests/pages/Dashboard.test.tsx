@@ -182,6 +182,56 @@ describe("Dashboard", () => {
     cleanup();
   });
 
+  describe("Page layout baseline (pre–Stitch re-skin)", () => {
+    it("shows the stitch dashboard header", () => {
+      mockUseAuth.mockReturnValue({
+        user: { uid: "test-user-id", displayName: "Jane Doe" },
+        loading: false,
+        signIn: vi.fn(),
+        signOut: vi.fn(),
+      });
+
+      renderDashboard();
+
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Welcome back, Jane" }),
+      ).toBeTruthy();
+      expect(
+        screen.getByText("Here is your clean status summary for this month."),
+      ).toBeTruthy();
+      expect(screen.getByRole("button", { name: "New Invoice" })).toBeTruthy();
+    });
+
+    it("shows quick actions and latest documents sections", () => {
+      renderDashboard();
+
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Quick actions" }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Latest documents" }),
+      ).toBeTruthy();
+    });
+
+    it("shows new invoice and new quotation quick actions", () => {
+      renderDashboard();
+
+      expect(
+        screen.getAllByRole("button", { name: /new invoice/i }).length,
+      ).toBeGreaterThan(0);
+      expect(
+        screen.getAllByRole("button", { name: /new quotation/i }).length,
+      ).toBeGreaterThan(0);
+    });
+
+    it("uses the widened dashboard page shell", () => {
+      const { container } = renderDashboard();
+
+      const page = container.querySelector(".dashboard-page.app-page");
+      expect(page).toBeTruthy();
+    });
+  });
+
   describe("Click Behavior Routing", () => {
     it("should navigate to edit page when clicking 'Continue editing' on draft document", async () => {
       renderDashboard();
