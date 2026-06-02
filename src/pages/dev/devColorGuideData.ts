@@ -5,13 +5,15 @@ export type TokenRow = {
   use: string;
 };
 
-export type StatusSample = {
-  label: string;
-  bentoBg: string;
-  bentoFg: string;
+export type ThemeVariant = {
   pillBg: string;
   pillFg: string;
-  listBorder: string;
+};
+
+export type StatusSample = {
+  label: string;
+  light: ThemeVariant;
+  dark: ThemeVariant;
 };
 
 export const PRIMARY_TOKENS: TokenRow[] = [
@@ -131,30 +133,26 @@ export const DASHBOARD_TOKENS: TokenRow[] = [
   },
 ];
 
-/** Light-theme samples; dark theme uses the same CSS variables. */
 export const STATUS_SAMPLES: StatusSample[] = [
   {
     label: "Draft",
-    bentoBg: "#e1e3e4",
-    bentoFg: "#191c1d",
-    pillBg: "#e1e3e4",
-    pillFg: "#404943",
-    listBorder: "#707973",
+    light: { pillBg: "#e1e3e4", pillFg: "#404943" },
+    dark: { pillBg: "#333638", pillFg: "#bfc9c1" },
+  },
+  {
+    label: "Ready",
+    // ── PROPOSED — adjust before implementing ──
+    light: { pillBg: "#1d6fb5", pillFg: "#ffffff" },
+    dark: { pillBg: "#5aa7e8", pillFg: "#0b2a44" },
   },
   {
     label: "Sent",
-    bentoBg: "#f39c12",
-    bentoFg: "#191c1d",
-    pillBg: "#f39c12",
-    pillFg: "#191c1d",
-    listBorder: "#f39c12",
+    light: { pillBg: "#f39c12", pillFg: "#191c1d" },
+    dark: { pillBg: "#f39c12", pillFg: "#191c1d" },
   },
   {
     label: "Paid",
-    bentoBg: "#309860",
-    bentoFg: "#ffffff",
-    pillBg: "#309860",
-    pillFg: "#ffffff",
-    listBorder: "#309860",
+    light: { pillBg: "#309860", pillFg: "#ffffff" },
+    dark: { pillBg: "#1e5d3b", pillFg: "#95d4b3" },
   },
 ];

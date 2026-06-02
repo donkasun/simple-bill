@@ -95,15 +95,14 @@ const DevColorGuide = () => {
       <TokenTable title="Dashboard &amp; settings" rows={DASHBOARD_TOKENS} />
 
       <section className="dev-color-section">
-        <h2 className="dev-color-section__title">Document status</h2>
+        <h2 className="dev-color-section__title">Document status pills</h2>
         <div className="dev-color-table-wrap">
           <table className="dev-color-table">
             <thead>
               <tr>
                 <th scope="col">Status</th>
-                <th scope="col">Dashboard bento</th>
-                <th scope="col">Row pill</th>
-                <th scope="col">Documents list border</th>
+                <th scope="col">Light theme pill</th>
+                <th scope="col">Dark theme pill</th>
               </tr>
             </thead>
             <tbody>
@@ -114,33 +113,44 @@ const DevColorGuide = () => {
                   </td>
                   <td>
                     <span
-                      className="dev-color-sample dev-color-sample--bento"
+                      className="dev-color-sample dev-color-sample--pill"
                       style={{
-                        backgroundColor: row.bentoBg,
-                        color: row.bentoFg,
+                        backgroundColor: row.light.pillBg,
+                        color: row.light.pillFg,
                       }}
                     >
                       {row.label}
                     </span>
+                    <code
+                      style={{
+                        marginLeft: 8,
+                        fontSize: "0.75rem",
+                        opacity: 0.7,
+                      }}
+                    >
+                      {row.light.pillBg}
+                    </code>
                   </td>
-                  <td>
+                  <td style={{ background: "#191c1d", borderRadius: 6 }}>
                     <span
                       className="dev-color-sample dev-color-sample--pill"
                       style={{
-                        backgroundColor: row.pillBg,
-                        color: row.pillFg,
+                        backgroundColor: row.dark.pillBg,
+                        color: row.dark.pillFg,
                       }}
                     >
                       {row.label}
                     </span>
-                  </td>
-                  <td>
-                    <span
-                      className="dev-color-sample dev-color-sample--border"
-                      style={{ borderLeftColor: row.listBorder }}
+                    <code
+                      style={{
+                        marginLeft: 8,
+                        fontSize: "0.75rem",
+                        opacity: 0.7,
+                        color: "#bfc9c1",
+                      }}
                     >
-                      Border
-                    </span>
+                      {row.dark.pillBg}
+                    </code>
                   </td>
                 </tr>
               ))}
