@@ -238,7 +238,7 @@ describe("DocumentCreation actions", () => {
     });
   });
 
-  it("save draft navigates to dashboard after add", async () => {
+  it("save draft navigates to the edit page for the new doc", async () => {
     render(
       <BrowserRouter>
         <DocumentCreation />
@@ -249,7 +249,10 @@ describe("DocumentCreation actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+      expect(mockNavigate).toHaveBeenCalledWith(
+        "/documents/new-doc-id/edit",
+        expect.objectContaining({ state: { autoEdit: true } }),
+      );
     });
   });
 });

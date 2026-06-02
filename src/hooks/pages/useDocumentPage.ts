@@ -503,7 +503,7 @@ export function useDocumentPage(
       if (id && state.customerId) {
         recordCustomerBilled(user.uid, state.customerId);
       }
-      if (id) navigate("/dashboard");
+      if (id) navigate(`/documents/${id}/edit`, { state: { autoEdit: true } });
     } catch (e: unknown) {
       if (applyDocNumberError(e)) {
         setSaveError("That document number is already in use. Pick another.");

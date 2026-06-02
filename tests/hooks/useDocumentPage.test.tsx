@@ -476,6 +476,38 @@ describe("useDocumentPage", () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  it("saveDraft navigates to the edit page for the new doc, not back to the dashboard", async () => {
+    addDocumentSpy.mockResolvedValue("draft-id-1");
+
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "create" });
+      return null;
+    };
+    render(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(vm!.flags.showForm).toBe(true));
+
+    await act(async () => {
+      await vm!.actions.saveDraft();
+    });
+
+    await waitFor(() => {
+      expect(addDocumentSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ status: "draft" }),
+      );
+      // Must land on the edit page for the new doc, not the dashboard
+      expect(mockNavigate).toHaveBeenCalledWith(
+        "/documents/draft-id-1/edit",
+        expect.objectContaining({ state: { autoEdit: true } }),
+      );
+      expect(mockNavigate).not.toHaveBeenCalledWith("/dashboard");
+    });
+  });
+
   it("does not auto-select a customer when opening a new document with no location state", async () => {
     let vm: ReturnType<typeof useDocumentPage> | null = null;
     const Comp = () => {
