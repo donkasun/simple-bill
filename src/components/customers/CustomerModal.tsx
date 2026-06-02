@@ -6,6 +6,7 @@ import Button from "../core/Button";
 export type CustomerFormData = {
   name: string;
   email?: string | null;
+  phone?: string | null;
   address?: string | null;
   showEmail?: boolean;
 };
@@ -59,6 +60,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     () => ({
       name: "",
       email: "",
+      phone: "",
       address: "",
       showEmail: true,
       ...(initial ?? {}),
@@ -106,6 +108,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     await onSubmit({
       name: form.name.trim(),
       email: form.email?.trim() || null,
+      phone: form.phone?.trim() || null,
       address: form.address?.trim() || null,
       showEmail: form.showEmail ?? true,
     });
@@ -143,6 +146,15 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 <div className="modal-error">{errors.email}</div>
               )}
             </div>
+
+            <StyledInput
+              label="Phone (optional)"
+              type="tel"
+              name="phone"
+              value={form.phone ?? ""}
+              onChange={handleChange}
+              placeholder="+94 77 123 4567"
+            />
 
             <StyledTextarea
               label="Address"
