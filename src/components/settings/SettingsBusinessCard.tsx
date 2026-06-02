@@ -87,7 +87,7 @@ const SettingsBusinessCard: React.FC<SettingsBusinessCardProps> = ({
           />
         </div>
 
-        <div className="settings-business-form__field">
+        <div className="settings-business-form__field settings-business-form__field--full">
           <label
             htmlFor="biz-address"
             className="settings-business-form__label"

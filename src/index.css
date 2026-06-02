@@ -1286,10 +1286,24 @@ h6 {
 
 /* ── Settings business card ──────────────────────────────────────── */
 .settings-business-form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
   margin-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .settings-business-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-business-form__field--full {
+    grid-column: 1 / -1;
+  }
+
+  .settings-business-form__actions {
+    grid-column: 1 / -1;
+  }
 }
 
 .settings-business-form__field {
