@@ -59,7 +59,7 @@ const SettingsBusinessCard: React.FC<SettingsBusinessCardProps> = ({
       </p>
 
       <form className="settings-business-form" onSubmit={handleSave}>
-        <div className="settings-business-form__field">
+        <div className="settings-business-form__field settings-business-form__field--name">
           <label htmlFor="biz-name" className="settings-business-form__label">
             Business name
           </label>
@@ -67,13 +67,13 @@ const SettingsBusinessCard: React.FC<SettingsBusinessCardProps> = ({
             id="biz-name"
             type="text"
             className="styled-input"
-            placeholder="e.g. Kusal &amp; Co."
+            placeholder="e.g. Kusal & Co."
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
-        <div className="settings-business-form__field">
+        <div className="settings-business-form__field settings-business-form__field--email">
           <label htmlFor="biz-email" className="settings-business-form__label">
             Email
           </label>
@@ -87,7 +87,7 @@ const SettingsBusinessCard: React.FC<SettingsBusinessCardProps> = ({
           />
         </div>
 
-        <div className="settings-business-form__field settings-business-form__field--full">
+        <div className="settings-business-form__field settings-business-form__field--address">
           <label
             htmlFor="biz-address"
             className="settings-business-form__label"
@@ -97,7 +97,7 @@ const SettingsBusinessCard: React.FC<SettingsBusinessCardProps> = ({
           <textarea
             id="biz-address"
             className="styled-textarea"
-            rows={3}
+            rows={4}
             placeholder={"e.g. 42 Galle Road\nColombo 3\nSri Lanka"}
             value={address}
             onChange={(e) => setAddress(e.target.value)}

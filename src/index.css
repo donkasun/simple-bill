@@ -1295,14 +1295,32 @@ h6 {
 @media (min-width: 640px) {
   .settings-business-form {
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
   }
 
-  .settings-business-form__field--full {
-    grid-column: 1 / -1;
+  /* Name → col 1 row 1, Email → col 1 row 2, Address → col 2 rows 1-2 */
+  .settings-business-form__field--name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .settings-business-form__field--email {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .settings-business-form__field--address {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
+  }
+  .settings-business-form__field--address .styled-textarea {
+    flex: 1;
+    resize: none;
   }
 
   .settings-business-form__actions {
     grid-column: 1 / -1;
+    grid-row: 3;
   }
 }
 
