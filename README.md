@@ -8,7 +8,7 @@
 
 A calm invoicing app for freelancers and small business owners who bill the same people regularly. Real product scope, not a tutorial exercise.
 
-**Repo:** [github.com/donkasun/simple-bill](https://github.com/donkasun/simple-bill)
+**Live:** [simple-bill-iota.vercel.app](https://simple-bill-iota.vercel.app/) &nbsp;·&nbsp; **Repo:** [github.com/donkasun/simple-bill](https://github.com/donkasun/simple-bill)
 
 ---
 
