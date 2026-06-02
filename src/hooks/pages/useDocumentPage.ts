@@ -93,6 +93,7 @@ export type DocumentPageViewModel = {
     initializing: boolean;
     generatingInvoice: boolean;
     canEdit: boolean;
+    isDirty: boolean;
     documentStatus: DocumentStatus;
     showCreateGuide: boolean;
     showForm: boolean;
@@ -102,6 +103,11 @@ export type DocumentPageViewModel = {
     DocumentEditorFormProps,
     "showDocumentTypeHint" | "showDraftFinalizeHint"
   >;
+  discardDialog: {
+    isOpen: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+  };
   actions: {
     saveDraft: () => Promise<void>;
     saveChanges: () => Promise<void>;
@@ -115,6 +121,14 @@ export type DocumentPageViewModel = {
     navigateCancel: () => void;
   };
 };
+
+// Excludes documentType from dirty comparison — toggling invoice↔quotation
+// before filling in any other field is not considered a meaningful change.
+function comparableJson(s: DocumentFormState): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { documentType: _, ...rest } = s;
+  return JSON.stringify(rest);
+}
 
 export function useDocumentPage(
   args: UseDocumentPageArgs,
@@ -186,6 +200,7 @@ export function useDocumentPage(
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   // Tracks an in-flight create→finalize so a retry (e.g. after a PDF or
   // download failure) updates the same document and reuses the same number
@@ -216,6 +231,9 @@ export function useDocumentPage(
       itemCatalog,
       canEdit,
     });
+
+  // Snapshot of the last-saved (or just-loaded) form state for dirty detection.
+  const savedFormJsonRef = useRef(isCreate ? comparableJson(state) : "");
 
   useEffect(() => {
     if (!isCreate || !user?.uid) return;
@@ -307,17 +325,16 @@ export function useDocumentPage(
             ? it.amount
             : computeAmount(it.unitPrice ?? 0, it.quantity ?? 0),
         }));
-        dispatch({
-          type: "SET_ALL",
-          value: {
-            documentType: data.type,
-            documentNumber: data.docNumber ?? "",
-            date: data.date,
-            customerId: data.customerId,
-            notes: data.notes,
-            lineItems: items.length > 0 ? items : [createEmptyLineItem()],
-          },
-        });
+        const formSnapshot = {
+          documentType: data.type,
+          documentNumber: data.docNumber ?? "",
+          date: data.date,
+          customerId: data.customerId,
+          notes: data.notes,
+          lineItems: items.length > 0 ? items : [createEmptyLineItem()],
+        };
+        savedFormJsonRef.current = comparableJson(formSnapshot);
+        dispatch({ type: "SET_ALL", value: formSnapshot });
       } catch (e: unknown) {
         if (!mounted) return;
         setLoadError(
@@ -456,6 +473,7 @@ export function useDocumentPage(
         { subtotal, total },
       );
       await setDocument(documentId, { ...payload, currency });
+      savedFormJsonRef.current = comparableJson(state);
       if (state.customerId) {
         recordCustomerBilled(user.uid, state.customerId);
       }
@@ -877,6 +895,9 @@ export function useDocumentPage(
       initializing,
       generatingInvoice,
       canEdit,
+      isDirty:
+        (isCreate || isEditMode) &&
+        comparableJson(state) !== savedFormJsonRef.current,
       documentStatus,
       showCreateGuide,
       showForm,
@@ -893,7 +914,24 @@ export function useDocumentPage(
       dismissCreateGuide: handleDismissCreateGuide,
       generateInvoice,
       enterEditMode: () => setIsEditMode(true),
-      navigateCancel: () => navigate("/dashboard"),
+      navigateCancel: () => {
+        const dirty =
+          (isCreate || isEditMode) &&
+          comparableJson(state) !== savedFormJsonRef.current;
+        if (dirty) {
+          setDiscardOpen(true);
+        } else {
+          navigate(-1);
+        }
+      },
+    },
+    discardDialog: {
+      isOpen: discardOpen,
+      onConfirm: () => {
+        setDiscardOpen(false);
+        navigate(-1);
+      },
+      onCancel: () => setDiscardOpen(false),
     },
   };
 }

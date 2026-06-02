@@ -6,20 +6,33 @@ _simple-bill — reference for developers and testers_
 
 ## Statuses
 
-Every document has one of three statuses. Only forward transitions are
-permitted (except unpaid, which reverses finalized→paid).
+Every document has one of four statuses.
 
 ```
-draft ──► finalized ──► paid
-                 ▲        │
-                 └────────┘  (mark unpaid reverses paid → finalized)
+draft ──► ready ──► sent ──► paid
+  ▲         ▲                  │
+  │         │                  │
+  └─────────┘  (Edit reverts   │
+  (Edit from   view → edit)    │
+   view mode)                  │
+                               │
+               sent ◄──────────┘  (mark unpaid reverses paid → sent)
 ```
 
-| Status      | Editable | PDF exists | Can mark paid |
-| ----------- | -------- | ---------- | ------------- |
-| `draft`     | Yes      | No         | No            |
-| `finalized` | No       | Yes        | Yes           |
-| `paid`      | No       | Yes        | —             |
+| Status  | Editable | PDF downloaded | Can mark paid |
+| ------- | -------- | -------------- | ------------- |
+| `draft` | Yes      | No             | No            |
+| `ready` | Yes      | Yes            | No            |
+| `sent`  | No       | Yes            | Yes           |
+| `paid`  | No       | Yes            | —             |
+
+**Transition rules:**
+
+- `draft` → `ready`: user clicks **Download PDF** (PDF is generated and saved locally; document is locked for delivery but still editable).
+- `ready` → `sent`: user clicks **Mark as sent** (confirms the document reached the customer; document becomes read-only).
+- `sent` → `paid`: user clicks **Mark as paid** from the document list.
+- `paid` → `sent`: user clicks **Mark as unpaid** (reversal; PDF unchanged).
+- `ready` → `draft`: implicit — user clicks **Edit document** on a ready document (no explicit revert needed; editing is already allowed).
 
 ---
 
@@ -31,10 +44,10 @@ draft ──► finalized ──► paid
 
 **Flow:**
 
-1. Form opens with `documentType = "invoice"`, today's date, currency from user profile, and the first customer pre-selected (or the customer passed in location state).
+1. Form opens with `documentType = "invoice"`, today's date, and currency from user profile. No customer is pre-selected (unless one was passed in location state via a quick-action card).
 2. User fills in line items and optionally types a document number (left blank = auto-allocate on save).
-3. **Save draft** → validates required fields, allocates `INV-YYYY-NNN` if blank, writes `status: "draft"` to Firestore, navigates to `/dashboard`.
-4. **Finalize & download PDF** → validates all fields, generates PDF bytes first, writes `status: "finalized"` + `finalizedAt` to Firestore, downloads the PDF, navigates to `/dashboard`.
+3. **Save draft** → validates required fields, allocates `INV-YYYY-NNN` if blank, writes `status: "draft"` to Firestore, navigates to `/documents/{id}/edit` (stays in edit mode).
+4. **Download PDF** → validates all fields (customer + line items required), generates PDF bytes first, writes `status: "ready"` + `sentAt` to Firestore, downloads the PDF, navigates to `/documents/{id}/edit` with `autoEdit: true`.
 
 **Firestore writes:**
 
@@ -69,9 +82,9 @@ This is the same as flow 1. The `sourceDocumentId` field is never set. There is 
 
 ## 4. Existing quotation → generate invoice (linked flow)
 
-**Entry point:** Open a **finalized** quotation (`/documents/:id/edit`) → _Generate invoice_ button (visible only when `documentType === "quotation"` and `canEdit === false`).
+**Entry point:** Open a **sent** quotation (`/documents/:id/edit`) → _Generate invoice_ button (visible only when `documentType === "quotation"` and `documentStatus === "sent"`).
 
-**Precondition:** The quotation must be `finalized`. Draft quotations only show the _Edit document_ button, not _Generate invoice_.
+**Precondition:** The quotation must be `sent`. Draft and ready quotations only show the _Edit document_ button, not _Generate invoice_.
 
 **Flow:**
 
@@ -91,26 +104,26 @@ This is the same as flow 1. The `sourceDocumentId` field is never set. There is 
 - `documents/{quotationId}` — partial update: `{ relatedInvoices: [..., newInvoiceId] }`.
 - `docCounters/{userId}_invoice_{year}` — seq incremented.
 
-**What happens next:** The generated invoice is a normal draft invoice. The user edits it, then saves or finalizes it independently. The quotation is not modified further.
+**What happens next:** The generated invoice is a normal draft invoice. The user edits it, then saves or downloads it independently. The quotation is not modified further.
 
 ---
 
-## 5. Edit an existing draft invoice or quotation
+## 5. Edit an existing draft or ready invoice / quotation
 
-**Entry point:** Documents list or Dashboard → click a draft card → opens `/documents/:id/edit`.
+**Entry point:** Documents list or Dashboard → click a draft or ready card → opens `/documents/:id/edit`.
 
 **Conditions for `canEdit`:**
 
-- `documentStatus === "draft"` **and** `isEditMode === true`.
-- `isEditMode` starts `true` for drafts opened normally, or when navigated with `state: { autoEdit: true }` (e.g. after _Generate invoice_).
-- For a draft viewed in read-only mode, the _Edit document_ button sets `isEditMode = true`.
+- `documentStatus === "draft"` or `documentStatus === "ready"`, **and** `isEditMode === true`.
+- `isEditMode` starts `true` for drafts opened normally, or when navigated with `state: { autoEdit: true }` (e.g. after _Download PDF_ or _Generate invoice_).
+- For a draft or ready document viewed in read-only mode, the _Edit document_ button sets `isEditMode = true`.
 
 **Available actions (edit mode):**
 
-| Button                    | What it does                                                                                                                                                   |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Save changes**          | Validates, writes updated payload with `status: "draft"` to the existing doc via `setDocument`. Does not navigate away.                                        |
-| **Finish & download PDF** | Validates, generates PDF first, then updates the existing doc to `status: "finalized"` + `finalizedAt`. Downloads PDF. Does not navigate away (stays on view). |
+| Button           | What it does                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Save changes** | Validates, writes updated payload with the existing status (`draft` or `ready`) to Firestore via `setDocument`. Does not navigate away.          |
+| **Download PDF** | Validates, generates PDF first, then updates the doc to `status: "ready"` + `sentAt`. Downloads PDF. Navigates to `/documents/{id}/edit` (view). |
 
 **What you cannot change after saving changes:**
 
@@ -118,26 +131,45 @@ This is the same as flow 1. The `sourceDocumentId` field is never set. There is 
 
 ---
 
-## 6. View a finalized invoice or quotation (read-only)
+## 6. View a ready document
 
-**Entry point:** Any card for a `finalized` or `paid` document.
+**Entry point:** Any card for a `ready` document, or after clicking **Download PDF** from edit mode.
+
+**`canEdit` is `false`** (unless the user clicks _Edit document_). The form renders in read-only mode.
+
+**Available actions:**
+
+| Button            | What it does                                                                |
+| ----------------- | --------------------------------------------------------------------------- |
+| **Edit document** | Sets `isEditMode = true` — returns to edit mode (status stays `ready`).     |
+| **Mark as sent**  | Calls `update(id, { status: "sent" })`. Document becomes read-only.         |
+| **Download PDF**  | Re-generates PDF from stored document data and triggers a browser download. |
+
+No warning banner is shown — the document is still editable.
+
+---
+
+## 7. View a sent invoice or quotation (read-only)
+
+**Entry point:** Any card for a `sent` or `paid` document.
 
 **`canEdit` is `false`.** The form renders in read-only mode (all inputs disabled).
 
 **Available actions:**
 
-| Document type               | Available buttons                                         |
-| --------------------------- | --------------------------------------------------------- |
-| Invoice (finalized or paid) | — (no actions except Cancel / Download PDF from the list) |
-| Quotation (finalized)       | **Generate invoice** (see flow 4)                         |
+| Document type    | Available buttons                      |
+| ---------------- | -------------------------------------- |
+| Invoice (sent)   | **Download PDF**                       |
+| Invoice (paid)   | **Download PDF**                       |
+| Quotation (sent) | **Download PDF**, **Generate invoice** |
 
-A warning banner reads: _"This document has been finalized and cannot be edited."_ For quotations it adds: _"You can generate invoices from this finalized quotation."_
+A warning banner reads: _"This document has been sent and cannot be edited."_ For quotations it adds: _"You can generate invoices from this sent quotation."_
 
 ---
 
-## 7. Mark invoice as paid
+## 8. Mark invoice as paid
 
-**Entry point:** Documents list or Dashboard → overflow menu (`⋯`) on a `finalized` invoice → _Mark as paid_.
+**Entry point:** Documents list or Dashboard → overflow menu (`⋯`) on a `sent` invoice → _Mark as paid_.
 
 **Flow:** Confirmation dialog → `update(id, { status: "paid", paidAt: new Date() })`. Toast: _"Marked as paid"_.
 
@@ -145,17 +177,17 @@ A warning banner reads: _"This document has been finalized and cannot be edited.
 
 ---
 
-## 8. Mark invoice as unpaid (reverse)
+## 9. Mark invoice as unpaid (reverse)
 
 **Entry point:** Overflow menu on a `paid` invoice → _Mark as unpaid_.
 
-**Flow:** Confirmation dialog → `update(id, { status: "finalized", paidAt: null })`. Toast: _"Marked as unpaid"_.
+**Flow:** Confirmation dialog → `update(id, { status: "sent", paidAt: null })`. Toast: _"Marked as unpaid"_.
 
-**Result:** Document returns to `finalized` status. The PDF is unchanged.
+**Result:** Document returns to `sent` status. The PDF is unchanged.
 
 ---
 
-## 9. Duplicate a document
+## 10. Duplicate a document
 
 **Entry point:** Overflow menu on any document (any status) → _Duplicate_.
 
@@ -166,7 +198,7 @@ A warning banner reads: _"This document has been finalized and cannot be edited.
    - Resets `status` to `"draft"`.
    - Sets `date` to today.
    - Clears all relationship fields: `sourceDocumentId`, `sourceDocumentType`, `relatedInvoices`, `originalQuantity`, `invoicedQuantity`, `remainingQuantity`.
-   - Clears `finalizedAt` and `paidAt`.
+   - Clears `sentAt` and `paidAt`.
 3. Writes the new document to Firestore.
 4. Navigates to `/documents/{newId}/edit` with `autoEdit: true`.
 
@@ -174,7 +206,7 @@ A warning banner reads: _"This document has been finalized and cannot be edited.
 
 ---
 
-## 10. Delete a document
+## 11. Delete a document
 
 **Entry point:** Overflow menu on any document → _Delete_.
 
@@ -184,7 +216,7 @@ A warning banner reads: _"This document has been finalized and cannot be edited.
 
 ---
 
-## 11. Copy from previous (create screen only)
+## 12. Copy from previous (create screen only)
 
 **Entry point:** `/documents/new` → _Copy from previous_ button.
 
@@ -195,14 +227,14 @@ A warning banner reads: _"This document has been finalized and cannot be edited.
 ## Relationship summary
 
 ```
-Quotation (finalized)
+Quotation (sent)
     │
     │  Generate invoice (flow 4)
     ▼
-Invoice (draft)  ──►  Invoice (finalized)  ──►  Invoice (paid)
-    │                        │
-    │  relatedInvoices[]      │  paidAt / status
-    └────────────────────────►  Stored on the quotation only
+Invoice (draft)  ──►  Invoice (ready)  ──►  Invoice (sent)  ──►  Invoice (paid)
+    │                                              │
+    │  relatedInvoices[]                           │  paidAt / status
+    └──────────────────────────────────────────────►  Stored on the quotation only
 ```
 
 A quotation can generate multiple invoices (one per _Generate invoice_ click). Each generated invoice stores `sourceDocumentId` pointing back to the quotation. The quotation stores `relatedInvoices[]` as the forward reference. Neither document is otherwise aware of the other's status.

@@ -2,7 +2,7 @@ import React from "react";
 import StyledDropdown from "@components/core/StyledDropdown";
 import StyledInput from "@components/core/StyledInput";
 import StyledTextarea from "@components/core/StyledTextarea";
-import SegmentedToggle from "@components/core/SegmentedToggle";
+import ChoiceTileGroup from "@components/core/ChoiceTileGroup";
 import LineItemsTable from "@components/documents/LineItemsTable";
 import Button from "@components/core/Button";
 import { formatCurrency } from "@utils/currency";
@@ -102,11 +102,12 @@ const DocumentEditorForm: React.FC<DocumentEditorFormProps> = ({
               />
             )}
 
-            <div style={{ marginLeft: "auto", minWidth: 260, maxWidth: 420 }}>
-              <SegmentedToggle<DocumentType>
+            <div style={{ marginLeft: "auto" }}>
+              <ChoiceTileGroup<DocumentType>
                 ariaLabel="Document Type"
                 id="doc-documentType"
                 value={state.documentType}
+                columns={2}
                 options={[
                   { value: "invoice", label: "Invoice" },
                   { value: "quotation", label: "Quotation" },

@@ -246,6 +246,13 @@ describe("DocumentCreation actions", () => {
     );
 
     await screen.findByRole("button", { name: "Save draft" });
+
+    // Save draft is disabled until the user makes a change
+    const notes = screen.getByPlaceholderText(
+      "Additional notes for the customer",
+    );
+    fireEvent.change(notes, { target: { value: "Test note" } });
+
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
 
     await waitFor(() => {

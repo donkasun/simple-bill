@@ -1,5 +1,6 @@
 import React from "react";
 import Button from "@components/core/Button";
+import ConfirmDialog from "@components/core/ConfirmDialog";
 import ErrorBanner from "@components/core/ErrorBanner";
 import { useParams } from "react-router-dom";
 import { usePageTitle } from "@components/layout/PageTitleContext";
@@ -33,7 +34,7 @@ const DocumentEdit: React.FC = () => {
           subtitle={headerSubtitle}
           secondaryActions={
             <Button variant="secondary" onClick={actions.navigateCancel}>
-              Cancel
+              Back
             </Button>
           }
           actions={
@@ -146,6 +147,16 @@ const DocumentEdit: React.FC = () => {
         submitting={catalogModals.itemSubmitting}
         onSubmit={catalogModals.handleItemSubmit}
         onCancel={catalogModals.closeItemModal}
+      />
+      <ConfirmDialog
+        isOpen={vm.discardDialog.isOpen}
+        title="Unsaved changes"
+        message="You have unsaved changes that will be lost. Go back anyway?"
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        danger={false}
+        onConfirm={vm.discardDialog.onConfirm}
+        onCancel={vm.discardDialog.onCancel}
       />
     </>
   );

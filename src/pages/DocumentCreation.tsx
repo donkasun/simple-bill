@@ -1,5 +1,6 @@
 import React from "react";
 import Button from "@components/core/Button";
+import ConfirmDialog from "@components/core/ConfirmDialog";
 import ErrorBanner from "@components/core/ErrorBanner";
 import OnboardingStepper from "@components/core/OnboardingStepper";
 import { usePageTitle } from "@components/layout/PageTitleContext";
@@ -24,7 +25,7 @@ const DocumentCreation: React.FC = () => {
           secondaryActions={
             <>
               <Button variant="secondary" onClick={actions.navigateCancel}>
-                Cancel
+                Back
               </Button>
               <Button
                 variant="secondary"
@@ -42,8 +43,10 @@ const DocumentCreation: React.FC = () => {
             <>
               <Button
                 onClick={actions.saveDraft}
-                disabled={flags.saving || flags.finalizing}
-                aria-disabled={flags.saving || flags.finalizing}
+                disabled={flags.saving || flags.finalizing || !flags.isDirty}
+                aria-disabled={
+                  flags.saving || flags.finalizing || !flags.isDirty
+                }
               >
                 {flags.saving ? "Saving…" : "Save draft"}
               </Button>
@@ -139,6 +142,16 @@ const DocumentCreation: React.FC = () => {
         submitting={catalogModals.itemSubmitting}
         onSubmit={catalogModals.handleItemSubmit}
         onCancel={catalogModals.closeItemModal}
+      />
+      <ConfirmDialog
+        isOpen={vm.discardDialog.isOpen}
+        title="Unsaved changes"
+        message="You have unsaved changes that will be lost. Leave without saving?"
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+        danger={false}
+        onConfirm={vm.discardDialog.onConfirm}
+        onCancel={vm.discardDialog.onCancel}
       />
     </>
   );

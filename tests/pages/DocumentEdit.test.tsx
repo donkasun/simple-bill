@@ -256,7 +256,7 @@ describe("DocumentEdit", () => {
     });
 
     renderEdit("doc-final");
-    await screen.findByRole("button", { name: "Cancel" });
+    await screen.findByRole("button", { name: "Back" });
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
     });
