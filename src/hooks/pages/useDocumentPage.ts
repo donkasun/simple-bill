@@ -241,15 +241,17 @@ export function useDocumentPage(
     state.customerId,
   ]);
 
+  const documentTypePreselectedRef = useRef(false);
   useEffect(() => {
     if (!isCreate || !locationState?.documentType) return;
+    if (documentTypePreselectedRef.current) return;
+    documentTypePreselectedRef.current = true;
     dispatch({
       type: "SET_FIELD",
       field: "documentType",
       value: locationState.documentType,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dispatch, isCreate, locationState?.documentType]);
 
   useEffect(() => {
     if (!user?.uid) return;

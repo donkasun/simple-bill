@@ -5,6 +5,7 @@ export type HeaderErrors = {
   documentNumber?: string;
   date?: string;
   customerId?: string;
+  lineItems?: string;
 };
 
 export type LineItemFieldErrors = {
@@ -40,6 +41,8 @@ export function validateFinalize(s: DocumentFormState): ValidationResult {
   if (!s.documentType) header.documentType = "Document type is required";
   if (!s.date?.trim()) header.date = "Date is required";
   if (!s.customerId) header.customerId = "Customer is required to finalize";
+  if (s.lineItems.length === 0)
+    header.lineItems = "At least one line item is required";
   for (const li of s.lineItems) {
     const err: LineItemFieldErrors = {};
     if (!li.name?.trim()) err.name = "Item name is required";

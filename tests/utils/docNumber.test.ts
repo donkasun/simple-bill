@@ -17,6 +17,7 @@ vi.mock("firebase/firestore", () => ({
 
 import {
   buildDocNumberPrefix,
+  allocateNextDocumentNumber,
   isDocNumberTaken,
   reconcileDocCounter,
   DuplicateDocNumberError,
@@ -94,6 +95,72 @@ describe("docNumber", () => {
     it("ignores numbers that are not in the auto-number format", async () => {
       await reconcileDocCounter("u1", "my-custom-ref-42");
       expect(runTransaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("allocateNextDocumentNumber", () => {
+    function fakeTx(currentSeq: number | undefined) {
+      const setTx = vi.fn();
+      const tx = {
+        get: vi.fn().mockResolvedValue({
+          exists: () => currentSeq !== undefined,
+          data: () => ({ seq: currentSeq }),
+        }),
+        set: setTx,
+      };
+      return { tx, setTx };
+    }
+
+    it("increments seq from current value and returns a padded number", async () => {
+      const { tx, setTx } = fakeTx(4);
+      runTransaction.mockImplementation(
+        async (_db: unknown, cb: (t: typeof tx) => Promise<number>) => cb(tx),
+      );
+
+      const result = await allocateNextDocumentNumber(
+        "u1",
+        "invoice",
+        "2026-01-01",
+      );
+
+      expect(result).toBe("INV-2026-005");
+      expect(setTx).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ seq: 5, type: "invoice", year: "2026" }),
+        { merge: true },
+      );
+    });
+
+    it("initialises the counter at 1 when no counter document exists", async () => {
+      const { tx, setTx } = fakeTx(undefined);
+      runTransaction.mockImplementation(
+        async (_db: unknown, cb: (t: typeof tx) => Promise<number>) => cb(tx),
+      );
+
+      const result = await allocateNextDocumentNumber(
+        "u1",
+        "quotation",
+        "2026-03-15",
+      );
+
+      expect(result).toBe("QUO-2026-001");
+      expect(setTx).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ seq: 1, type: "quotation", year: "2026" }),
+        { merge: true },
+      );
+    });
+
+    it("uses today's year when date string is empty", async () => {
+      const { tx } = fakeTx(0);
+      runTransaction.mockImplementation(
+        async (_db: unknown, cb: (t: typeof tx) => Promise<number>) => cb(tx),
+      );
+
+      const result = await allocateNextDocumentNumber("u1", "invoice", "");
+      const thisYear = String(new Date().getFullYear());
+
+      expect(result).toMatch(new RegExp(`^INV-${thisYear}-`));
     });
   });
 

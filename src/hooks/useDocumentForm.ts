@@ -14,6 +14,7 @@ export type HeaderErrors = {
   documentNumber?: string;
   date?: string;
   customerId?: string;
+  lineItems?: string;
 };
 
 export type LineItemFieldErrors = {

@@ -34,6 +34,12 @@ describe("documentValidation", () => {
     expect(e.quantity).toBeTruthy();
   });
 
+  it("validateFinalize rejects an empty line-items array", () => {
+    const s = { ...baseState, customerId: "c1", lineItems: [] };
+    const res = validateFinalize(s as typeof baseState);
+    expect(res.header.lineItems).toBeTruthy();
+  });
+
   it("validateFinalize requires name and positive quantity", () => {
     const s = {
       ...baseState,

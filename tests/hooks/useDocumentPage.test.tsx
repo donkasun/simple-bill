@@ -476,6 +476,30 @@ describe("useDocumentPage", () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  it("preselects documentType from navigation state even when state resolves after initial render", async () => {
+    // Simulate navigation state arriving after the component mounts by
+    // using a non-null initial state — the effect must fire on dep changes,
+    // not only on mount.
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "create" });
+      return null;
+    };
+    render(
+      <MemoryRouter
+        initialEntries={[
+          { pathname: "/documents/new", state: { documentType: "quotation" } },
+        ]}
+      >
+        <Comp />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(vm!.state.documentType).toBe("quotation");
+    });
+  });
+
   it("does not overwrite a user-selected currency when the profile loads later", async () => {
     const useUserProfile = (await import("@hooks/useUserProfile")).default;
     // Profile hasn't resolved a currency yet on first render.
