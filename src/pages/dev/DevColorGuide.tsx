@@ -186,22 +186,6 @@ const DevColorGuide = () => {
           </div>
         </div>
       </section>
-
-      <section className="dev-color-section">
-        <h2 className="dev-color-section__title">Dashboard bento</h2>
-        <div className="dev-color-bento-row">
-          {STATUS_SAMPLES.map((row) => (
-            <div
-              key={row.label}
-              className="dev-color-bento-card"
-              style={{ backgroundColor: row.bentoBg, color: row.bentoFg }}
-            >
-              <span className="dev-color-bento-card__label">{row.label}</span>
-              <span className="dev-color-bento-card__value">12</span>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 };
