@@ -4,6 +4,7 @@ import { useAuth } from "@auth/useAuth";
 import { useFirestore } from "@hooks/useFirestore";
 import type { DocumentEntity } from "../../types/document";
 import { useDocumentMutations } from "./useDocumentMutations";
+import type { PdfPreviewData } from "@components/documents/DocumentPreviewContent";
 
 export type DocumentRow = DocumentEntity & {
   typeLabel: string;
@@ -24,10 +25,10 @@ export type DocumentsPageViewModel = {
   filteredDocuments: DocumentRow[];
   hasDocuments: boolean;
   hasFilteredResults: boolean;
+  previewData: PdfPreviewData | null;
   pending: {
     duplicatingId: string | null;
     deletingId: string | null;
-    downloadingId: string | null;
     markingPaidId: string | null;
     markingUnpaidId: string | null;
   };
@@ -49,7 +50,8 @@ export type DocumentsPageViewModel = {
     confirmMarkUnpaid: () => Promise<void>;
     cancelMarkUnpaid: () => void;
     duplicate: (source: DocumentEntity) => Promise<void>;
-    download: (doc: DocumentEntity) => Promise<void>;
+    openPreview: (doc: DocumentEntity) => void;
+    closePreview: () => void;
     navigateNewDocument: () => void;
     navigateNewInvoice: () => void;
     navigateNewQuotation: () => void;
@@ -150,6 +152,7 @@ export function useDocumentsPage(): DocumentsPageViewModel {
     filteredDocuments,
     hasDocuments,
     hasFilteredResults,
+    previewData: mutations.previewData,
     pending: mutations.pending,
     confirms: mutations.confirms,
     actions: {
@@ -165,7 +168,8 @@ export function useDocumentsPage(): DocumentsPageViewModel {
       confirmMarkUnpaid: mutations.actions.confirmMarkUnpaid,
       cancelMarkUnpaid: mutations.actions.cancelMarkUnpaid,
       duplicate: mutations.actions.duplicate,
-      download: mutations.actions.download,
+      openPreview: mutations.actions.openPreview,
+      closePreview: mutations.actions.closePreview,
       navigateNewDocument: () => navigate("/documents/new"),
       navigateNewInvoice: () => navigate("/documents/new"),
       navigateNewQuotation: () =>

@@ -3,6 +3,7 @@ import { usePageTitle } from "@components/layout/PageTitleContext";
 import PageHeader from "@components/layout/PageHeader";
 import SettingsCurrencyCard from "@components/settings/SettingsCurrencyCard";
 import SettingsThemeCard from "@components/settings/SettingsThemeCard";
+import SettingsBusinessCard from "@components/settings/SettingsBusinessCard";
 import { useSettingsPage } from "@hooks/pages/useSettingsPage";
 
 const Settings: React.FC = () => {
@@ -25,6 +26,10 @@ const Settings: React.FC = () => {
 
       {vm.profile && (
         <div className="settings-sections">
+          <SettingsBusinessCard
+            business={vm.profile.business ?? {}}
+            onSave={vm.actions.setBusinessInfo}
+          />
           <SettingsCurrencyCard
             currency={vm.profile.currency ?? "USD"}
             onChange={vm.actions.setCurrency}

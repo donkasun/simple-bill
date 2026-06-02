@@ -98,6 +98,8 @@
   /* Status accents — align dashboard bento, row pills, and documents list border */
   --status-draft-pill-bg: var(--md-surface-container-highest);
   --status-draft-pill-fg: var(--md-on-surface-variant);
+  --status-ready-pill-bg: #1d6fb5;
+  --status-ready-pill-fg: #ffffff;
   --status-sent-accent: var(--brand-warning);
   --status-paid-accent: var(--md-primary-container);
   --status-draft-border: var(--md-outline);
@@ -201,6 +203,9 @@
   --settings-choice-selected-border: var(--md-primary-hover);
   --settings-choice-selected-text: var(--md-on-primary);
   --settings-choice-selected-text-muted: var(--md-on-primary);
+
+  --status-ready-pill-bg: #5aa7e8;
+  --status-ready-pill-fg: #0b2a44;
 }
 
 /* Native form controls respect dark mode */
@@ -1284,6 +1289,57 @@ h6 {
   color: var(--md-on-surface-variant);
 }
 
+/* ── Settings business card ──────────────────────────────────────── */
+.settings-business-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .settings-business-form {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  /* Name → col 1 row 1, Email → col 1 row 2, Address → col 2 rows 1-2 */
+  .settings-business-form__field--name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .settings-business-form__field--email {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .settings-business-form__field--address {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
+  }
+  /* FieldWrapper + textarea inside address column stretch to fill height */
+  .settings-business-form__field--address .FieldWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .settings-business-form__field--address .FieldWrapper textarea {
+    flex: 1;
+  }
+
+  .settings-business-form__actions {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+
+.settings-business-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
 /* Sidebar overlay — hidden on all screen sizes by default */
 .sidebar-overlay {
   display: none;
@@ -2119,6 +2175,11 @@ h6 {
 .dashboard-doc-row__pill--draft {
   background: var(--status-draft-pill-bg);
   color: var(--status-draft-pill-fg);
+}
+
+.dashboard-doc-row__pill--ready {
+  background: var(--status-ready-pill-bg);
+  color: var(--status-ready-pill-fg);
 }
 
 .dashboard-doc-row__details {
@@ -3350,4 +3411,183 @@ select:focus {
   .dev-color-bento-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── PDF preview modal ──────────────────────────────────────────── */
+@media print {
+  .pdf-preview-modal-backdrop,
+  .pdf-preview-modal-toolbar {
+    display: none !important;
+  }
+
+  .pdf-preview-modal-panel {
+    position: fixed !important;
+    inset: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .pdf-preview-modal-scroll {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}
+
+/* ── Document preview (HTML invoice render) ───────────────────────── */
+.doc-preview-printable {
+  background: #fff;
+  color: #111;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.doc-preview__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+}
+
+.doc-preview__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 1.5rem;
+}
+
+.doc-preview__title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: #0e5138;
+}
+
+.doc-preview__number {
+  font-size: 1rem;
+  color: #555;
+  margin: 0 0 0.25rem;
+}
+
+.doc-preview__date {
+  font-size: 0.875rem;
+  color: #555;
+  margin: 0;
+}
+
+.doc-preview__from {
+  text-align: right;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.doc-preview__from strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #111;
+}
+
+.doc-preview__from p {
+  margin: 0;
+  color: #555;
+}
+
+.doc-preview__bill-to {
+  background: #f7f7f5;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.doc-preview__section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #aaa;
+  margin: 0 0 0.5rem;
+}
+
+.doc-preview__customer-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #111;
+  margin: 0 0 0.25rem;
+}
+
+.doc-preview__bill-to p {
+  margin: 0;
+  color: #555;
+  font-size: 0.875rem;
+}
+
+.doc-preview__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.doc-preview__table thead tr {
+  border-bottom: 2px solid #111;
+}
+
+.doc-preview__table thead th {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #aaa;
+  text-align: left;
+}
+
+.doc-preview__col-num {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.doc-preview__table tbody td {
+  padding: 0.75rem 0.75rem;
+  vertical-align: top;
+  border-bottom: 1px solid #eee;
+  color: #222;
+}
+
+.doc-preview__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.doc-preview__item-name {
+  display: block;
+  font-weight: 500;
+}
+
+.doc-preview__item-desc {
+  display: block;
+  font-size: 0.8125rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.doc-preview__table tfoot td {
+  padding: 0.5rem 0.75rem;
+  color: #333;
+}
+
+.doc-preview__subtotal-row td {
+  border-top: 1px solid #e8e8e8;
+  font-size: 0.875rem;
+}
+
+.doc-preview__total-row td {
+  border-top: 2px solid #111;
+  font-size: 1rem;
+  padding-top: 0.75rem;
+}
+
+.doc-preview__total-row strong {
+  color: #0e5138;
 }

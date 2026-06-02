@@ -2,16 +2,15 @@ import { useCallback, useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import type { FirestoreId } from "@models/firestore";
 import type { DocumentEntity } from "../../types/document";
-import { downloadBlob } from "@utils/download";
-import { buildDuplicatePayload, getDocumentFilename } from "@utils/documents";
+import { buildDuplicatePayload } from "@utils/documents";
 import { allocateNextDocumentNumber } from "@utils/docNumber";
 import { todayIso } from "@utils/date";
 import { toast } from "@contexts/toast";
+import type { PdfPreviewData } from "@components/documents/DocumentPreviewContent";
 
 export type DocumentMutationsPending = {
   duplicatingId: string | null;
   deletingId: string | null;
-  downloadingId: string | null;
   markingPaidId: string | null;
   markingUnpaidId: string | null;
 };
@@ -33,12 +32,14 @@ export type DocumentMutationsActions = {
   confirmMarkUnpaid: () => Promise<void>;
   cancelMarkUnpaid: () => void;
   duplicate: (source: DocumentEntity) => Promise<void>;
-  download: (doc: DocumentEntity) => Promise<void>;
+  openPreview: (doc: DocumentEntity) => void;
+  closePreview: () => void;
 };
 
 export type DocumentMutationsViewModel = {
   pending: DocumentMutationsPending;
   confirms: DocumentMutationsConfirms;
+  previewData: PdfPreviewData | null;
   actions: DocumentMutationsActions;
 };
 
@@ -65,7 +66,7 @@ export function useDocumentMutations({
 }: UseDocumentMutationsArgs): DocumentMutationsViewModel {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<PdfPreviewData | null>(null);
   const [markPaidConfirmId, setMarkPaidConfirmId] = useState<string | null>(
     null,
   );
@@ -118,38 +119,27 @@ export function useDocumentMutations({
     [add, navigate, onDuplicateError, userId],
   );
 
-  const download = useCallback(async (doc: DocumentEntity) => {
-    setDownloadingId(doc.id ?? null);
-    try {
-      await toast.promise(
-        (async () => {
-          const { generateDocumentPdf } = await import("../../utils/pdf");
-          const pdfBytes = await generateDocumentPdf({
-            type: doc.type,
-            docNumber: doc.docNumber,
-            date: doc.date,
-            customerDetails: doc.customerDetails,
-            items: doc.items,
-            subtotal: doc.subtotal,
-            total: doc.total,
-            currency: doc.currency || "USD",
-          });
-          const filename = `${getDocumentFilename(doc.type, doc.docNumber, doc.date)}.pdf`;
-          downloadBlob(filename, pdfBytes, "application/pdf");
-        })(),
-        {
-          loading: "Generating PDF…",
-          success: "PDF downloaded",
-          error: (e) =>
-            e instanceof Error ? e.message : "Failed to download PDF",
-        },
-      );
-    } catch {
-      // rejection was already surfaced as a toast by toast.promise's error
-      // handler; nothing more to do here.
-    } finally {
-      setDownloadingId(null);
-    }
+  const openPreview = useCallback((doc: DocumentEntity) => {
+    setPreviewData({
+      type: doc.type,
+      docNumber: doc.docNumber ?? "",
+      date: doc.date ?? "",
+      customerDetails: doc.customerDetails,
+      items: (doc.items ?? []).map((it) => ({
+        name: it.name ?? "",
+        description: it.description,
+        unitPrice: it.unitPrice,
+        quantity: it.quantity,
+        amount: it.amount,
+      })),
+      subtotal: doc.subtotal ?? 0,
+      total: doc.total ?? 0,
+      currency: doc.currency ?? "USD",
+    });
+  }, []);
+
+  const closePreview = useCallback(() => {
+    setPreviewData(null);
   }, []);
 
   const handleConfirmDelete = async () => {
@@ -201,7 +191,6 @@ export function useDocumentMutations({
     pending: {
       duplicatingId,
       deletingId,
-      downloadingId,
       markingPaidId,
       markingUnpaidId,
     },
@@ -210,6 +199,7 @@ export function useDocumentMutations({
       markPaidId: markPaidConfirmId,
       markUnpaidId: markUnpaidConfirmId,
     },
+    previewData,
     actions: {
       requestDelete: (id: string) => setDeleteConfirmId(id),
       confirmDelete: handleConfirmDelete,
@@ -221,7 +211,8 @@ export function useDocumentMutations({
       confirmMarkUnpaid: handleConfirmMarkUnpaid,
       cancelMarkUnpaid: () => setMarkUnpaidConfirmId(null),
       duplicate,
-      download,
+      openPreview,
+      closePreview,
     },
   };
 }

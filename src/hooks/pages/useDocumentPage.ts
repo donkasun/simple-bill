@@ -35,13 +35,9 @@ import {
   reconcileDocCounter,
   DuplicateDocNumberError,
 } from "@utils/docNumber";
-import {
-  buildDocumentPayload,
-  selectCustomerDetails,
-  getDocumentFilename,
-} from "@utils/documents";
-import { downloadBlob } from "@utils/download";
+import { buildDocumentPayload, selectCustomerDetails } from "@utils/documents";
 import { todayIso } from "@utils/date";
+import type { PdfPreviewData } from "@components/documents/DocumentPreviewContent";
 import { computeAmount } from "@utils/documentMath";
 import {
   validateDraft,
@@ -88,7 +84,6 @@ export type DocumentPageViewModel = {
   flags: {
     saving: boolean;
     finalizing: boolean;
-    downloading: boolean;
     prefilling: boolean;
     initializing: boolean;
     generatingInvoice: boolean;
@@ -98,6 +93,7 @@ export type DocumentPageViewModel = {
     showCreateGuide: boolean;
     showForm: boolean;
   };
+  previewData: PdfPreviewData | null;
   catalogModals: ReturnType<typeof useDocumentCatalogModals>;
   formProps: Omit<
     DocumentEditorFormProps,
@@ -113,12 +109,13 @@ export type DocumentPageViewModel = {
     saveChanges: () => Promise<void>;
     downloadPdf: () => Promise<void>;
     markAsSent: () => Promise<void>;
-    downloadDocument: () => Promise<void>;
+    downloadDocument: () => void;
     copyFromPrevious: () => Promise<void>;
     dismissCreateGuide: () => void;
     generateInvoice: () => Promise<void>;
     enterEditMode: () => void;
     navigateCancel: () => void;
+    closePreview: () => void;
   };
 };
 
@@ -142,6 +139,7 @@ export function useDocumentPage(
     customerId?: string;
     documentType?: DocumentType;
     autoEdit?: boolean;
+    openPreview?: PdfPreviewData;
   } | null;
 
   const {
@@ -198,9 +196,10 @@ export function useDocumentPage(
   const [loadError, setLoadError] = useState<string | null>(null);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState(false);
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<PdfPreviewData | null>(null);
+  const previewFromStateConsumedRef = useRef(false);
 
   // Tracks an in-flight create→finalize so a retry (e.g. after a PDF or
   // download failure) updates the same document and reuses the same number
@@ -349,6 +348,24 @@ export function useDocumentPage(
       mounted = false;
     };
   }, [dispatch, documentId, isCreate]);
+
+  // Auto-open preview when navigated here from the creation flow
+  useEffect(() => {
+    if (
+      !initializing &&
+      locationState?.openPreview &&
+      !previewFromStateConsumedRef.current
+    ) {
+      previewFromStateConsumedRef.current = true;
+      setPreviewData(locationState.openPreview);
+      // Clear the state so navigating back/forward doesn't re-open
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...locationState, openPreview: undefined },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initializing]);
 
   const dismissCreateGuide = !!profile?.onboarding?.createInvoiceDismissed;
   const showCreateGuide = isCreate && !dismissCreateGuide && hasDocs === false;
@@ -560,7 +577,7 @@ export function useDocumentPage(
     try {
       const validation = validateFinalize(state);
       if (applyValidationErrors(validation)) {
-        setFinalizeError("Please resolve the errors before downloading.");
+        setFinalizeError("Please resolve the errors before viewing.");
         focusFirstValidationError(state, validation);
         return;
       }
@@ -578,21 +595,6 @@ export function useDocumentPage(
         { subtotal, total },
       );
 
-      // Generate the PDF *before* persisting. It is pure given the form state,
-      // so a PDF failure must never leave a persisted document behind that a
-      // retry would then duplicate.
-      const { generateDocumentPdf } = await import("../../utils/pdf");
-      const pdfBytes = await generateDocumentPdf({
-        type: base.type as DocumentType,
-        docNumber: base.docNumber || "",
-        date: base.date as string,
-        customerDetails: base.customerDetails,
-        items: base.items,
-        subtotal: base.subtotal as number,
-        total: base.total as number,
-        currency,
-      });
-
       const payload: Partial<DocumentEntity> = {
         ...base,
         currency,
@@ -603,8 +605,6 @@ export function useDocumentPage(
       let savedId: string;
       if (isCreate) {
         if (finalizeCreatedIdRef.current) {
-          // A previous attempt already created the document; update it in
-          // place rather than creating a second one.
           await setDocument(finalizeCreatedIdRef.current, payload);
           savedId = finalizeCreatedIdRef.current;
         } else {
@@ -629,16 +629,38 @@ export function useDocumentPage(
         recordCustomerBilled(user.uid, state.customerId);
       }
 
-      const filename = `${getDocumentFilename(
-        base.type as DocumentType,
-        base.docNumber as string,
-        base.date as string,
-      )}.pdf`;
-      downloadBlob(filename, pdfBytes, "application/pdf");
-      // Fully succeeded — clear the retry guards.
       finalizeCreatedIdRef.current = null;
       finalizeDocNumberRef.current = null;
-      navigate(`/documents/${savedId}/edit`, { state: { autoEdit: true } });
+
+      const previewPayload: PdfPreviewData = {
+        type: base.type as DocumentEntity["type"],
+        docNumber: base.docNumber || "",
+        date: base.date as string,
+        customerDetails: base.customerDetails,
+        items: (base.items ?? []).map((it) => ({
+          name: it.name ?? "",
+          description: it.description,
+          unitPrice: it.unitPrice,
+          quantity: it.quantity,
+          amount: it.amount,
+        })),
+        subtotal: base.subtotal as number,
+        total: base.total as number,
+        currency,
+        businessName: profile?.business?.name,
+        businessEmail: profile?.business?.email,
+        businessAddress: profile?.business?.address,
+      };
+
+      if (isCreate) {
+        // Navigate to the edit page carrying the preview payload — the modal
+        // opens there so closing it keeps the user on the right page.
+        navigate(`/documents/${savedId}/edit`, {
+          state: { openPreview: previewPayload },
+        });
+      } else {
+        setPreviewData(previewPayload);
+      }
     } catch (e: unknown) {
       if (applyDocNumberError(e)) {
         setFinalizeError(
@@ -646,7 +668,7 @@ export function useDocumentPage(
         );
       } else {
         setFinalizeError(
-          e instanceof Error ? e.message : "Failed to download PDF",
+          e instanceof Error ? e.message : "Failed to finalize document",
         );
       }
     } finally {
@@ -660,7 +682,7 @@ export function useDocumentPage(
     customers,
     documentId,
     isCreate,
-    navigate,
+    profile?.business,
     resolveDocNumber,
     setDocument,
     state,
@@ -750,37 +772,31 @@ export function useDocumentPage(
     });
   }, [profile?.onboarding, updateUserProfile]);
 
-  const downloadDocument = useCallback(async () => {
-    setDownloading(true);
-    try {
-      const { generateDocumentPdf } = await import("../../utils/pdf");
-      const pdfBytes = await generateDocumentPdf({
-        type: state.documentType,
-        docNumber: state.documentNumber || "",
-        date: state.date,
-        customerDetails: selectCustomerDetails(customers, state.customerId),
-        items: state.lineItems.map((li) => ({
-          itemId: li.itemId,
-          name: li.name,
-          description: li.description,
-          unitPrice: li.unitPrice,
-          quantity: li.quantity,
-          amount: li.amount,
-        })),
-        subtotal,
-        total,
-        currency,
-      });
-      const filename = `${getDocumentFilename(state.documentType, state.documentNumber, state.date)}.pdf`;
-      downloadBlob(filename, pdfBytes, "application/pdf");
-    } catch (e: unknown) {
-      // Surface via toast so the user sees feedback without a full error banner.
-      const { toast } = await import("@contexts/toast");
-      toast.error(e instanceof Error ? e.message : "Failed to download PDF");
-    } finally {
-      setDownloading(false);
-    }
-  }, [currency, customers, state, subtotal, total]);
+  const downloadDocument = useCallback(() => {
+    setPreviewData({
+      type: state.documentType,
+      docNumber: state.documentNumber || "",
+      date: state.date,
+      customerDetails: selectCustomerDetails(customers, state.customerId),
+      items: state.lineItems.map((li) => ({
+        name: li.name,
+        description: li.description,
+        unitPrice: li.unitPrice,
+        quantity: li.quantity,
+        amount: li.amount,
+      })),
+      subtotal,
+      total,
+      currency,
+      businessName: profile?.business?.name,
+      businessEmail: profile?.business?.email,
+      businessAddress: profile?.business?.address,
+    });
+  }, [currency, customers, profile?.business, state, subtotal, total]);
+
+  const closePreview = useCallback(() => {
+    setPreviewData(null);
+  }, []);
 
   const generateInvoice = useCallback(async () => {
     setGenerateError(null);
@@ -890,7 +906,6 @@ export function useDocumentPage(
     flags: {
       saving,
       finalizing,
-      downloading,
       prefilling,
       initializing,
       generatingInvoice,
@@ -902,6 +917,7 @@ export function useDocumentPage(
       showCreateGuide,
       showForm,
     },
+    previewData,
     catalogModals,
     formProps,
     actions: {
@@ -914,6 +930,7 @@ export function useDocumentPage(
       dismissCreateGuide: handleDismissCreateGuide,
       generateInvoice,
       enterEditMode: () => setIsEditMode(true),
+      closePreview,
       navigateCancel: () => {
         const dirty =
           (isCreate || isEditMode) &&

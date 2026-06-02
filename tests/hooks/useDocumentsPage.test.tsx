@@ -17,7 +17,6 @@ vi.mock("@utils/documents", () => ({
   buildDuplicatePayload: vi.fn().mockReturnValue({ type: "invoice" }),
   getDocumentFilename: vi.fn(),
 }));
-vi.mock("@utils/download", () => ({ downloadBlob: vi.fn() }));
 vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
 vi.mock("@contexts/toast", () => ({
   toast: {

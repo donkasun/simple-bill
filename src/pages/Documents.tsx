@@ -8,6 +8,7 @@ import DocumentsFilterBar from "@components/documents/DocumentsFilterBar";
 import DocumentsEmptyState from "@components/documents/DocumentsEmptyState";
 import NewDocumentMenu from "@components/documents/NewDocumentMenu";
 import { useDocumentsPage } from "@hooks/pages/useDocumentsPage";
+import PdfPreviewModal from "@components/documents/PdfPreviewModal";
 
 const Documents: React.FC = () => {
   usePageTitle("Documents");
@@ -48,11 +49,10 @@ const Documents: React.FC = () => {
                 document={d}
                 duplicatingId={vm.pending.duplicatingId}
                 deletingId={vm.pending.deletingId}
-                downloadingId={vm.pending.downloadingId}
                 markingPaidId={vm.pending.markingPaidId}
                 markingUnpaidId={vm.pending.markingUnpaidId}
                 onDuplicate={vm.actions.duplicate}
-                onDownload={vm.actions.download}
+                onPreview={vm.actions.openPreview}
                 onDelete={vm.actions.requestDelete}
                 onMarkPaid={vm.actions.requestMarkPaid}
                 onMarkUnpaid={vm.actions.requestMarkUnpaid}
@@ -73,6 +73,11 @@ const Documents: React.FC = () => {
         )}
       </section>
 
+      <PdfPreviewModal
+        open={!!vm.previewData}
+        data={vm.previewData}
+        onClose={vm.actions.closePreview}
+      />
       <ConfirmDialog
         isOpen={!!vm.confirms.deleteId}
         title="Delete document"

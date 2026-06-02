@@ -23,10 +23,6 @@ vi.mock("@hooks/useUserProfile", () => ({
   })),
 }));
 vi.mock("../../src/firebase/config", () => ({ db: {}, auth: {} }));
-vi.mock("@utils/pdf", () => ({
-  generateDocumentPdf: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
-}));
-vi.mock("@utils/download", () => ({ downloadBlob: vi.fn() }));
 vi.mock("@utils/docNumber", () => ({
   allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-001"),
   isDocNumberTaken: vi.fn().mockResolvedValue(false),
@@ -183,7 +179,7 @@ describe("DocumentEdit", () => {
 
     await screen.findByRole("button", { name: "Save changes" });
     expect(screen.getByRole("button", { name: "Save changes" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Download PDF" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "View PDF" })).toBeTruthy();
   });
 
   it("shows load error when document is missing", async () => {
@@ -225,27 +221,19 @@ describe("DocumentEdit", () => {
     });
   });
 
-  it("downloads PDF and saves document as ready", async () => {
-    const { downloadBlob } = await import("@utils/download");
-    const { generateDocumentPdf } = await import("@utils/pdf");
-
+  it("view PDF saves document as ready without navigating away", async () => {
     renderEdit("doc-1", { autoEdit: true });
-    await screen.findByRole("button", { name: "Download PDF" });
+    await screen.findByRole("button", { name: "View PDF" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Download PDF" }));
+    fireEvent.click(screen.getByRole("button", { name: "View PDF" }));
 
     await waitFor(() => {
       expect(setDocumentSpy).toHaveBeenCalledWith(
         "doc-1",
         expect.objectContaining({ status: "ready" }),
       );
-      expect(generateDocumentPdf).toHaveBeenCalled();
-      expect(downloadBlob).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringContaining("/edit"),
-        expect.objectContaining({ state: { autoEdit: true } }),
-      );
     });
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it("shows view-only UI for sent documents", async () => {

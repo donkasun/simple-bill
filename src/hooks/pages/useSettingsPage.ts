@@ -11,6 +11,11 @@ export type SettingsPageViewModel = {
   actions: {
     setCurrency: (currency: string) => Promise<void>;
     setTheme: (theme: "light" | "dark" | "system") => void;
+    setBusinessInfo: (info: {
+      name?: string;
+      email?: string;
+      address?: string;
+    }) => Promise<void>;
   };
 };
 
@@ -37,6 +42,18 @@ export function useSettingsPage(): SettingsPageViewModel {
       },
       setTheme: (value: "light" | "dark" | "system") => {
         setTheme(value);
+      },
+      setBusinessInfo: async (info) => {
+        try {
+          await updateUserProfile({
+            business: { ...profile?.business, ...info },
+          });
+          toast.success("Business info saved");
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to save business info",
+          );
+        }
       },
     },
   };
