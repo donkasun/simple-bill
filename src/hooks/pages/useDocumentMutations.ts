@@ -188,7 +188,7 @@ export function useDocumentMutations({
     setMarkingUnpaidId(id);
     setMarkUnpaidConfirmId(null);
     try {
-      await update(id, { status: "finalized", paidAt: null });
+      await update(id, { status: "sent", paidAt: null });
       toast.success("Marked as unpaid");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to mark as unpaid");

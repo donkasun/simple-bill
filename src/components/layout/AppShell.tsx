@@ -167,6 +167,9 @@ const AppShell: React.FC = () => {
               {showDevNav
                 ? navLink("/dev/colors", "palette", "Color guide (dev)")
                 : null}
+              {showDevNav
+                ? navLink("/dev/buttons", "smart_button", "Button guide (dev)")
+                : null}
             </nav>
 
             <div className="sidebar-footer">

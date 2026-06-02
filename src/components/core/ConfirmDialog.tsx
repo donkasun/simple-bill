@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import Button from "@components/core/Button";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -26,7 +27,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      // Focus the confirm button when opened
       confirmButtonRef.current?.focus();
 
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -77,7 +77,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         padding: "1rem",
       }}
     >
-      {/* Backdrop */}
       <div
         style={{
           position: "absolute",
@@ -88,7 +87,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         onClick={onCancel}
       />
 
-      {/* Dialog content */}
       <div
         ref={dialogRef}
         role="dialog"
@@ -96,14 +94,14 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         aria-labelledby="confirm-dialog-title"
         style={{
           position: "relative",
-          backgroundColor: "var(--white)",
-          borderRadius: "12px",
+          backgroundColor: "var(--md-surface)",
+          borderRadius: "var(--dashboard-radius-xl)",
           width: "100%",
           maxWidth: "400px",
           padding: "1.5rem",
           boxShadow:
             "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-          color: "var(--brand-text-primary)",
+          color: "var(--md-on-surface)",
         }}
       >
         <h3 id="confirm-dialog-title" className="modal-title">
@@ -112,7 +110,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <p
           style={{
             marginBottom: "1.5rem",
-            color: "var(--brand-text-secondary)",
+            color: "var(--md-on-surface-variant)",
             lineHeight: "1.5",
           }}
         >
@@ -126,41 +124,16 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             gap: "0.75rem",
           }}
         >
-          <button
-            onClick={onCancel}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "8px",
-              border: "1px solid var(--brand-border)",
-              backgroundColor: "transparent",
-              color: "var(--brand-text-primary)",
-              fontWeight: "600",
-              cursor: "pointer",
-              minHeight: "44px",
-              minWidth: "80px",
-            }}
-          >
+          <Button variant="secondary" onClick={onCancel}>
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             ref={confirmButtonRef}
+            variant={danger ? "danger" : "primary"}
             onClick={onConfirm}
-            style={{
-              padding: "0.5rem 1.5rem",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: danger
-                ? "var(--brand-danger)"
-                : "var(--brand-primary)",
-              color: danger ? "white" : "var(--md-on-primary)",
-              fontWeight: "600",
-              cursor: "pointer",
-              minHeight: "44px",
-              minWidth: "80px",
-            }}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

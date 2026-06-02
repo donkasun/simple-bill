@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 import type {
   DocumentFormState,
   FormLineItem,
@@ -11,8 +11,10 @@ import { computeAmount, computeSubtotal } from "@utils/documentMath";
 
 export type HeaderErrors = {
   documentType?: string;
+  documentNumber?: string;
   date?: string;
   customerId?: string;
+  lineItems?: string;
 };
 
 export type LineItemFieldErrors = {
@@ -147,7 +149,6 @@ function isMutatingAction(action: FormAction): boolean {
 export function useDocumentForm(options?: UseDocumentFormOptions) {
   const {
     initial,
-    customers,
     itemCatalog,
     canEdit = true,
     totalsCalculator,
@@ -164,17 +165,6 @@ export function useDocumentForm(options?: UseDocumentFormOptions) {
     },
     [canEdit],
   );
-
-  useEffect(() => {
-    if (!canEdit) return;
-    if (!state.customerId && customers && customers.length > 0) {
-      rawDispatch({
-        type: "SET_FIELD",
-        field: "customerId",
-        value: customers[0].id,
-      });
-    }
-  }, [customers, state.customerId, canEdit]);
 
   const addLine = useCallback(
     () => dispatch({ type: "ADD_LINE_ITEM" }),

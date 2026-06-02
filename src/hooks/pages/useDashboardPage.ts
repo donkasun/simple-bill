@@ -115,7 +115,7 @@ function resolveSpotlightCustomer(
 ): DashboardSpotlightCustomer | null {
   const outstandingByCustomer = new Map<string, number>();
   for (const doc of documents) {
-    if (doc.type !== "invoice" || doc.status !== "finalized" || !doc.customerId)
+    if (doc.type !== "invoice" || doc.status !== "sent" || !doc.customerId)
       continue;
     const total = Number.isFinite(doc.total) ? doc.total : 0;
     outstandingByCustomer.set(
@@ -244,7 +244,7 @@ export function useDashboardPage(): DashboardPageViewModel {
   const financialSummary = useMemo((): DashboardFinancialSummary => {
     const now = new Date();
     const outstanding = documents
-      .filter((doc) => doc.status === "finalized")
+      .filter((doc) => doc.status === "sent")
       .reduce((sum, doc) => sum + doc.total, 0);
     const paidThisMonth = documents
       .filter((doc) => {
@@ -273,7 +273,7 @@ export function useDashboardPage(): DashboardPageViewModel {
     let draftCount = 0;
     for (const doc of documents) {
       if (doc.status === "paid") paidCount += 1;
-      else if (doc.status === "finalized") sentCount += 1;
+      else if (doc.status === "sent") sentCount += 1;
       else draftCount += 1;
     }
     return { paidCount, sentCount, draftCount };
@@ -327,7 +327,7 @@ export function useDashboardPage(): DashboardPageViewModel {
         navigate("/documents/new", { state: { customerId } }),
       navigateToDrafts: () => navigate("/documents?status=draft"),
       navigateToPaid: () => navigate("/documents?status=paid"),
-      navigateToSent: () => navigate("/documents?status=finalized"),
+      navigateToSent: () => navigate("/documents?status=sent"),
       navigateToCreateFirstInvoice: () => navigate("/documents/new"),
     },
   };

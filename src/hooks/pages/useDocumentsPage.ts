@@ -11,7 +11,7 @@ export type DocumentRow = DocumentEntity & {
 };
 
 export type TypeFilter = "all" | "invoice" | "quotation";
-export type StatusFilter = "all" | "draft" | "finalized" | "paid";
+export type StatusFilter = "all" | "draft" | "ready" | "sent" | "paid";
 
 export type DocumentsPageViewModel = {
   title: string;
@@ -109,7 +109,7 @@ export function useDocumentsPage(): DocumentsPageViewModel {
     const drafts = documents.filter(
       (doc) => !doc.status || doc.status === "draft",
     ).length;
-    const sent = documents.filter((doc) => doc.status === "finalized").length;
+    const sent = documents.filter((doc) => doc.status === "sent").length;
     const paid = documents.filter((doc) => doc.status === "paid").length;
     const countLabel = documents.length === 1 ? "item" : "items";
     const invoiceLabel = invoices === 1 ? "invoice" : "invoices";
@@ -126,7 +126,8 @@ export function useDocumentsPage(): DocumentsPageViewModel {
     }
     if (
       status === "draft" ||
-      status === "finalized" ||
+      status === "ready" ||
+      status === "sent" ||
       status === "paid" ||
       status === "all"
     ) {

@@ -65,7 +65,7 @@ const mockDocuments = [
     id: "doc2",
     type: "quotation",
     typeLabel: "Quotation",
-    status: "finalized",
+    status: "sent",
     customerName: "Finlays",
     userId: "user1",
   },

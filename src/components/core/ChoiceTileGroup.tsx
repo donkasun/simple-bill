@@ -9,7 +9,7 @@ type ChoiceTileGroupProps<T extends string> = {
   value: T;
   options: ChoiceTileOption<T>[];
   onChange: (value: T) => void;
-  columns?: 2 | 3 | 4;
+  columns?: 2 | 3 | 4 | 5;
   disabled?: boolean;
 };
 

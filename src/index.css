@@ -1087,6 +1087,10 @@ h6 {
   }
 }
 
+.choice-tile-group--cols-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .choice-tile {
   min-height: 44px;
   padding: 0.625rem 0.75rem;
@@ -1441,7 +1445,7 @@ h6 {
 .btn-primary {
   background-color: var(--md-primary-container);
   color: #ffffff;
-  border-radius: 9999px; /* pill-style */
+  border-radius: var(--dashboard-radius-xl);
   font-weight: 700;
   min-height: 48px;
   border: none;
@@ -1463,15 +1467,11 @@ h6 {
   box-shadow: none;
 }
 
-.dashboard-header-cta.btn-primary {
-  border-radius: var(--dashboard-radius-xl);
-}
-
 .btn-secondary {
   background-color: var(--md-surface-container-lowest);
   color: var(--md-on-surface);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 9999px; /* pill-style */
+  border-radius: var(--dashboard-radius-xl);
   font-weight: 700;
   min-height: 48px;
   cursor: pointer;
@@ -1481,6 +1481,28 @@ h6 {
   background-color: var(--md-surface-container-high);
 }
 .btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-danger {
+  background-color: var(--brand-danger);
+  color: #ffffff;
+  border-radius: var(--dashboard-radius-xl);
+  font-weight: 700;
+  min-height: 48px;
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    transform 0.15s;
+}
+.btn-danger:hover {
+  background-color: color-mix(in srgb, var(--brand-danger) 80%, black);
+}
+.btn-danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
@@ -1784,10 +1806,9 @@ h6 {
 .docs-filter-bar {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
   padding-top: 16px;
   margin-bottom: 20px;
   border-top: 1px solid var(--md-outline-variant);
@@ -1796,12 +1817,24 @@ h6 {
 }
 
 .docs-filter-bar .choice-tile-group {
-  width: auto;
   flex: 0 0 auto;
+  width: auto;
+  grid-template-columns: repeat(var(--cols), minmax(0, auto));
 }
 
-.docs-filter-bar .choice-tile-group--cols-4 {
-  grid-template-columns: repeat(4, minmax(0, auto));
+.docs-filter-bar .choice-tile-group--cols-3 {
+  --cols: 3;
+}
+
+.docs-filter-bar .choice-tile-group--cols-5 {
+  --cols: 5;
+}
+
+.docs-filter-bar .docs-filter-divider {
+  width: 1px;
+  height: 28px;
+  flex-shrink: 0;
+  background: var(--md-outline-variant);
 }
 
 .docs-filter-bar .choice-tile {
@@ -2250,7 +2283,7 @@ h6 {
   min-height: 44px;
   padding: 10px 14px;
   border: 1px solid var(--dashboard-headline-accent);
-  border-radius: 8px;
+  border-radius: var(--dashboard-radius-xl);
   background: transparent;
   color: var(--dashboard-headline-accent);
   font-family: var(--font-body);

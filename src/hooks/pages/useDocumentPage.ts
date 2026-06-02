@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   collection,
@@ -29,7 +29,12 @@ import type {
 import type { Customer } from "../../types/customer";
 import type { Item } from "../../types/item";
 import { db } from "../../firebase/config";
-import { allocateNextDocumentNumber } from "@utils/docNumber";
+import {
+  allocateNextDocumentNumber,
+  isDocNumberTaken,
+  reconcileDocCounter,
+  DuplicateDocNumberError,
+} from "@utils/docNumber";
 import {
   buildDocumentPayload,
   selectCustomerDetails,
@@ -83,10 +88,12 @@ export type DocumentPageViewModel = {
   flags: {
     saving: boolean;
     finalizing: boolean;
+    downloading: boolean;
     prefilling: boolean;
     initializing: boolean;
     generatingInvoice: boolean;
     canEdit: boolean;
+    isDirty: boolean;
     documentStatus: DocumentStatus;
     showCreateGuide: boolean;
     showForm: boolean;
@@ -96,10 +103,17 @@ export type DocumentPageViewModel = {
     DocumentEditorFormProps,
     "showDocumentTypeHint" | "showDraftFinalizeHint"
   >;
+  discardDialog: {
+    isOpen: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+  };
   actions: {
     saveDraft: () => Promise<void>;
     saveChanges: () => Promise<void>;
-    finalizeAndDownload: () => Promise<void>;
+    downloadPdf: () => Promise<void>;
+    markAsSent: () => Promise<void>;
+    downloadDocument: () => Promise<void>;
     copyFromPrevious: () => Promise<void>;
     dismissCreateGuide: () => void;
     generateInvoice: () => Promise<void>;
@@ -107,6 +121,14 @@ export type DocumentPageViewModel = {
     navigateCancel: () => void;
   };
 };
+
+// Excludes documentType from dirty comparison — toggling invoice↔quotation
+// before filling in any other field is not considered a meaningful change.
+function comparableJson(s: DocumentFormState): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { documentType: _, ...rest } = s;
+  return JSON.stringify(rest);
+}
 
 export function useDocumentPage(
   args: UseDocumentPageArgs,
@@ -144,6 +166,7 @@ export function useDocumentPage(
 
   const {
     add: addDocument,
+    update: updateDocument,
     set: setDocument,
     getById: getDocument,
   } = useFirestore<DocumentEntity>({
@@ -175,9 +198,22 @@ export function useDocumentPage(
   const [loadError, setLoadError] = useState<string | null>(null);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
-  const canEdit = isCreate || (documentStatus === "draft" && isEditMode);
+  // Tracks an in-flight create→finalize so a retry (e.g. after a PDF or
+  // download failure) updates the same document and reuses the same number
+  // instead of creating a duplicate. Reset once a finalize fully succeeds.
+  const finalizeCreatedIdRef = useRef<string | null>(null);
+  const finalizeDocNumberRef = useRef<string | null>(null);
+  // Once the currency is set explicitly (user choice or loaded document), a
+  // late-arriving profile default must not overwrite it.
+  const currencyPinnedRef = useRef(false);
+
+  const canEdit =
+    isCreate ||
+    ((documentStatus === "draft" || documentStatus === "ready") && isEditMode);
 
   const { state, dispatch, addLine, selectItemById, subtotal, total } =
     useDocumentForm({
@@ -196,6 +232,9 @@ export function useDocumentPage(
       canEdit,
     });
 
+  // Snapshot of the last-saved (or just-loaded) form state for dirty detection.
+  const savedFormJsonRef = useRef(isCreate ? comparableJson(state) : "");
+
   useEffect(() => {
     if (!isCreate || !user?.uid) return;
     const q = query(
@@ -209,40 +248,41 @@ export function useDocumentPage(
       .catch(() => setHasDocs(true));
   }, [isCreate, user?.uid]);
 
+  const customerPreselectedRef = useRef(false);
   useEffect(() => {
     if (!isCreate) return;
-    if (customers.length === 0) return;
-    if (state.customerId) return;
+    if (customerPreselectedRef.current) return;
     const preselected = locationState?.customerId;
-    const target =
-      preselected && customers.some((c) => c.id === preselected)
-        ? preselected
-        : customers[0].id;
-    dispatch({ type: "SET_FIELD", field: "customerId", value: target });
-  }, [
-    customers,
-    dispatch,
-    isCreate,
-    locationState?.customerId,
-    state.customerId,
-  ]);
+    if (!preselected) return;
+    if (!customers.some((c) => c.id === preselected)) return;
+    customerPreselectedRef.current = true;
+    dispatch({ type: "SET_FIELD", field: "customerId", value: preselected });
+  }, [customers, dispatch, isCreate, locationState?.customerId]);
 
+  const documentTypePreselectedRef = useRef(false);
   useEffect(() => {
     if (!isCreate || !locationState?.documentType) return;
+    if (documentTypePreselectedRef.current) return;
+    documentTypePreselectedRef.current = true;
     dispatch({
       type: "SET_FIELD",
       field: "documentType",
       value: locationState.documentType,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dispatch, isCreate, locationState?.documentType]);
 
   useEffect(() => {
     if (!user?.uid) return;
     setItemUsage(loadItemUsage(user.uid));
   }, [user?.uid]);
 
+  const setCurrencyExplicit = useCallback((next: string) => {
+    currencyPinnedRef.current = true;
+    setCurrency(next);
+  }, []);
+
   useEffect(() => {
+    if (currencyPinnedRef.current) return;
     if (profile?.currency) setCurrency(profile.currency);
   }, [profile?.currency]);
 
@@ -268,8 +308,12 @@ export function useDocumentPage(
         const data = snap.data() as DocumentEntity;
         if (!mounted) return;
         setDocumentStatus(data.status);
-        setCurrency(data.currency || "USD");
-        setIsEditMode(data.status === "draft");
+        setCurrencyExplicit(data.currency || "USD");
+        const canEditStatus =
+          data.status === "draft" || data.status === "ready";
+        const autoEdit = !!(locationState as { autoEdit?: boolean } | null)
+          ?.autoEdit;
+        setIsEditMode(canEditStatus && (data.status === "draft" || autoEdit));
         const items = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -281,17 +325,16 @@ export function useDocumentPage(
             ? it.amount
             : computeAmount(it.unitPrice ?? 0, it.quantity ?? 0),
         }));
-        dispatch({
-          type: "SET_ALL",
-          value: {
-            documentType: data.type,
-            documentNumber: data.docNumber ?? "",
-            date: data.date,
-            customerId: data.customerId,
-            notes: data.notes,
-            lineItems: items.length > 0 ? items : [createEmptyLineItem()],
-          },
-        });
+        const formSnapshot = {
+          documentType: data.type,
+          documentNumber: data.docNumber ?? "",
+          date: data.date,
+          customerId: data.customerId,
+          notes: data.notes,
+          lineItems: items.length > 0 ? items : [createEmptyLineItem()],
+        };
+        savedFormJsonRef.current = comparableJson(formSnapshot);
+        dispatch({ type: "SET_ALL", value: formSnapshot });
       } catch (e: unknown) {
         if (!mounted) return;
         setLoadError(
@@ -306,17 +349,6 @@ export function useDocumentPage(
       mounted = false;
     };
   }, [dispatch, documentId, isCreate]);
-
-  useEffect(() => {
-    if (isCreate) return;
-    if (!state.customerId && customers.length > 0) {
-      dispatch({
-        type: "SET_FIELD",
-        field: "customerId",
-        value: customers[0].id,
-      });
-    }
-  }, [customers, dispatch, isCreate, state.customerId]);
 
   const dismissCreateGuide = !!profile?.onboarding?.createInvoiceDismissed;
   const showCreateGuide = isCreate && !dismissCreateGuide && hasDocs === false;
@@ -386,10 +418,37 @@ export function useDocumentPage(
 
   const resolveDocNumber = useCallback(async () => {
     if (!user?.uid) throw new Error("Not signed in");
-    return state.documentNumber?.trim()
-      ? state.documentNumber.trim()
-      : allocateNextDocumentNumber(user.uid, state.documentType, state.date);
-  }, [state.date, state.documentNumber, state.documentType, user?.uid]);
+    const manual = state.documentNumber?.trim();
+    if (manual) {
+      if (await isDocNumberTaken(user.uid, manual, documentId)) {
+        throw new DuplicateDocNumberError(manual);
+      }
+      // Keep the auto-number counter ahead of manually entered sequences so a
+      // later auto-allocation can't re-emit the same number.
+      await reconcileDocCounter(user.uid, manual);
+      return manual;
+    }
+    return allocateNextDocumentNumber(user.uid, state.documentType, state.date);
+  }, [
+    documentId,
+    state.date,
+    state.documentNumber,
+    state.documentType,
+    user?.uid,
+  ]);
+
+  // Surfaces a duplicate-number failure as a field error on Document #.
+  // Returns true when it handled the error.
+  const applyDocNumberError = useCallback((e: unknown): boolean => {
+    if (e instanceof DuplicateDocNumberError) {
+      setHeaderErrors((prev) => ({
+        ...prev,
+        documentNumber: "This number is already used by another document.",
+      }));
+      return true;
+    }
+    return false;
+  }, []);
 
   const saveChanges = useCallback(async () => {
     setSaveError(null);
@@ -414,16 +473,22 @@ export function useDocumentPage(
         { subtotal, total },
       );
       await setDocument(documentId, { ...payload, currency });
+      savedFormJsonRef.current = comparableJson(state);
       if (state.customerId) {
         recordCustomerBilled(user.uid, state.customerId);
       }
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save changes");
+      if (applyDocNumberError(e)) {
+        setSaveError("That document number is already in use. Pick another.");
+      } else {
+        setSaveError(e instanceof Error ? e.message : "Failed to save changes");
+      }
     } finally {
       setSaving(false);
     }
   }, [
     applyValidationErrors,
+    applyDocNumberError,
     currency,
     customers,
     documentId,
@@ -464,15 +529,20 @@ export function useDocumentPage(
       if (id && state.customerId) {
         recordCustomerBilled(user.uid, state.customerId);
       }
-      if (id) navigate("/dashboard");
+      if (id) navigate(`/documents/${id}/edit`, { state: { autoEdit: true } });
     } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save draft");
+      if (applyDocNumberError(e)) {
+        setSaveError("That document number is already in use. Pick another.");
+      } else {
+        setSaveError(e instanceof Error ? e.message : "Failed to save draft");
+      }
     } finally {
       setSaving(false);
     }
   }, [
     addDocument,
     applyValidationErrors,
+    applyDocNumberError,
     currency,
     customers,
     navigate,
@@ -483,49 +553,34 @@ export function useDocumentPage(
     user?.uid,
   ]);
 
-  const finalizeAndDownload = useCallback(async () => {
+  const downloadPdf = useCallback(async () => {
     setFinalizeError(null);
     if (!user?.uid) return;
     setFinalizing(true);
     try {
       const validation = validateFinalize(state);
       if (applyValidationErrors(validation)) {
-        setFinalizeError("Please resolve the errors to finalize.");
+        setFinalizeError("Please resolve the errors before downloading.");
         focusFirstValidationError(state, validation);
         return;
       }
-      const docNumber = await resolveDocNumber();
+      // Reuse the number allocated on a previous (failed) attempt so retries
+      // don't burn sequence numbers or change the document's identity.
+      const docNumber =
+        finalizeDocNumberRef.current ?? (await resolveDocNumber());
+      finalizeDocNumberRef.current = docNumber;
       const base = buildDocumentPayload(
         user.uid,
         state,
-        "finalized",
+        "ready",
         docNumber,
         selectCustomerDetails(customers, state.customerId),
         { subtotal, total },
       );
-      const payload: Partial<DocumentEntity> = {
-        ...base,
-        currency,
-        finalizedAt:
-          serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
-      };
 
-      if (isCreate) {
-        await addDocument(
-          payload as Omit<DocumentEntity, "id" | "createdAt" | "updatedAt"> & {
-            finalizedAt: import("firebase/firestore").Timestamp;
-          },
-        );
-      } else if (documentId) {
-        await setDocument(documentId, payload);
-        setDocumentStatus("finalized");
-        setIsEditMode(false);
-      }
-
-      if (state.customerId) {
-        recordCustomerBilled(user.uid, state.customerId);
-      }
-
+      // Generate the PDF *before* persisting. It is pure given the form state,
+      // so a PDF failure must never leave a persisted document behind that a
+      // retry would then duplicate.
       const { generateDocumentPdf } = await import("../../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
         type: base.type as DocumentType,
@@ -537,23 +592,70 @@ export function useDocumentPage(
         total: base.total as number,
         currency,
       });
+
+      const payload: Partial<DocumentEntity> = {
+        ...base,
+        currency,
+        sentAt:
+          serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
+      };
+
+      let savedId: string;
+      if (isCreate) {
+        if (finalizeCreatedIdRef.current) {
+          // A previous attempt already created the document; update it in
+          // place rather than creating a second one.
+          await setDocument(finalizeCreatedIdRef.current, payload);
+          savedId = finalizeCreatedIdRef.current;
+        } else {
+          savedId = await addDocument(
+            payload as Omit<
+              DocumentEntity,
+              "id" | "createdAt" | "updatedAt"
+            > & {
+              sentAt: import("firebase/firestore").Timestamp;
+            },
+          );
+          finalizeCreatedIdRef.current = savedId;
+        }
+      } else {
+        savedId = documentId!;
+        await setDocument(documentId!, payload);
+        setDocumentStatus("ready");
+        setIsEditMode(false);
+      }
+
+      if (state.customerId) {
+        recordCustomerBilled(user.uid, state.customerId);
+      }
+
       const filename = `${getDocumentFilename(
         base.type as DocumentType,
         base.docNumber as string,
         base.date as string,
       )}.pdf`;
       downloadBlob(filename, pdfBytes, "application/pdf");
-      navigate("/dashboard");
+      // Fully succeeded — clear the retry guards.
+      finalizeCreatedIdRef.current = null;
+      finalizeDocNumberRef.current = null;
+      navigate(`/documents/${savedId}/edit`, { state: { autoEdit: true } });
     } catch (e: unknown) {
-      setFinalizeError(
-        e instanceof Error ? e.message : "Failed to finalize & download",
-      );
+      if (applyDocNumberError(e)) {
+        setFinalizeError(
+          "That document number is already in use. Pick another.",
+        );
+      } else {
+        setFinalizeError(
+          e instanceof Error ? e.message : "Failed to download PDF",
+        );
+      }
     } finally {
       setFinalizing(false);
     }
   }, [
     addDocument,
     applyValidationErrors,
+    applyDocNumberError,
     currency,
     customers,
     documentId,
@@ -566,6 +668,16 @@ export function useDocumentPage(
     total,
     user?.uid,
   ]);
+
+  const markAsSent = useCallback(async () => {
+    if (!documentId) return;
+    try {
+      await updateDocument(documentId, { status: "sent" });
+      setDocumentStatus("sent");
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : "Failed to mark as sent");
+    }
+  }, [documentId, updateDocument]);
 
   const copyFromPrevious = useCallback(async () => {
     if (!isCreate || !user?.uid) return;
@@ -638,6 +750,38 @@ export function useDocumentPage(
     });
   }, [profile?.onboarding, updateUserProfile]);
 
+  const downloadDocument = useCallback(async () => {
+    setDownloading(true);
+    try {
+      const { generateDocumentPdf } = await import("../../utils/pdf");
+      const pdfBytes = await generateDocumentPdf({
+        type: state.documentType,
+        docNumber: state.documentNumber || "",
+        date: state.date,
+        customerDetails: selectCustomerDetails(customers, state.customerId),
+        items: state.lineItems.map((li) => ({
+          itemId: li.itemId,
+          name: li.name,
+          description: li.description,
+          unitPrice: li.unitPrice,
+          quantity: li.quantity,
+          amount: li.amount,
+        })),
+        subtotal,
+        total,
+        currency,
+      });
+      const filename = `${getDocumentFilename(state.documentType, state.documentNumber, state.date)}.pdf`;
+      downloadBlob(filename, pdfBytes, "application/pdf");
+    } catch (e: unknown) {
+      // Surface via toast so the user sees feedback without a full error banner.
+      const { toast } = await import("@contexts/toast");
+      toast.error(e instanceof Error ? e.message : "Failed to download PDF");
+    } finally {
+      setDownloading(false);
+    }
+  }, [currency, customers, state, subtotal, total]);
+
   const generateInvoice = useCallback(async () => {
     setGenerateError(null);
     if (!user?.uid || !documentId) return;
@@ -676,7 +820,6 @@ export function useDocumentPage(
           newInvoiceId,
         ];
         await setDocument(documentId, {
-          ...currentDoc,
           relatedInvoices: updatedRelatedInvoices,
         });
       }
@@ -707,7 +850,7 @@ export function useDocumentPage(
     state,
     dispatch,
     currency,
-    onCurrencyChange: setCurrency,
+    onCurrencyChange: setCurrencyExplicit,
     headerErrors,
     itemErrors,
     visibleCustomers,
@@ -747,10 +890,14 @@ export function useDocumentPage(
     flags: {
       saving,
       finalizing,
+      downloading,
       prefilling,
       initializing,
       generatingInvoice,
       canEdit,
+      isDirty:
+        (isCreate || isEditMode) &&
+        comparableJson(state) !== savedFormJsonRef.current,
       documentStatus,
       showCreateGuide,
       showForm,
@@ -760,12 +907,31 @@ export function useDocumentPage(
     actions: {
       saveDraft,
       saveChanges,
-      finalizeAndDownload,
+      downloadPdf,
+      markAsSent,
+      downloadDocument,
       copyFromPrevious,
       dismissCreateGuide: handleDismissCreateGuide,
       generateInvoice,
       enterEditMode: () => setIsEditMode(true),
-      navigateCancel: () => navigate("/dashboard"),
+      navigateCancel: () => {
+        const dirty =
+          (isCreate || isEditMode) &&
+          comparableJson(state) !== savedFormJsonRef.current;
+        if (dirty) {
+          setDiscardOpen(true);
+        } else {
+          navigate(-1);
+        }
+      },
+    },
+    discardDialog: {
+      isOpen: discardOpen,
+      onConfirm: () => {
+        setDiscardOpen(false);
+        navigate(-1);
+      },
+      onCancel: () => setDiscardOpen(false),
     },
   };
 }

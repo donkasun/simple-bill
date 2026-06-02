@@ -33,11 +33,12 @@ const DocumentsFilterBar: React.FC<DocumentsFilterBarProps> = ({
         id="doc-status-filter"
         ariaLabel="Filter by status"
         value={statusFilter}
-        columns={4}
+        columns={5}
         options={[
           { value: "all", label: "All" },
           { value: "draft", label: "Draft" },
-          { value: "finalized", label: "Sent" },
+          { value: "ready", label: "Ready" },
+          { value: "sent", label: "Sent" },
           { value: "paid", label: "Paid" },
         ]}
         onChange={onStatusChange}

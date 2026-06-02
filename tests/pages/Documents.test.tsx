@@ -76,7 +76,7 @@ const mockDocuments = [
     typeLabel: "Quotation",
     docNumber: "QUO-2026-001",
     date: "2026-05-27",
-    status: "finalized",
+    status: "sent",
     total: 6000,
     currency: "LKR",
     customerName: "Finlays",

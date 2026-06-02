@@ -21,6 +21,16 @@ vi.mock("react-router-dom", async () => {
 });
 vi.mock("@utils/docNumber", () => ({
   allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-001"),
+  isDocNumberTaken: vi.fn().mockResolvedValue(false),
+  reconcileDocCounter: vi.fn().mockResolvedValue(undefined),
+  DuplicateDocNumberError: class DuplicateDocNumberError extends Error {
+    docNumber: string;
+    constructor(docNumber: string) {
+      super(`Document number "${docNumber}" is already in use.`);
+      this.name = "DuplicateDocNumberError";
+      this.docNumber = docNumber;
+    }
+  },
 }));
 
 let capturedDismiss: undefined | (() => void);
@@ -228,7 +238,7 @@ describe("DocumentCreation actions", () => {
     });
   });
 
-  it("save draft navigates to dashboard after add", async () => {
+  it("save draft navigates to the edit page for the new doc", async () => {
     render(
       <BrowserRouter>
         <DocumentCreation />
@@ -236,10 +246,20 @@ describe("DocumentCreation actions", () => {
     );
 
     await screen.findByRole("button", { name: "Save draft" });
+
+    // Save draft is disabled until the user makes a change
+    const notes = screen.getByPlaceholderText(
+      "Additional notes for the customer",
+    );
+    fireEvent.change(notes, { target: { value: "Test note" } });
+
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+      expect(mockNavigate).toHaveBeenCalledWith(
+        "/documents/new-doc-id/edit",
+        expect.objectContaining({ state: { autoEdit: true } }),
+      );
     });
   });
 });

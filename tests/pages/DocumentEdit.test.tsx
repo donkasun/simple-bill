@@ -29,6 +29,16 @@ vi.mock("@utils/pdf", () => ({
 vi.mock("@utils/download", () => ({ downloadBlob: vi.fn() }));
 vi.mock("@utils/docNumber", () => ({
   allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-001"),
+  isDocNumberTaken: vi.fn().mockResolvedValue(false),
+  reconcileDocCounter: vi.fn().mockResolvedValue(undefined),
+  DuplicateDocNumberError: class DuplicateDocNumberError extends Error {
+    docNumber: string;
+    constructor(docNumber: string) {
+      super(`Document number "${docNumber}" is already in use.`);
+      this.name = "DuplicateDocNumberError";
+      this.docNumber = docNumber;
+    }
+  },
 }));
 
 const mockNavigate = vi.fn();
@@ -173,9 +183,7 @@ describe("DocumentEdit", () => {
 
     await screen.findByRole("button", { name: "Save changes" });
     expect(screen.getByRole("button", { name: "Save changes" })).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Finish & download PDF" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Download PDF" })).toBeTruthy();
   });
 
   it("shows load error when document is missing", async () => {
@@ -217,50 +225,51 @@ describe("DocumentEdit", () => {
     });
   });
 
-  it("finalizes document, downloads PDF, and navigates to dashboard", async () => {
+  it("downloads PDF and saves document as ready", async () => {
     const { downloadBlob } = await import("@utils/download");
     const { generateDocumentPdf } = await import("@utils/pdf");
 
     renderEdit("doc-1", { autoEdit: true });
-    await screen.findByRole("button", { name: "Finish & download PDF" });
+    await screen.findByRole("button", { name: "Download PDF" });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Finish & download PDF" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Download PDF" }));
 
     await waitFor(() => {
       expect(setDocumentSpy).toHaveBeenCalledWith(
         "doc-1",
-        expect.objectContaining({ status: "finalized" }),
+        expect.objectContaining({ status: "ready" }),
       );
       expect(generateDocumentPdf).toHaveBeenCalled();
       expect(downloadBlob).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringContaining("/edit"),
+        expect.objectContaining({ state: { autoEdit: true } }),
+      );
     });
   });
 
-  it("shows view-only UI for finalized documents", async () => {
+  it("shows view-only UI for sent documents", async () => {
     const { getDoc } = await import("firebase/firestore");
     (getDoc as vi.Mock).mockResolvedValue({
       exists: () => true,
-      data: () => ({ ...draftDocData, status: "finalized" }),
+      data: () => ({ ...draftDocData, status: "sent" }),
     });
 
     renderEdit("doc-final");
-    await screen.findByRole("button", { name: "Cancel" });
+    await screen.findByRole("button", { name: "Back" });
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
     });
   });
 
-  it("shows generate invoice for finalized quotation", async () => {
+  it("shows generate invoice for sent quotation", async () => {
     const { getDoc } = await import("firebase/firestore");
     (getDoc as vi.Mock).mockResolvedValue({
       exists: () => true,
       data: () => ({
         ...draftDocData,
         type: "quotation",
-        status: "finalized",
+        status: "sent",
       }),
     });
 
