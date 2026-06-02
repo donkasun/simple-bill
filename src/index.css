@@ -98,6 +98,8 @@
   /* Status accents — align dashboard bento, row pills, and documents list border */
   --status-draft-pill-bg: var(--md-surface-container-highest);
   --status-draft-pill-fg: var(--md-on-surface-variant);
+  --status-ready-pill-bg: #1d6fb5;
+  --status-ready-pill-fg: #ffffff;
   --status-sent-accent: var(--brand-warning);
   --status-paid-accent: var(--md-primary-container);
   --status-draft-border: var(--md-outline);
@@ -201,6 +203,9 @@
   --settings-choice-selected-border: var(--md-primary-hover);
   --settings-choice-selected-text: var(--md-on-primary);
   --settings-choice-selected-text-muted: var(--md-on-primary);
+
+  --status-ready-pill-bg: #5aa7e8;
+  --status-ready-pill-fg: #0b2a44;
 }
 
 /* Native form controls respect dark mode */
@@ -2170,6 +2175,11 @@ h6 {
 .dashboard-doc-row__pill--draft {
   background: var(--status-draft-pill-bg);
   color: var(--status-draft-pill-fg);
+}
+
+.dashboard-doc-row__pill--ready {
+  background: var(--status-ready-pill-bg);
+  color: var(--status-ready-pill-fg);
 }
 
 .dashboard-doc-row__details {
