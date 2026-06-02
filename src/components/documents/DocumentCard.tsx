@@ -7,28 +7,20 @@ type DocumentCardProps = {
   document: DocumentRow;
   duplicatingId: string | null;
   deletingId: string | null;
-  downloadingId: string | null;
   markingPaidId: string | null;
   markingUnpaidId: string | null;
   onDuplicate: (document: DocumentEntity) => void;
-  onDownload: (document: DocumentEntity) => void;
+  onPreview: (document: DocumentEntity) => void;
   onDelete: (id: string) => void;
   onMarkPaid: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
 };
 
-const getPrimaryAction = (
-  document: DocumentEntity,
-  isMarkingPaid: boolean,
-  isDownloading: boolean,
-) => {
+const getPrimaryAction = (document: DocumentEntity, isMarkingPaid: boolean) => {
   const isDraft = !document.status || document.status === "draft";
   if (isDraft) return { label: "Continue editing", kind: "edit" as const };
   if (document.status === "paid") {
-    return {
-      label: isDownloading ? "Downloading..." : "Download PDF",
-      kind: "download" as const,
-    };
+    return { label: "View PDF", kind: "preview" as const };
   }
   return {
     label: isMarkingPaid ? "Saving..." : "Mark as paid",
@@ -40,11 +32,10 @@ const DocumentCard = ({
   document,
   duplicatingId,
   deletingId,
-  downloadingId,
   markingPaidId,
   markingUnpaidId,
   onDuplicate,
-  onDownload,
+  onPreview,
   onDelete,
   onMarkPaid,
   onMarkUnpaid,
@@ -54,22 +45,13 @@ const DocumentCard = ({
   const isFinalized = document.status === "sent" || document.status === "ready";
   const isPaid = document.status === "paid";
   const isDeleting = deletingId === document.id;
-  const isDownloading = downloadingId === document.id;
   const isMarkingPaid = markingPaidId === document.id;
   const isMarkingUnpaid = markingUnpaidId === document.id;
   const isDuplicating = duplicatingId === document.id;
   const isBusy = Boolean(
-    isDeleting ||
-    isDownloading ||
-    isMarkingPaid ||
-    isMarkingUnpaid ||
-    duplicatingId,
+    isDeleting || isMarkingPaid || isMarkingUnpaid || duplicatingId,
   );
-  const primaryAction = getPrimaryAction(
-    document,
-    isMarkingPaid,
-    isDownloading,
-  );
+  const primaryAction = getPrimaryAction(document, isMarkingPaid);
 
   const handlePrimaryAction = () => {
     if (!document.id) return;
@@ -77,8 +59,8 @@ const DocumentCard = ({
       navigate(`/documents/${document.id}/edit`);
       return;
     }
-    if (primaryAction.kind === "download") {
-      onDownload(document);
+    if (primaryAction.kind === "preview") {
+      onPreview(document);
       return;
     }
     onMarkPaid(document.id);
@@ -128,10 +110,10 @@ const DocumentCard = ({
             {!isPaid && (
               <button
                 type="button"
-                onClick={() => onDownload(document)}
-                disabled={isDownloading || Boolean(duplicatingId)}
+                onClick={() => onPreview(document)}
+                disabled={Boolean(duplicatingId)}
               >
-                {isDownloading ? "Downloading..." : "Download PDF"}
+                View PDF
               </button>
             )}
             {isPaid && (
