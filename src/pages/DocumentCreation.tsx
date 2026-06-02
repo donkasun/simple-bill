@@ -9,6 +9,7 @@ import DocumentEditorForm from "@components/documents/DocumentEditorForm";
 import CustomerModal from "@components/customers/CustomerModal";
 import ItemModal from "@components/items/ItemModal";
 import { useDocumentPage } from "@hooks/pages/useDocumentPage";
+import PdfPreviewModal from "@components/documents/PdfPreviewModal";
 
 const DocumentCreation: React.FC = () => {
   usePageTitle("Create Document");
@@ -21,7 +22,7 @@ const DocumentCreation: React.FC = () => {
         <PageHeader
           toolbar
           title="New invoice or quote"
-          subtitle="Fill in the details below, then save a draft or download a PDF."
+          subtitle="Fill in the details below, then save a draft or view a PDF preview."
           secondaryActions={
             <>
               <Button variant="secondary" onClick={actions.navigateCancel}>
@@ -59,7 +60,7 @@ const DocumentCreation: React.FC = () => {
                   flags.saving || flags.finalizing || vm.finalizeDisabled
                 }
               >
-                {flags.finalizing ? "Preparing…" : "Download PDF"}
+                {flags.finalizing ? "Preparing…" : "View PDF"}
               </Button>
             </>
           }
@@ -142,6 +143,11 @@ const DocumentCreation: React.FC = () => {
         submitting={catalogModals.itemSubmitting}
         onSubmit={catalogModals.handleItemSubmit}
         onCancel={catalogModals.closeItemModal}
+      />
+      <PdfPreviewModal
+        open={!!vm.previewData}
+        data={vm.previewData}
+        onClose={vm.actions.closePreview}
       />
       <ConfirmDialog
         isOpen={vm.discardDialog.isOpen}

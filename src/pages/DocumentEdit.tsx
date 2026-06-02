@@ -9,6 +9,7 @@ import DocumentEditorForm from "@components/documents/DocumentEditorForm";
 import CustomerModal from "@components/customers/CustomerModal";
 import ItemModal from "@components/items/ItemModal";
 import { useDocumentPage } from "@hooks/pages/useDocumentPage";
+import PdfPreviewModal from "@components/documents/PdfPreviewModal";
 
 const DocumentEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,7 +59,7 @@ const DocumentEdit: React.FC = () => {
                       vm.finalizeDisabled
                     }
                   >
-                    {flags.finalizing ? "Preparing…" : "Download PDF"}
+                    {flags.finalizing ? "Preparing…" : "View PDF"}
                   </Button>
                 </>
               ) : (
@@ -86,9 +87,9 @@ const DocumentEdit: React.FC = () => {
                     <Button
                       variant="secondary"
                       onClick={actions.downloadDocument}
-                      disabled={flags.downloading || flags.initializing}
+                      disabled={flags.initializing}
                     >
-                      {flags.downloading ? "Downloading…" : "Download PDF"}
+                      View PDF
                     </Button>
                   )}
                   {vm.state.documentType === "quotation" &&
@@ -147,6 +148,11 @@ const DocumentEdit: React.FC = () => {
         submitting={catalogModals.itemSubmitting}
         onSubmit={catalogModals.handleItemSubmit}
         onCancel={catalogModals.closeItemModal}
+      />
+      <PdfPreviewModal
+        open={!!vm.previewData}
+        data={vm.previewData}
+        onClose={vm.actions.closePreview}
       />
       <ConfirmDialog
         isOpen={vm.discardDialog.isOpen}
