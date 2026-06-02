@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import * as documentsUtils from "../../src/utils/documents";
 import {
   getDocNumberPlaceholder,
   getDocumentFilename,
@@ -119,5 +120,10 @@ describe("documents utils", () => {
     expect("originalQuantity" in payload).toBe(false);
     expect("invoicedQuantity" in payload).toBe(false);
     expect("remainingQuantity" in payload).toBe(false);
+  });
+
+  it("getInvoiceGenerationStatus is not exported (dead code removed)", () => {
+    expect("getInvoiceGenerationStatus" in documentsUtils).toBe(false);
+    expect("calculateRemainingQuantities" in documentsUtils).toBe(false);
   });
 });

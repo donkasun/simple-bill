@@ -332,11 +332,11 @@ describe("useDocumentPage", () => {
           sourceDocumentType: "quotation",
         }),
       );
-      // links the new invoice back onto the source quotation
-      expect(setDocumentSpy).toHaveBeenCalledWith(
-        "quo-1",
-        expect.objectContaining({ relatedInvoices: ["inv-2"] }),
-      );
+      // links the new invoice back onto the source quotation —
+      // must write ONLY relatedInvoices, not stale id/createdAt fields
+      expect(setDocumentSpy).toHaveBeenCalledWith("quo-1", {
+        relatedInvoices: ["inv-2"],
+      });
       expect(mockNavigate).toHaveBeenCalledWith("/documents/inv-2/edit");
     });
   });
@@ -474,5 +474,50 @@ describe("useDocumentPage", () => {
     });
     expect(addDocumentSpy).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("does not overwrite a user-selected currency when the profile loads later", async () => {
+    const useUserProfile = (await import("@hooks/useUserProfile")).default;
+    // Profile hasn't resolved a currency yet on first render.
+    (useUserProfile as vi.Mock).mockReturnValue({
+      profile: { currency: undefined, onboarding: {} },
+      loading: false,
+      error: null,
+      updateUserProfile: vi.fn(),
+    });
+
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "create" });
+      return null;
+    };
+    const { rerender } = render(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
+
+    // User explicitly picks EUR.
+    await act(async () => {
+      vm!.formProps.onCurrencyChange("EUR");
+    });
+    await waitFor(() => expect(vm!.currency).toBe("EUR"));
+
+    // Profile resolves afterwards with a different currency.
+    (useUserProfile as vi.Mock).mockReturnValue({
+      profile: { currency: "USD", onboarding: {} },
+      loading: false,
+      error: null,
+      updateUserProfile: vi.fn(),
+    });
+    rerender(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+
+    // The late-arriving profile currency must not clobber the user's choice.
+    await waitFor(() => expect(vm!.currency).toBe("EUR"));
   });
 });

@@ -187,6 +187,9 @@ export function useDocumentPage(
   // instead of creating a duplicate. Reset once a finalize fully succeeds.
   const finalizeCreatedIdRef = useRef<string | null>(null);
   const finalizeDocNumberRef = useRef<string | null>(null);
+  // Once the currency is set explicitly (user choice or loaded document), a
+  // late-arriving profile default must not overwrite it.
+  const currencyPinnedRef = useRef(false);
 
   const canEdit = isCreate || (documentStatus === "draft" && isEditMode);
 
@@ -253,7 +256,13 @@ export function useDocumentPage(
     setItemUsage(loadItemUsage(user.uid));
   }, [user?.uid]);
 
+  const setCurrencyExplicit = useCallback((next: string) => {
+    currencyPinnedRef.current = true;
+    setCurrency(next);
+  }, []);
+
   useEffect(() => {
+    if (currencyPinnedRef.current) return;
     if (profile?.currency) setCurrency(profile.currency);
   }, [profile?.currency]);
 
@@ -279,7 +288,7 @@ export function useDocumentPage(
         const data = snap.data() as DocumentEntity;
         if (!mounted) return;
         setDocumentStatus(data.status);
-        setCurrency(data.currency || "USD");
+        setCurrencyExplicit(data.currency || "USD");
         setIsEditMode(data.status === "draft");
         const items = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
@@ -752,7 +761,6 @@ export function useDocumentPage(
           newInvoiceId,
         ];
         await setDocument(documentId, {
-          ...currentDoc,
           relatedInvoices: updatedRelatedInvoices,
         });
       }
@@ -783,7 +791,7 @@ export function useDocumentPage(
     state,
     dispatch,
     currency,
-    onCurrencyChange: setCurrency,
+    onCurrencyChange: setCurrencyExplicit,
     headerErrors,
     itemErrors,
     visibleCustomers,
