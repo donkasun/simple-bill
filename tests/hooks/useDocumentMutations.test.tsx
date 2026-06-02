@@ -14,11 +14,6 @@ vi.mock("@utils/documents", () => ({
   buildDuplicatePayload: vi.fn().mockReturnValue({ type: "invoice" }),
   getDocumentFilename: vi.fn().mockReturnValue("invoice-INV-2026-002"),
 }));
-vi.mock("@utils/download", () => ({ downloadBlob: vi.fn() }));
-vi.mock("@utils/pdf", () => ({
-  generateDocumentPdf: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
-}));
-
 vi.mock("@contexts/toast", () => ({
   toast: {
     success: vi.fn(),
@@ -118,10 +113,25 @@ describe("useDocumentMutations", () => {
     );
   });
 
-  it("wraps download in toast.promise", async () => {
+  it("openPreview sets previewData from the document", async () => {
     const getVm = renderHook();
-    await getVm().actions.download(sourceDoc as never);
-    await waitFor(() => expect(toastMock.promise).toHaveBeenCalled());
+    getVm().actions.openPreview({
+      ...sourceDoc,
+      docNumber: "INV-2026-001",
+      date: "2026-06-01",
+      items: [],
+      subtotal: 0,
+      total: 0,
+      currency: "USD",
+    } as never);
+    await waitFor(() => {
+      expect(getVm().previewData).toEqual(
+        expect.objectContaining({
+          type: "invoice",
+          docNumber: "INV-2026-001",
+        }),
+      );
+    });
   });
 
   it("toasts error when mark paid fails", async () => {

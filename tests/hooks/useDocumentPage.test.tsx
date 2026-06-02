@@ -28,11 +28,6 @@ vi.mock("@utils/docNumber", () => ({
     }
   },
 }));
-vi.mock("@utils/pdf", () => ({
-  generateDocumentPdf: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
-}));
-vi.mock("@utils/download", () => ({ downloadBlob: vi.fn() }));
-
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");
@@ -233,10 +228,7 @@ describe("useDocumentPage", () => {
     });
   });
 
-  it("create mode downloadPdf saves document as ready, builds a PDF, and navigates to edit", async () => {
-    const { generateDocumentPdf } = await import("@utils/pdf");
-    const { downloadBlob } = await import("@utils/download");
-
+  it("create mode downloadPdf saves document as ready and navigates with preview payload", async () => {
     let vm: ReturnType<typeof useDocumentPage> | null = null;
     const Comp = () => {
       vm = useDocumentPage({ mode: "create" });
@@ -270,11 +262,13 @@ describe("useDocumentPage", () => {
       expect(addDocumentSpy).toHaveBeenCalledWith(
         expect.objectContaining({ status: "ready", currency: "USD" }),
       );
-      expect(generateDocumentPdf).toHaveBeenCalled();
-      expect(downloadBlob).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith(
         expect.stringContaining("/edit"),
-        expect.objectContaining({ state: { autoEdit: true } }),
+        expect.objectContaining({
+          state: expect.objectContaining({
+            openPreview: expect.objectContaining({ type: "invoice" }),
+          }),
+        }),
       );
     });
   });
@@ -451,77 +445,25 @@ describe("useDocumentPage", () => {
     return () => vm!;
   }
 
-  it("create mode downloadPdf does not persist when PDF generation fails; retry persists exactly once", async () => {
-    const { generateDocumentPdf } = await import("@utils/pdf");
-    // First attempt: PDF generation throws. Subsequent calls fall
-    // back to the factory default (resolves), simulating a transient failure.
-    (generateDocumentPdf as vi.Mock).mockRejectedValueOnce(
-      new Error("pdf boom"),
-    );
+  it("create mode downloadPdf does not persist when save fails; retry persists exactly once", async () => {
+    addDocumentSpy.mockRejectedValueOnce(new Error("firestore boom"));
 
     const getVm = await renderValidCreateForm();
 
-    // Attempt 1 — PDF fails, so nothing must be persisted.
     await act(async () => {
       await getVm().actions.downloadPdf();
     });
     await waitFor(() => expect(getVm().banners.finalizeError).toBeTruthy());
-    expect(addDocumentSpy).not.toHaveBeenCalled();
+    expect(addDocumentSpy).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).not.toHaveBeenCalled();
 
-    // Attempt 2 — PDF succeeds, document is persisted exactly once as ready.
     await act(async () => {
       await getVm().actions.downloadPdf();
     });
     await waitFor(() => {
-      expect(addDocumentSpy).toHaveBeenCalledTimes(1);
+      expect(addDocumentSpy).toHaveBeenCalledTimes(2);
       expect(addDocumentSpy).toHaveBeenCalledWith(
         expect.objectContaining({ status: "ready" }),
-      );
-    });
-  });
-
-  it("create mode downloadPdf reuses the created doc on retry after a download failure", async () => {
-    const { downloadBlob } = await import("@utils/download");
-    // First attempt: PDF + persist succeed, but the download throws.
-    (downloadBlob as vi.Mock).mockImplementationOnce(() => {
-      throw new Error("download boom");
-    });
-    const { allocateNextDocumentNumber } = await import("@utils/docNumber");
-    (allocateNextDocumentNumber as vi.Mock)
-      .mockResolvedValueOnce("INV-2026-001")
-      .mockResolvedValueOnce("INV-2026-002");
-
-    const getVm = await renderValidCreateForm();
-
-    // Attempt 1 — persists, then download fails.
-    await act(async () => {
-      await getVm().actions.downloadPdf();
-    });
-    await waitFor(() => {
-      expect(addDocumentSpy).toHaveBeenCalledTimes(1);
-      expect(getVm().banners.finalizeError).toBeTruthy();
-    });
-    expect(addDocumentSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ docNumber: "INV-2026-001" }),
-    );
-
-    // Attempt 2 — must update the already-created doc, not create a new one,
-    // and must keep the originally allocated number.
-    await act(async () => {
-      await getVm().actions.downloadPdf();
-    });
-    await waitFor(() => {
-      expect(addDocumentSpy).toHaveBeenCalledTimes(1);
-      expect(setDocumentSpy).toHaveBeenCalledWith(
-        "new-id",
-        expect.objectContaining({
-          status: "ready",
-          docNumber: "INV-2026-001",
-        }),
-      );
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringContaining("/edit"),
-        expect.objectContaining({ state: { autoEdit: true } }),
       );
     });
   });
@@ -700,7 +642,7 @@ describe("useDocumentPage", () => {
     await waitFor(() => expect(vm!.currency).toBe("EUR"));
   });
 
-  it("downloadDocument generates a PDF from the loaded document and triggers a download", async () => {
+  it("downloadDocument sets previewData from the loaded document", async () => {
     const { getDoc } = await import("firebase/firestore");
     (getDoc as vi.Mock).mockResolvedValue({
       exists: () => true,
@@ -718,9 +660,6 @@ describe("useDocumentPage", () => {
       }),
     });
 
-    const { generateDocumentPdf } = await import("@utils/pdf");
-    const { downloadBlob } = await import("@utils/download");
-
     let vm: ReturnType<typeof useDocumentPage> | null = null;
     const Comp = () => {
       vm = useDocumentPage({ mode: "edit", documentId: "doc-1" });
@@ -734,21 +673,18 @@ describe("useDocumentPage", () => {
 
     await waitFor(() => expect(vm!.flags.initializing).toBe(false));
 
-    await act(async () => {
-      await vm!.actions.downloadDocument();
+    act(() => {
+      vm!.actions.downloadDocument();
     });
 
     await waitFor(() => {
-      expect(generateDocumentPdf).toHaveBeenCalledWith(
-        expect.objectContaining({ docNumber: "INV-2024-001", currency: "LKR" }),
-      );
-      expect(downloadBlob).toHaveBeenCalledWith(
-        expect.stringContaining("INV-2024-001"),
-        expect.any(Uint8Array),
-        "application/pdf",
+      expect(vm!.previewData).toEqual(
+        expect.objectContaining({
+          docNumber: "INV-2024-001",
+          currency: "LKR",
+        }),
       );
     });
-    // must not navigate away
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

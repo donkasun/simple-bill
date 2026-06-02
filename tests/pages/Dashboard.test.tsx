@@ -47,12 +47,6 @@ vi.mock("firebase/firestore", () => ({
 vi.mock("@auth/useAuth");
 vi.mock("@hooks/useFirestore");
 vi.mock("@components/layout/PageTitleContext");
-vi.mock("@utils/pdf", () => ({
-  generateDocumentPdf: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
-}));
-vi.mock("@utils/download", () => ({
-  downloadBlob: vi.fn(),
-}));
 vi.mock("@utils/docNumber", () => ({
   allocateNextDocumentNumber: vi.fn().mockResolvedValue("INV-2026-002"),
 }));
@@ -278,9 +272,7 @@ describe("Dashboard", () => {
         screen.queryByRole("button", { name: "Continue editing" }),
       ).toBeNull();
       expect(screen.queryByRole("button", { name: "Mark as paid" })).toBeNull();
-      expect(
-        screen.queryByRole("button", { name: /download pdf/i }),
-      ).toBeNull();
+      expect(screen.queryByRole("button", { name: /view pdf/i })).toBeNull();
     });
 
     it("shows Pending for draft rows instead of a date", () => {
