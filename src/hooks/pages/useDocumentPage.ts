@@ -139,6 +139,7 @@ export function useDocumentPage(
     customerId?: string;
     documentType?: DocumentType;
     autoEdit?: boolean;
+    openPreview?: PdfPreviewData;
   } | null;
 
   const {
@@ -198,7 +199,7 @@ export function useDocumentPage(
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [previewData, setPreviewData] = useState<PdfPreviewData | null>(null);
-  const finalizedDocIdRef = useRef<string | null>(null);
+  const previewFromStateConsumedRef = useRef(false);
 
   // Tracks an in-flight create→finalize so a retry (e.g. after a PDF or
   // download failure) updates the same document and reuses the same number
@@ -347,6 +348,24 @@ export function useDocumentPage(
       mounted = false;
     };
   }, [dispatch, documentId, isCreate]);
+
+  // Auto-open preview when navigated here from the creation flow
+  useEffect(() => {
+    if (
+      !initializing &&
+      locationState?.openPreview &&
+      !previewFromStateConsumedRef.current
+    ) {
+      previewFromStateConsumedRef.current = true;
+      setPreviewData(locationState.openPreview);
+      // Clear the state so navigating back/forward doesn't re-open
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...locationState, openPreview: undefined },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initializing]);
 
   const dismissCreateGuide = !!profile?.onboarding?.createInvoiceDismissed;
   const showCreateGuide = isCreate && !dismissCreateGuide && hasDocs === false;
@@ -610,10 +629,10 @@ export function useDocumentPage(
         recordCustomerBilled(user.uid, state.customerId);
       }
 
-      finalizedDocIdRef.current = savedId;
       finalizeCreatedIdRef.current = null;
       finalizeDocNumberRef.current = null;
-      setPreviewData({
+
+      const previewPayload: PdfPreviewData = {
         type: base.type as DocumentEntity["type"],
         docNumber: base.docNumber || "",
         date: base.date as string,
@@ -631,7 +650,17 @@ export function useDocumentPage(
         businessName: profile?.business?.name,
         businessEmail: profile?.business?.email,
         businessAddress: profile?.business?.address,
-      });
+      };
+
+      if (isCreate) {
+        // Navigate to the edit page carrying the preview payload — the modal
+        // opens there so closing it keeps the user on the right page.
+        navigate(`/documents/${savedId}/edit`, {
+          state: { openPreview: previewPayload },
+        });
+      } else {
+        setPreviewData(previewPayload);
+      }
     } catch (e: unknown) {
       if (applyDocNumberError(e)) {
         setFinalizeError(
@@ -767,12 +796,7 @@ export function useDocumentPage(
 
   const closePreview = useCallback(() => {
     setPreviewData(null);
-    if (finalizedDocIdRef.current) {
-      const id = finalizedDocIdRef.current;
-      finalizedDocIdRef.current = null;
-      navigate(`/documents/${id}/edit`, { state: { autoEdit: true } });
-    }
-  }, [navigate]);
+  }, []);
 
   const generateInvoice = useCallback(async () => {
     setGenerateError(null);

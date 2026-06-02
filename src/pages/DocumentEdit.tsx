@@ -82,7 +82,8 @@ const DocumentEdit: React.FC = () => {
                       Mark as sent
                     </Button>
                   )}
-                  {(flags.documentStatus === "sent" ||
+                  {(flags.documentStatus === "ready" ||
+                    flags.documentStatus === "sent" ||
                     flags.documentStatus === "paid") && (
                     <Button
                       variant="secondary"
