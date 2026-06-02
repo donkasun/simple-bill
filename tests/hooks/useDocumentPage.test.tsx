@@ -211,11 +211,10 @@ describe("useDocumentPage", () => {
       </MemoryRouter>,
     );
 
-    // Customer auto-selects once the (mocked) customers load.
-    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
-
-    // Make every line item valid for finalize (name, qty >= 1, price >= 0).
+    await waitFor(() => expect(vm!.flags.showForm).toBe(true));
+    // Manually select customer and fill line items (no auto-selection).
     await act(async () => {
+      vm!.dispatch({ type: "SET_FIELD", field: "customerId", value: "c1" });
       for (const li of vm!.state.lineItems) {
         vm!.dispatch({
           type: "UPDATE_LINE_ITEM",
@@ -354,8 +353,9 @@ describe("useDocumentPage", () => {
         <Comp />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
+    await waitFor(() => expect(vm!.flags.showForm).toBe(true));
     await act(async () => {
+      vm!.dispatch({ type: "SET_FIELD", field: "customerId", value: "c1" });
       for (const li of vm!.state.lineItems) {
         vm!.dispatch({
           type: "UPDATE_LINE_ITEM",
@@ -454,9 +454,9 @@ describe("useDocumentPage", () => {
         <Comp />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
-
+    await waitFor(() => expect(vm!.flags.showForm).toBe(true));
     await act(async () => {
+      vm!.dispatch({ type: "SET_FIELD", field: "customerId", value: "c1" });
       vm!.dispatch({
         type: "SET_FIELD",
         field: "documentNumber",
@@ -474,6 +474,43 @@ describe("useDocumentPage", () => {
     });
     expect(addDocumentSpy).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("does not auto-select a customer when opening a new document with no location state", async () => {
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "create" });
+      return null;
+    };
+    render(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+
+    // Give effects time to run
+    await waitFor(() => expect(vm!.flags.showForm).toBe(true));
+    // Customer list is loaded (mocked to [{id:"c1"}]) but nothing should be picked
+    expect(vm!.state.customerId).toBeUndefined();
+  });
+
+  it("pre-selects a customer when one is passed via location state", async () => {
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "create" });
+      return null;
+    };
+    render(
+      <MemoryRouter
+        initialEntries={[
+          { pathname: "/documents/new", state: { customerId: "c1" } },
+        ]}
+      >
+        <Comp />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
   });
 
   it("preselects documentType from navigation state even when state resolves after initial render", async () => {
@@ -520,7 +557,7 @@ describe("useDocumentPage", () => {
         <Comp />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(vm!.state.customerId).toBe("c1"));
+    await waitFor(() => expect(vm!.flags.showForm).toBe(true));
 
     // User explicitly picks EUR.
     await act(async () => {

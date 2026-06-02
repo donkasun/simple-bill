@@ -223,23 +223,16 @@ export function useDocumentPage(
       .catch(() => setHasDocs(true));
   }, [isCreate, user?.uid]);
 
+  const customerPreselectedRef = useRef(false);
   useEffect(() => {
     if (!isCreate) return;
-    if (customers.length === 0) return;
-    if (state.customerId) return;
+    if (customerPreselectedRef.current) return;
     const preselected = locationState?.customerId;
-    const target =
-      preselected && customers.some((c) => c.id === preselected)
-        ? preselected
-        : customers[0].id;
-    dispatch({ type: "SET_FIELD", field: "customerId", value: target });
-  }, [
-    customers,
-    dispatch,
-    isCreate,
-    locationState?.customerId,
-    state.customerId,
-  ]);
+    if (!preselected) return;
+    if (!customers.some((c) => c.id === preselected)) return;
+    customerPreselectedRef.current = true;
+    dispatch({ type: "SET_FIELD", field: "customerId", value: preselected });
+  }, [customers, dispatch, isCreate, locationState?.customerId]);
 
   const documentTypePreselectedRef = useRef(false);
   useEffect(() => {
@@ -328,17 +321,6 @@ export function useDocumentPage(
       mounted = false;
     };
   }, [dispatch, documentId, isCreate]);
-
-  useEffect(() => {
-    if (isCreate) return;
-    if (!state.customerId && customers.length > 0) {
-      dispatch({
-        type: "SET_FIELD",
-        field: "customerId",
-        value: customers[0].id,
-      });
-    }
-  }, [customers, dispatch, isCreate, state.customerId]);
 
   const dismissCreateGuide = !!profile?.onboarding?.createInvoiceDismissed;
   const showCreateGuide = isCreate && !dismissCreateGuide && hasDocs === false;
