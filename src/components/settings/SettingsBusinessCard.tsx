@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Button from "@components/core/Button";
+import StyledInput from "@components/core/StyledInput";
+import StyledTextarea from "@components/core/StyledTextarea";
 
 type BusinessInfo = {
   name?: string;
@@ -59,48 +61,37 @@ const SettingsBusinessCard: React.FC<SettingsBusinessCardProps> = ({
       </p>
 
       <form className="settings-business-form" onSubmit={handleSave}>
-        <div className="settings-business-form__field settings-business-form__field--name">
-          <label htmlFor="biz-name" className="settings-business-form__label">
-            Business name
-          </label>
-          <input
+        <div className="settings-business-form__field--name">
+          <StyledInput
             id="biz-name"
+            label="Business name"
             type="text"
-            className="styled-input"
             placeholder="e.g. Kusal & Co."
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
-        <div className="settings-business-form__field settings-business-form__field--email">
-          <label htmlFor="biz-email" className="settings-business-form__label">
-            Email
-          </label>
-          <input
+        <div className="settings-business-form__field--email">
+          <StyledInput
             id="biz-email"
+            label="Email"
             type="email"
-            className="styled-input"
             placeholder="e.g. hello@yourco.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
 
-        <div className="settings-business-form__field settings-business-form__field--address">
-          <label
-            htmlFor="biz-address"
-            className="settings-business-form__label"
-          >
-            Address
-          </label>
-          <textarea
+        <div className="settings-business-form__field--address">
+          <StyledTextarea
             id="biz-address"
-            className="styled-textarea"
+            label="Address"
             rows={4}
             placeholder={"e.g. 42 Galle Road\nColombo 3\nSri Lanka"}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+            style={{ resize: "none", flex: 1 }}
           />
         </div>
 
