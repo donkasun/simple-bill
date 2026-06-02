@@ -71,6 +71,15 @@ const DocumentEdit: React.FC = () => {
                       Edit document
                     </Button>
                   )}
+                  {flags.documentStatus !== "draft" && (
+                    <Button
+                      variant="secondary"
+                      onClick={actions.downloadDocument}
+                      disabled={flags.downloading || flags.initializing}
+                    >
+                      {flags.downloading ? "Downloading…" : "Download PDF"}
+                    </Button>
+                  )}
                   {vm.state.documentType === "quotation" && (
                     <Button
                       onClick={actions.generateInvoice}

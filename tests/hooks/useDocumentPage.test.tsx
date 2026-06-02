@@ -581,4 +581,56 @@ describe("useDocumentPage", () => {
     // The late-arriving profile currency must not clobber the user's choice.
     await waitFor(() => expect(vm!.currency).toBe("EUR"));
   });
+
+  it("downloadDocument generates a PDF from the loaded document and triggers a download", async () => {
+    const { getDoc } = await import("firebase/firestore");
+    (getDoc as vi.Mock).mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        type: "invoice",
+        docNumber: "INV-2024-001",
+        status: "finalized",
+        currency: "LKR",
+        date: "2024-01-15",
+        customerId: "c1",
+        customerDetails: { name: "Acme" },
+        items: [{ name: "Work", unitPrice: 100, quantity: 1, amount: 100 }],
+        subtotal: 100,
+        total: 100,
+      }),
+    });
+
+    const { generateDocumentPdf } = await import("@utils/pdf");
+    const { downloadBlob } = await import("@utils/download");
+
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "edit", documentId: "doc-1" });
+      return null;
+    };
+    render(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(vm!.flags.initializing).toBe(false));
+
+    await act(async () => {
+      await vm!.actions.downloadDocument();
+    });
+
+    await waitFor(() => {
+      expect(generateDocumentPdf).toHaveBeenCalledWith(
+        expect.objectContaining({ docNumber: "INV-2024-001", currency: "LKR" }),
+      );
+      expect(downloadBlob).toHaveBeenCalledWith(
+        expect.stringContaining("INV-2024-001"),
+        expect.any(Uint8Array),
+        "application/pdf",
+      );
+    });
+    // must not navigate away
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
 });

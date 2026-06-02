@@ -88,6 +88,7 @@ export type DocumentPageViewModel = {
   flags: {
     saving: boolean;
     finalizing: boolean;
+    downloading: boolean;
     prefilling: boolean;
     initializing: boolean;
     generatingInvoice: boolean;
@@ -105,6 +106,7 @@ export type DocumentPageViewModel = {
     saveDraft: () => Promise<void>;
     saveChanges: () => Promise<void>;
     finalizeAndDownload: () => Promise<void>;
+    downloadDocument: () => Promise<void>;
     copyFromPrevious: () => Promise<void>;
     dismissCreateGuide: () => void;
     generateInvoice: () => Promise<void>;
@@ -180,6 +182,7 @@ export function useDocumentPage(
   const [loadError, setLoadError] = useState<string | null>(null);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [hasDocs, setHasDocs] = useState<boolean | null>(null);
 
   // Tracks an in-flight create→finalize so a retry (e.g. after a PDF or
@@ -707,6 +710,38 @@ export function useDocumentPage(
     });
   }, [profile?.onboarding, updateUserProfile]);
 
+  const downloadDocument = useCallback(async () => {
+    setDownloading(true);
+    try {
+      const { generateDocumentPdf } = await import("../../utils/pdf");
+      const pdfBytes = await generateDocumentPdf({
+        type: state.documentType,
+        docNumber: state.documentNumber || "",
+        date: state.date,
+        customerDetails: selectCustomerDetails(customers, state.customerId),
+        items: state.lineItems.map((li) => ({
+          itemId: li.itemId,
+          name: li.name,
+          description: li.description,
+          unitPrice: li.unitPrice,
+          quantity: li.quantity,
+          amount: li.amount,
+        })),
+        subtotal,
+        total,
+        currency,
+      });
+      const filename = `${getDocumentFilename(state.documentType, state.documentNumber, state.date)}.pdf`;
+      downloadBlob(filename, pdfBytes, "application/pdf");
+    } catch (e: unknown) {
+      // Surface via toast so the user sees feedback without a full error banner.
+      const { toast } = await import("@contexts/toast");
+      toast.error(e instanceof Error ? e.message : "Failed to download PDF");
+    } finally {
+      setDownloading(false);
+    }
+  }, [currency, customers, state, subtotal, total]);
+
   const generateInvoice = useCallback(async () => {
     setGenerateError(null);
     if (!user?.uid || !documentId) return;
@@ -815,6 +850,7 @@ export function useDocumentPage(
     flags: {
       saving,
       finalizing,
+      downloading,
       prefilling,
       initializing,
       generatingInvoice,
@@ -829,6 +865,7 @@ export function useDocumentPage(
       saveDraft,
       saveChanges,
       finalizeAndDownload,
+      downloadDocument,
       copyFromPrevious,
       dismissCreateGuide: handleDismissCreateGuide,
       generateInvoice,
