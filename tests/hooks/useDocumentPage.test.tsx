@@ -43,6 +43,7 @@ const mockUseAuth = useAuth as vi.MockedFunction<typeof useAuth>;
 const mockUseFirestore = useFirestore as vi.MockedFunction<typeof useFirestore>;
 
 let addDocumentSpy = vi.fn();
+let updateDocumentSpy = vi.fn();
 let setDocumentSpy = vi.fn();
 let getDocumentSpy = vi.fn();
 
@@ -69,6 +70,7 @@ describe("useDocumentPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     addDocumentSpy = vi.fn().mockResolvedValue("new-id");
+    updateDocumentSpy = vi.fn().mockResolvedValue(undefined);
     setDocumentSpy = vi.fn().mockResolvedValue(undefined);
     getDocumentSpy = vi.fn().mockResolvedValue(undefined);
     mockUseAuth.mockReturnValue({
@@ -114,7 +116,7 @@ describe("useDocumentPage", () => {
         loading: false,
         error: null,
         add: addDocumentSpy,
-        update: vi.fn(),
+        update: updateDocumentSpy,
         remove: vi.fn(),
         set: setDocumentSpy,
         getById: getDocumentSpy,
@@ -146,13 +148,13 @@ describe("useDocumentPage", () => {
     });
   });
 
-  it("edit mode sets canEdit false when document is finalized", async () => {
+  it("edit mode sets canEdit false when document is sent", async () => {
     const { getDoc } = await import("firebase/firestore");
     (getDoc as vi.Mock).mockResolvedValue({
       exists: () => true,
       data: () => ({
         type: "invoice",
-        status: "finalized",
+        status: "sent",
         currency: "USD",
         date: "2024-01-01",
         items: [],
@@ -175,7 +177,42 @@ describe("useDocumentPage", () => {
     await waitFor(() => {
       expect(vm!.flags.initializing).toBe(false);
       expect(vm!.flags.canEdit).toBe(false);
-      expect(vm!.flags.documentStatus).toBe("finalized");
+      expect(vm!.flags.documentStatus).toBe("sent");
+    });
+  });
+
+  it("edit mode sets canEdit true when document is ready and autoEdit is set", async () => {
+    const { getDoc } = await import("firebase/firestore");
+    (getDoc as vi.Mock).mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        type: "invoice",
+        status: "ready",
+        currency: "USD",
+        date: "2024-01-01",
+        items: [],
+        subtotal: 0,
+        total: 0,
+      }),
+    });
+
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "edit", documentId: "doc-1" });
+      return null;
+    };
+    render(
+      <MemoryRouter
+        initialEntries={[{ pathname: "/", state: { autoEdit: true } }]}
+      >
+        <Comp />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(vm!.flags.initializing).toBe(false);
+      expect(vm!.flags.canEdit).toBe(true);
+      expect(vm!.flags.documentStatus).toBe("ready");
     });
   });
 
@@ -196,7 +233,7 @@ describe("useDocumentPage", () => {
     });
   });
 
-  it("create mode finalize adds a finalized document, builds a PDF, and navigates", async () => {
+  it("create mode downloadPdf saves document as ready, builds a PDF, and navigates to edit", async () => {
     const { generateDocumentPdf } = await import("@utils/pdf");
     const { downloadBlob } = await import("@utils/download");
 
@@ -226,16 +263,62 @@ describe("useDocumentPage", () => {
     await waitFor(() => expect(vm!.finalizeDisabled).toBe(false));
 
     await act(async () => {
-      await vm!.actions.finalizeAndDownload();
+      await vm!.actions.downloadPdf();
     });
 
     await waitFor(() => {
       expect(addDocumentSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ status: "finalized", currency: "USD" }),
+        expect.objectContaining({ status: "ready", currency: "USD" }),
       );
       expect(generateDocumentPdf).toHaveBeenCalled();
       expect(downloadBlob).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringContaining("/edit"),
+        expect.objectContaining({ state: { autoEdit: true } }),
+      );
+    });
+  });
+
+  it("markAsSent moves a ready document to sent status", async () => {
+    const { getDoc } = await import("firebase/firestore");
+    (getDoc as vi.Mock).mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        type: "invoice",
+        docNumber: "INV-2024-001",
+        status: "ready",
+        currency: "USD",
+        date: "2024-01-15",
+        customerId: "c1",
+        items: [{ name: "Work", unitPrice: 100, quantity: 1, amount: 100 }],
+        subtotal: 100,
+        total: 100,
+      }),
+    });
+
+    let vm: ReturnType<typeof useDocumentPage> | null = null;
+    const Comp = () => {
+      vm = useDocumentPage({ mode: "edit", documentId: "doc-1" });
+      return null;
+    };
+    render(
+      <MemoryRouter>
+        <Comp />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(vm!.flags.initializing).toBe(false));
+
+    await act(async () => {
+      await vm!.actions.markAsSent();
+    });
+
+    await waitFor(() => {
+      expect(updateDocumentSpy).toHaveBeenCalledWith(
+        "doc-1",
+        expect.objectContaining({ status: "sent" }),
+      );
+      expect(vm!.flags.documentStatus).toBe("sent");
     });
   });
 
@@ -289,13 +372,13 @@ describe("useDocumentPage", () => {
     });
   });
 
-  it("generateInvoice creates a linked invoice from a finalized quotation and navigates", async () => {
+  it("generateInvoice creates a linked invoice from a sent quotation and navigates", async () => {
     const { getDoc } = await import("firebase/firestore");
     (getDoc as vi.Mock).mockResolvedValue({
       exists: () => true,
       data: () => ({
         type: "quotation",
-        status: "finalized",
+        status: "sent",
         currency: "USD",
         date: "2024-01-01",
         customerId: "c1",
@@ -368,9 +451,9 @@ describe("useDocumentPage", () => {
     return () => vm!;
   }
 
-  it("create mode finalize does not persist when PDF generation fails; retry persists exactly once", async () => {
+  it("create mode downloadPdf does not persist when PDF generation fails; retry persists exactly once", async () => {
     const { generateDocumentPdf } = await import("@utils/pdf");
-    // First finalize attempt: PDF generation throws. Subsequent calls fall
+    // First attempt: PDF generation throws. Subsequent calls fall
     // back to the factory default (resolves), simulating a transient failure.
     (generateDocumentPdf as vi.Mock).mockRejectedValueOnce(
       new Error("pdf boom"),
@@ -380,26 +463,26 @@ describe("useDocumentPage", () => {
 
     // Attempt 1 — PDF fails, so nothing must be persisted.
     await act(async () => {
-      await getVm().actions.finalizeAndDownload();
+      await getVm().actions.downloadPdf();
     });
     await waitFor(() => expect(getVm().banners.finalizeError).toBeTruthy());
     expect(addDocumentSpy).not.toHaveBeenCalled();
 
-    // Attempt 2 — PDF succeeds, document is persisted exactly once.
+    // Attempt 2 — PDF succeeds, document is persisted exactly once as ready.
     await act(async () => {
-      await getVm().actions.finalizeAndDownload();
+      await getVm().actions.downloadPdf();
     });
     await waitFor(() => {
       expect(addDocumentSpy).toHaveBeenCalledTimes(1);
       expect(addDocumentSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ status: "finalized" }),
+        expect.objectContaining({ status: "ready" }),
       );
     });
   });
 
-  it("create mode finalize reuses the created doc on retry after a download failure", async () => {
+  it("create mode downloadPdf reuses the created doc on retry after a download failure", async () => {
     const { downloadBlob } = await import("@utils/download");
-    // First finalize: PDF + persist succeed, but the download throws.
+    // First attempt: PDF + persist succeed, but the download throws.
     (downloadBlob as vi.Mock).mockImplementationOnce(() => {
       throw new Error("download boom");
     });
@@ -412,7 +495,7 @@ describe("useDocumentPage", () => {
 
     // Attempt 1 — persists, then download fails.
     await act(async () => {
-      await getVm().actions.finalizeAndDownload();
+      await getVm().actions.downloadPdf();
     });
     await waitFor(() => {
       expect(addDocumentSpy).toHaveBeenCalledTimes(1);
@@ -425,18 +508,21 @@ describe("useDocumentPage", () => {
     // Attempt 2 — must update the already-created doc, not create a new one,
     // and must keep the originally allocated number.
     await act(async () => {
-      await getVm().actions.finalizeAndDownload();
+      await getVm().actions.downloadPdf();
     });
     await waitFor(() => {
       expect(addDocumentSpy).toHaveBeenCalledTimes(1);
       expect(setDocumentSpy).toHaveBeenCalledWith(
         "new-id",
         expect.objectContaining({
-          status: "finalized",
+          status: "ready",
           docNumber: "INV-2026-001",
         }),
       );
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringContaining("/edit"),
+        expect.objectContaining({ state: { autoEdit: true } }),
+      );
     });
   });
 
@@ -621,7 +707,7 @@ describe("useDocumentPage", () => {
       data: () => ({
         type: "invoice",
         docNumber: "INV-2024-001",
-        status: "finalized",
+        status: "sent",
         currency: "LKR",
         date: "2024-01-15",
         customerId: "c1",

@@ -51,7 +51,7 @@ const DocumentCard = ({
 }: DocumentCardProps) => {
   const navigate = useNavigate();
   const isDraft = !document.status || document.status === "draft";
-  const isFinalized = document.status === "finalized";
+  const isFinalized = document.status === "sent" || document.status === "ready";
   const isPaid = document.status === "paid";
   const isDeleting = deletingId === document.id;
   const isDownloading = downloadingId === document.id;

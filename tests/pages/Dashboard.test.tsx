@@ -103,7 +103,7 @@ const mockDocuments = [
     customerName: "Beta Inc",
     total: 2500,
     currency: "USD",
-    status: "finalized",
+    status: "sent",
     relatedCount: 0,
     sourceInfo: "From Quotation",
   },
@@ -116,7 +116,7 @@ const mockDocuments = [
     customerName: "Gamma Ltd",
     total: 3000,
     currency: "USD",
-    status: "finalized",
+    status: "sent",
     relatedCount: 2,
     sourceInfo: undefined,
   },
@@ -534,7 +534,7 @@ describe("Dashboard", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/documents?status=paid");
 
       fireEvent.click(within(strip).getByRole("button", { name: /sent/i }));
-      expect(mockNavigate).toHaveBeenCalledWith("/documents?status=finalized");
+      expect(mockNavigate).toHaveBeenCalledWith("/documents?status=sent");
 
       fireEvent.click(within(strip).getByRole("button", { name: /draft/i }));
       expect(mockNavigate).toHaveBeenCalledWith("/documents?status=draft");

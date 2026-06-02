@@ -48,7 +48,7 @@ const DocumentCreation: React.FC = () => {
                 {flags.saving ? "Saving…" : "Save draft"}
               </Button>
               <Button
-                onClick={actions.finalizeAndDownload}
+                onClick={actions.downloadPdf}
                 disabled={
                   flags.saving || flags.finalizing || vm.finalizeDisabled
                 }
@@ -56,7 +56,7 @@ const DocumentCreation: React.FC = () => {
                   flags.saving || flags.finalizing || vm.finalizeDisabled
                 }
               >
-                {flags.finalizing ? "Finalizing…" : "Finalize & download PDF"}
+                {flags.finalizing ? "Preparing…" : "Download PDF"}
               </Button>
             </>
           }

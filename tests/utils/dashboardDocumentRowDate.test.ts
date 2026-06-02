@@ -24,7 +24,7 @@ describe("formatDashboardDocumentRowDate", () => {
   it("returns formatted date for finalized documents", () => {
     const doc = {
       ...baseDoc,
-      status: "finalized" as const,
+      status: "sent" as const,
       date: "2024-01-16",
     };
     expect(formatDashboardDocumentRowDate(doc as DocumentRow)).toMatch(/2024/);
@@ -33,7 +33,7 @@ describe("formatDashboardDocumentRowDate", () => {
   it("does not echo status strings when date is invalid", () => {
     const doc = {
       ...baseDoc,
-      status: "finalized" as const,
+      status: "sent" as const,
       date: "finalized",
     };
     expect(formatDashboardDocumentRowDate(doc as DocumentRow)).not.toBe(

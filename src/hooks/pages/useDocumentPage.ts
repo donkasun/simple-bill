@@ -105,7 +105,8 @@ export type DocumentPageViewModel = {
   actions: {
     saveDraft: () => Promise<void>;
     saveChanges: () => Promise<void>;
-    finalizeAndDownload: () => Promise<void>;
+    downloadPdf: () => Promise<void>;
+    markAsSent: () => Promise<void>;
     downloadDocument: () => Promise<void>;
     copyFromPrevious: () => Promise<void>;
     dismissCreateGuide: () => void;
@@ -151,6 +152,7 @@ export function useDocumentPage(
 
   const {
     add: addDocument,
+    update: updateDocument,
     set: setDocument,
     getById: getDocument,
   } = useFirestore<DocumentEntity>({
@@ -194,7 +196,9 @@ export function useDocumentPage(
   // late-arriving profile default must not overwrite it.
   const currencyPinnedRef = useRef(false);
 
-  const canEdit = isCreate || (documentStatus === "draft" && isEditMode);
+  const canEdit =
+    isCreate ||
+    ((documentStatus === "draft" || documentStatus === "ready") && isEditMode);
 
   const { state, dispatch, addLine, selectItemById, subtotal, total } =
     useDocumentForm({
@@ -287,7 +291,11 @@ export function useDocumentPage(
         if (!mounted) return;
         setDocumentStatus(data.status);
         setCurrencyExplicit(data.currency || "USD");
-        setIsEditMode(data.status === "draft");
+        const canEditStatus =
+          data.status === "draft" || data.status === "ready";
+        const autoEdit = !!(locationState as { autoEdit?: boolean } | null)
+          ?.autoEdit;
+        setIsEditMode(canEditStatus && (data.status === "draft" || autoEdit));
         const items = (data.items ?? []).map((it) => ({
           id: crypto.randomUUID(),
           itemId: it.itemId,
@@ -527,14 +535,14 @@ export function useDocumentPage(
     user?.uid,
   ]);
 
-  const finalizeAndDownload = useCallback(async () => {
+  const downloadPdf = useCallback(async () => {
     setFinalizeError(null);
     if (!user?.uid) return;
     setFinalizing(true);
     try {
       const validation = validateFinalize(state);
       if (applyValidationErrors(validation)) {
-        setFinalizeError("Please resolve the errors to finalize.");
+        setFinalizeError("Please resolve the errors before downloading.");
         focusFirstValidationError(state, validation);
         return;
       }
@@ -546,14 +554,14 @@ export function useDocumentPage(
       const base = buildDocumentPayload(
         user.uid,
         state,
-        "finalized",
+        "ready",
         docNumber,
         selectCustomerDetails(customers, state.customerId),
         { subtotal, total },
       );
 
       // Generate the PDF *before* persisting. It is pure given the form state,
-      // so a PDF failure must never leave a finalized document behind that a
+      // so a PDF failure must never leave a persisted document behind that a
       // retry would then duplicate.
       const { generateDocumentPdf } = await import("../../utils/pdf");
       const pdfBytes = await generateDocumentPdf({
@@ -570,28 +578,32 @@ export function useDocumentPage(
       const payload: Partial<DocumentEntity> = {
         ...base,
         currency,
-        finalizedAt:
+        sentAt:
           serverTimestamp() as unknown as import("firebase/firestore").Timestamp,
       };
 
+      let savedId: string;
       if (isCreate) {
         if (finalizeCreatedIdRef.current) {
           // A previous attempt already created the document; update it in
-          // place rather than creating a second finalized document.
+          // place rather than creating a second one.
           await setDocument(finalizeCreatedIdRef.current, payload);
+          savedId = finalizeCreatedIdRef.current;
         } else {
-          finalizeCreatedIdRef.current = await addDocument(
+          savedId = await addDocument(
             payload as Omit<
               DocumentEntity,
               "id" | "createdAt" | "updatedAt"
             > & {
-              finalizedAt: import("firebase/firestore").Timestamp;
+              sentAt: import("firebase/firestore").Timestamp;
             },
           );
+          finalizeCreatedIdRef.current = savedId;
         }
-      } else if (documentId) {
-        await setDocument(documentId, payload);
-        setDocumentStatus("finalized");
+      } else {
+        savedId = documentId!;
+        await setDocument(documentId!, payload);
+        setDocumentStatus("ready");
         setIsEditMode(false);
       }
 
@@ -605,10 +617,10 @@ export function useDocumentPage(
         base.date as string,
       )}.pdf`;
       downloadBlob(filename, pdfBytes, "application/pdf");
-      // Fully succeeded — clear the retry guards for any future finalize.
+      // Fully succeeded — clear the retry guards.
       finalizeCreatedIdRef.current = null;
       finalizeDocNumberRef.current = null;
-      navigate("/dashboard");
+      navigate(`/documents/${savedId}/edit`, { state: { autoEdit: true } });
     } catch (e: unknown) {
       if (applyDocNumberError(e)) {
         setFinalizeError(
@@ -616,7 +628,7 @@ export function useDocumentPage(
         );
       } else {
         setFinalizeError(
-          e instanceof Error ? e.message : "Failed to finalize & download",
+          e instanceof Error ? e.message : "Failed to download PDF",
         );
       }
     } finally {
@@ -638,6 +650,16 @@ export function useDocumentPage(
     total,
     user?.uid,
   ]);
+
+  const markAsSent = useCallback(async () => {
+    if (!documentId) return;
+    try {
+      await updateDocument(documentId, { status: "sent" });
+      setDocumentStatus("sent");
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : "Failed to mark as sent");
+    }
+  }, [documentId, updateDocument]);
 
   const copyFromPrevious = useCallback(async () => {
     if (!isCreate || !user?.uid) return;
@@ -864,7 +886,8 @@ export function useDocumentPage(
     actions: {
       saveDraft,
       saveChanges,
-      finalizeAndDownload,
+      downloadPdf,
+      markAsSent,
       downloadDocument,
       copyFromPrevious,
       dismissCreateGuide: handleDismissCreateGuide,

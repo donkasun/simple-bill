@@ -1,6 +1,6 @@
 import type { DocumentEntity } from "../types/document";
 
-export type DocumentStatusPillModifier = "paid" | "sent" | "draft";
+export type DocumentStatusPillModifier = "paid" | "sent" | "ready" | "draft";
 
 export type DocumentStatusPill = {
   label: string;
@@ -13,8 +13,11 @@ export function getDocumentStatusPill(
   if (status === "paid") {
     return { label: "Paid", modifier: "paid" };
   }
-  if (status === "finalized") {
+  if (status === "sent") {
     return { label: "Sent", modifier: "sent" };
+  }
+  if (status === "ready") {
+    return { label: "Ready", modifier: "ready" };
   }
   return { label: "Draft", modifier: "draft" };
 }

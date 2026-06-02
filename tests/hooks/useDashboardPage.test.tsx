@@ -63,7 +63,7 @@ const makeDocs = (count: number) =>
     id: `doc${i}`,
     type: "invoice" as const,
     typeLabel: "Invoice",
-    status: i === 0 ? ("finalized" as const) : ("draft" as const),
+    status: i === 0 ? ("sent" as const) : ("draft" as const),
     customerName: `Customer ${i}`,
     customerId: i < 2 ? `cust${i + 1}` : undefined,
     total: 100 * (i + 1),
@@ -247,7 +247,7 @@ describe("useDashboardPage", () => {
             id: "sent1",
             type: "invoice" as const,
             typeLabel: "Invoice",
-            status: "finalized" as const,
+            status: "sent" as const,
             customerName: "Sent Co",
             total: 75,
             currency: "USD",
@@ -258,7 +258,7 @@ describe("useDashboardPage", () => {
             id: "sent2",
             type: "invoice" as const,
             typeLabel: "Invoice",
-            status: "finalized" as const,
+            status: "sent" as const,
             customerName: "Sent Co 2",
             total: 25,
             currency: "USD",
@@ -325,7 +325,7 @@ describe("useDashboardPage", () => {
             id: "sent1",
             type: "invoice" as const,
             typeLabel: "Invoice",
-            status: "finalized" as const,
+            status: "sent" as const,
             customerId: "cust1",
             customerName: "Acme",
             total: 100,
@@ -337,7 +337,7 @@ describe("useDashboardPage", () => {
             id: "sent2",
             type: "invoice" as const,
             typeLabel: "Invoice",
-            status: "finalized" as const,
+            status: "sent" as const,
             customerId: "cust2",
             customerName: "Beta",
             total: 450,
@@ -374,7 +374,7 @@ describe("useDashboardPage", () => {
     });
   });
 
-  it("ignores finalized quotations when picking spotlight customer", async () => {
+  it("ignores sent quotations when picking spotlight customer", async () => {
     mockUseFirestore.mockImplementation((options) => {
       if (options.collectionName === "customers") {
         return {
@@ -395,7 +395,7 @@ describe("useDashboardPage", () => {
             id: "quo1",
             type: "quotation" as const,
             typeLabel: "Quotation",
-            status: "finalized" as const,
+            status: "sent" as const,
             customerId: "cust2",
             customerName: "Beta",
             total: 9000,
@@ -407,7 +407,7 @@ describe("useDashboardPage", () => {
             id: "inv1",
             type: "invoice" as const,
             typeLabel: "Invoice",
-            status: "finalized" as const,
+            status: "sent" as const,
             customerId: "cust1",
             customerName: "Acme",
             total: 100,

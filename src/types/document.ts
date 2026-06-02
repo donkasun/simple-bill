@@ -2,7 +2,7 @@ import type { BaseEntity } from "@models/firestore";
 import type { Timestamp } from "firebase/firestore";
 
 export type DocumentType = "invoice" | "quotation";
-export type DocumentStatus = "draft" | "finalized" | "paid";
+export type DocumentStatus = "draft" | "ready" | "sent" | "paid";
 
 export type DocumentLineItem = {
   itemId?: string;
@@ -25,7 +25,7 @@ export type DocumentEntity = BaseEntity & {
   total: number;
   notes?: string;
   status: DocumentStatus;
-  finalizedAt?: Timestamp;
+  sentAt?: Timestamp;
   paidAt?: Timestamp | Date | null;
   currency?: string;
   // Relationship tracking

@@ -11,9 +11,13 @@ describe("documentDisplay", () => {
       label: "Paid",
       modifier: "paid",
     });
-    expect(getDocumentStatusPill("finalized")).toEqual({
+    expect(getDocumentStatusPill("sent")).toEqual({
       label: "Sent",
       modifier: "sent",
+    });
+    expect(getDocumentStatusPill("ready")).toEqual({
+      label: "Ready",
+      modifier: "ready",
     });
     expect(getDocumentStatusPill("draft")).toEqual({
       label: "Draft",

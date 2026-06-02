@@ -87,10 +87,10 @@ describe("documents utils", () => {
       subtotal: 20,
       total: 20,
       notes: "Some notes",
-      status: "finalized",
+      status: "sent",
       currency: "EUR",
       // @ts-expect-error test-only timestamp shape
-      finalizedAt: { seconds: 123, nanoseconds: 0 },
+      sentAt: { seconds: 123, nanoseconds: 0 },
       sourceDocumentId: "quotation-123",
       sourceDocumentType: "quotation",
       relatedInvoices: ["inv-1"],
@@ -113,7 +113,7 @@ describe("documents utils", () => {
     expect(payload.items).toEqual(source.items);
     expect(payload.currency).toBe("EUR");
 
-    expect("finalizedAt" in payload).toBe(false);
+    expect("sentAt" in payload).toBe(false);
     expect("sourceDocumentId" in payload).toBe(false);
     expect("sourceDocumentType" in payload).toBe(false);
     expect("relatedInvoices" in payload).toBe(false);

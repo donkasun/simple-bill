@@ -45,7 +45,7 @@ export function buildDuplicatePayload(
 export function buildDocumentPayload(
   userId: string,
   state: DocumentFormState,
-  status: "draft" | "finalized",
+  status: "draft" | "ready" | "sent",
   docNumber: string,
   customerDetails: DocumentEntity["customerDetails"],
   totals: { subtotal: number; total: number },

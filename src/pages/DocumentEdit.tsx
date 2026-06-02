@@ -20,9 +20,9 @@ const DocumentEdit: React.FC = () => {
   const headerTitle = flags.canEdit ? "Edit document" : "View document";
   const headerSubtitle = flags.canEdit
     ? "Update details, then save or download a PDF."
-    : flags.documentStatus === "draft"
-      ? "Draft — click Edit to start making changes."
-      : "This document is finalized and cannot be edited.";
+    : flags.documentStatus === "draft" || flags.documentStatus === "ready"
+      ? "Click Edit to make changes."
+      : "This document has been sent and cannot be edited.";
 
   return (
     <>
@@ -49,7 +49,7 @@ const DocumentEdit: React.FC = () => {
                     {flags.saving ? "Saving…" : "Save changes"}
                   </Button>
                   <Button
-                    onClick={actions.finalizeAndDownload}
+                    onClick={actions.downloadPdf}
                     disabled={
                       flags.saving ||
                       flags.finalizing ||
@@ -57,12 +57,13 @@ const DocumentEdit: React.FC = () => {
                       vm.finalizeDisabled
                     }
                   >
-                    {flags.finalizing ? "Finishing…" : "Finish & download PDF"}
+                    {flags.finalizing ? "Preparing…" : "Download PDF"}
                   </Button>
                 </>
               ) : (
                 <>
-                  {flags.documentStatus === "draft" && (
+                  {(flags.documentStatus === "draft" ||
+                    flags.documentStatus === "ready") && (
                     <Button
                       variant="secondary"
                       onClick={actions.enterEditMode}
@@ -71,7 +72,16 @@ const DocumentEdit: React.FC = () => {
                       Edit document
                     </Button>
                   )}
-                  {flags.documentStatus !== "draft" && (
+                  {flags.documentStatus === "ready" && (
+                    <Button
+                      onClick={actions.markAsSent}
+                      disabled={flags.initializing}
+                    >
+                      Mark as sent
+                    </Button>
+                  )}
+                  {(flags.documentStatus === "sent" ||
+                    flags.documentStatus === "paid") && (
                     <Button
                       variant="secondary"
                       onClick={actions.downloadDocument}
@@ -80,16 +90,17 @@ const DocumentEdit: React.FC = () => {
                       {flags.downloading ? "Downloading…" : "Download PDF"}
                     </Button>
                   )}
-                  {vm.state.documentType === "quotation" && (
-                    <Button
-                      onClick={actions.generateInvoice}
-                      disabled={flags.generatingInvoice || flags.initializing}
-                    >
-                      {flags.generatingInvoice
-                        ? "Generating…"
-                        : "Generate invoice"}
-                    </Button>
-                  )}
+                  {vm.state.documentType === "quotation" &&
+                    flags.documentStatus === "sent" && (
+                      <Button
+                        onClick={actions.generateInvoice}
+                        disabled={flags.generatingInvoice || flags.initializing}
+                      >
+                        {flags.generatingInvoice
+                          ? "Generating…"
+                          : "Generate invoice"}
+                      </Button>
+                    )}
                 </>
               )}
             </>
@@ -99,14 +110,14 @@ const DocumentEdit: React.FC = () => {
         {flags.initializing && <div>Loading document…</div>}
         {banners.loadError && <ErrorBanner>{banners.loadError}</ErrorBanner>}
         {!flags.canEdit &&
-          flags.documentStatus !== "draft" &&
+          flags.documentStatus === "sent" &&
           !flags.initializing &&
           !banners.loadError && (
             <ErrorBanner variant="warning">
-              This document has been finalized and cannot be edited.
+              This document has been sent and cannot be edited.
               {vm.state.documentType === "quotation" && (
                 <div style={{ marginTop: 8 }}>
-                  You can generate invoices from this finalized quotation.
+                  You can generate invoices from this sent quotation.
                 </div>
               )}
             </ErrorBanner>

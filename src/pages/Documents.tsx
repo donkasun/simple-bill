@@ -94,7 +94,7 @@ const Documents: React.FC = () => {
       <ConfirmDialog
         isOpen={!!vm.confirms.markUnpaidId}
         title="Mark as unpaid"
-        message="Revert this document back to finalized (unpaid)?"
+        message="Revert this document back to sent (unpaid)?"
         confirmLabel="Mark as unpaid"
         onConfirm={vm.actions.confirmMarkUnpaid}
         onCancel={vm.actions.cancelMarkUnpaid}
