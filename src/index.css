@@ -3413,6 +3413,29 @@ select:focus {
   }
 }
 
+/* ── PDF preview modal ──────────────────────────────────────────── */
+@media print {
+  .pdf-preview-modal-backdrop,
+  .pdf-preview-modal-toolbar {
+    display: none !important;
+  }
+
+  .pdf-preview-modal-panel {
+    position: fixed !important;
+    inset: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .pdf-preview-modal-scroll {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}
+
 /* ── Document preview (HTML invoice render) ───────────────────────── */
 .doc-preview-printable {
   background: #fff;
