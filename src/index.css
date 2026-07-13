@@ -3591,3 +3591,17 @@ select:focus {
 .doc-preview__total-row strong {
   color: #0e5138;
 }
+
+/* ── Modal form overflow guard ───────────────────────────────────── */
+/* Ensure all form controls inside modals respect container width */
+[role="dialog"] input,
+[role="dialog"] textarea,
+[role="dialog"] select {
+  max-width: 100%;
+}
+
+/* Error messages must not overflow their parent field wrapper */
+.modal-error {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}

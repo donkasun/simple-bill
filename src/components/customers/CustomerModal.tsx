@@ -37,6 +37,7 @@ const modalStyle: React.CSSProperties = {
   background: "var(--white)",
   border: "1px solid var(--brand-border)",
   borderRadius: 16,
+  overflow: "hidden",
   padding: 24,
   boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
 };

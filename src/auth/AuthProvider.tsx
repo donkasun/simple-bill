@@ -41,7 +41,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     const provider = new GoogleAuthProvider();
+
+    // Suppress the harmless Cross-Origin-Opener-Policy console noise that
+    // Firefox and Chrome emit during Firebase popup auth about window.closed.
+    // This is a browser-level warning, not a thrown exception. We shadow
+    // console.error for the duration of the popup call to keep the console clean.
+    const origConsoleError = console.error;
     try {
+      console.error = (...args: Parameters<typeof console.error>) => {
+        if (
+          typeof args[0] === "string" &&
+          (args[0] as string).includes("Cross-Origin-Opener-Policy")
+        )
+          return;
+        origConsoleError(...args);
+      };
+
       await signInWithPopup(auth, provider);
     } catch (error) {
       const err = error as { code?: string } | unknown;
@@ -53,7 +68,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ) {
         return;
       }
-      console.error("Error signing in with Google:", error);
+      origConsoleError("Error signing in with Google:", error);
+    } finally {
+      console.error = origConsoleError;
     }
   };
 
